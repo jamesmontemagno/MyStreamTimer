@@ -1,0 +1,118 @@
+﻿<mah:MetroWindow
+        xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
+        x:Class="MyStreamTimer.WPF.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+        xmlns:local="clr-namespace:MyStreamTimer.WPF"
+        xmlns:viewmodel="clr-namespace:MyStreamTimer.Shared.ViewModel;assembly=MyStreamTimer.Shared"
+        mc:Ignorable="d"
+        Title="My Stream Timer" Height="350" Width="500" 
+        ResizeMode="NoResize">
+    <mah:MetroWindow.DataContext>
+        <viewmodel:TimerViewModel/>
+    </mah:MetroWindow.DataContext>
+    <Grid Margin="25">
+        <Grid.Resources>
+            <Style TargetType="Border" >
+                <Setter Property="Padding" Value="5" />
+            </Style>
+        </Grid.Resources>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <!--Count Down Type-->
+        <Border>
+            <Label Content="Count Type:"
+                   HorizontalAlignment="Right"/>
+        </Border>
+
+        <Border Grid.Column="1">
+            <StackPanel>
+                <RadioButton Content="Down" 
+                             IsChecked="{Binding IsDown}"/>
+                <RadioButton Content="Up" 
+                             Margin="0,5,0,0"
+                             IsChecked="{Binding IsUp}"/>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="1" >
+            <Label
+               HorizontalAlignment="Right"
+               Content="Time:"/>
+        </Border>
+
+        <Border Grid.Row="1" Grid.Column="1">
+            <mah:NumericUpDown HorizontalAlignment="Left"
+                           MinWidth="100"
+                           Minimum="1"
+                           IsEnabled="{Binding IsDown}"
+                           Value="{Binding Minutes}"/>
+        </Border>
+
+        <Border Grid.Row="2">
+            <Label HorizontalAlignment="Right"
+                   Content="Output:"/>
+        </Border>
+
+        <Border Grid.Row="2" Grid.Column="1">
+            <TextBox Text="{Binding Output}"/>
+        </Border>
+
+        <Border Grid.Row="3">
+            <Label HorizontalAlignment="Right"
+                   Content="Finish:"/>
+        </Border>
+
+        <Border Grid.Row="3" Grid.Column="1">
+            <TextBox 
+                Text="{Binding Finish}"/>
+        </Border>
+
+        <Border Grid.Row="4">
+            <Label HorizontalAlignment="Right"
+                   Content="File Name:"/>
+        </Border>
+
+        <Border Grid.Row="4" Grid.Column="1">
+            <TextBox 
+                Text="{Binding FileName}"/>
+        </Border>
+
+        <Border Grid.Row="4" Grid.Column="2">
+            <Button 
+                Width="30"
+                Height="30"
+                Command="{Binding CopyFilePathCommand}"
+                Style="{DynamicResource MahApps.Metro.Styles.MetroCircleButtonStyle}">
+                <iconPacks:FontAwesome Kind="CopyRegular"/>
+            </Button>
+        </Border>
+
+        <Border Grid.Row="5" Grid.ColumnSpan="2">
+            <ToggleButton IsChecked="False"
+                          Content="{Binding StartStop}"
+                          Command="{Binding StartStopTimerCommand}"/>
+        </Border>
+
+        <Border Grid.Row="6" Grid.ColumnSpan="2">
+            <TextBlock TextWrapping="Wrap"
+                       Text="{Binding CountdownOutput}" 
+                       HorizontalAlignment="Center" />
+        </Border>
+    </Grid>
+</mah:MetroWindow>
