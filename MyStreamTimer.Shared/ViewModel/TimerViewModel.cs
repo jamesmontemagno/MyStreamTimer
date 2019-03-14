@@ -1,4 +1,6 @@
 ﻿using MvvmHelpers;
+using MyStreamTimer.Shared.Helpers;
+using MyStreamTimer.Shared.Interfaces;
 using MyStreamTimer.Shared.Model;
 using System;
 using System.IO;
@@ -85,7 +87,12 @@ namespace MyStreamTimer.Shared.ViewModel
 
         void ExecuteCopyFilePathCommand()
         {
+            var folder = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            folder = Path.Combine(folder, "MyStreamTimer");
 
+            var clipboard = ServiceContainer.Resolve<IClipboard>();
+
+            clipboard?.CopyToClipboard(folder);
         }
 
         public ICommand StartStopTimerCommand { get; set; }
