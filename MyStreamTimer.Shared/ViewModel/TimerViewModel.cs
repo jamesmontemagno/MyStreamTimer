@@ -13,23 +13,45 @@ namespace MyStreamTimer.Shared.ViewModel
 {
     public class TimerViewModel : BaseViewModel
     {
+
+
         DateTime startTime;
         DateTime endTime;
         bool currentIsDown;
         int currentMinutes;
         string currentFinished, currentOutput, currentFileName;
         readonly Timer timer;
+        string identifier;
 
-        public TimerViewModel()
+        Settings settings;
+
+        public TimerViewModel(string id)
         {
+            identifier = id;
+            settings = new Settings(id);
+
+            switch(identifier)
+            {
+                case Constants.Countdown:
+                    IsDown = true;
+                    break;
+                case Constants.Countup:
+                    IsDown = false;
+                    break;
+                case Constants.Giveaway:
+                    IsDown = true;
+                    break;
+            }
+
             StartStopTimerCommand = new Command(ExecuteStartStopTimerCommand);
             CopyFilePathCommand = new Command(ExecuteCopyFilePathCommand);
             timer = new Timer(250);
             timer.Elapsed += TimerElapsed;
             timer.AutoReset = true;
+
+            if (AutoStart)
+                ExecuteStartStopTimerCommand();
         }
-
-
 
         bool isDown = true;
         public bool IsDown
@@ -38,35 +60,53 @@ namespace MyStreamTimer.Shared.ViewModel
             set => SetProperty(ref isDown, value);
         }
 
-        bool isUp;
-        public bool IsUp
-        {
-            get => isUp;
-            set => SetProperty(ref isUp, value);
-        }
-        int minutes = 5;
         public int Minutes
         {
-            get => minutes;
-            set => SetProperty(ref minutes, value);
+            get => settings.Minutes;
+            set
+            {
+                settings.Minutes = value;
+                OnPropertyChanged(nameof(Minutes));
+            }
         }
-        string output = @"Starting in {0:mm\:ss}";
+
         public string Output
         {
-            get => output;
-            set => SetProperty(ref output, value);
+            get => settings.Output;
+            set
+            {
+                settings.Output = value;
+                OnPropertyChanged(nameof(Output));
+            }
         }
-        string finish = "Let's do this!";
+
+        public bool AutoStart
+        {
+            get => settings.AutoStart;
+            set
+            {
+                settings.AutoStart = value;
+                OnPropertyChanged(nameof(AutoStart));
+            }
+        }
+
         public string Finish
         {
-            get => finish;
-            set => SetProperty(ref finish, value);
+            get => settings.Finish;
+            set
+            {
+                settings.Finish = value;
+                OnPropertyChanged(nameof(Finish));
+            }
         }
-        string fileName = "countdown.txt";
         public string FileName
         {
-            get => fileName;
-            set => SetProperty(ref fileName, value);
+            get => settings.FileName;
+            set
+            {
+                settings.FileName = value;
+                OnPropertyChanged(nameof(FileName));
+            }
         }
 
         string countdownOutput;
@@ -105,7 +145,8 @@ namespace MyStreamTimer.Shared.ViewModel
             }
             catch
             {
-                CountdownOutput = @"Invalid time format. Use {0:mm\:ss}";
+                CountdownOutput = @"Invalid time format. Use {0:hh\:mm\:ss}";
+                return;
             }
 
             try
@@ -120,6 +161,7 @@ namespace MyStreamTimer.Shared.ViewModel
             catch (Exception ex)
             {
                 CountdownOutput = ex.Message;
+                return;
             }
 
             IsBusy = !IsBusy;
