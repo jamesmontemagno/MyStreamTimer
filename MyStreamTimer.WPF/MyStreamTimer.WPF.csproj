@@ -9,7 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="MahApps.Metro" Version="2.0.0-alpha0262" />
-    <PackageReference Include="MahApps.Metro.IconPacks.FontAwesome" Version="3.0.0-alpha0103" />
+    <PackageReference Include="MahApps.Metro.IconPacks.FontAwesome" Version="3.0.0-alpha0134" />
     <PackageReference Include="Refractored.MvvmHelpers" Version="1.3.0" />
     <PackageReference Include="Xam.Plugins.Settings" Version="4.1.0-beta" />
   </ItemGroup>
