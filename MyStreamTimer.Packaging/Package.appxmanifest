@@ -9,7 +9,7 @@
   <Identity
     Name="2bcc5406-acda-4db0-b7fa-0d182231dda3"
     Publisher="CN=jamont"
-    Version="1.0.0.0" />
+    Version="1.0.1.0" />
 
   <Properties>
     <DisplayName>MyStreamTimer.Packaging</DisplayName>

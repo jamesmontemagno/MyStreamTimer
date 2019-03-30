@@ -6,6 +6,8 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using MyStreamTimer.Shared.Helpers;
 using MyStreamTimer.Shared.Interfaces;
 
@@ -29,8 +31,11 @@ namespace MyStreamTimer.WPF
                 //app is already running! Exiting the application  
                 Application.Current.Shutdown();
             }
+
+            MyStreamTimer.WPF.MainWindow.StartArgs = e;
             base.OnStartup(e);
             ServiceContainer.Register<IClipboard>(() => new ClipboardImplementation());
+
         }
     }
 }

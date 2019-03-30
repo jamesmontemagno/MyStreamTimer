@@ -13,6 +13,9 @@
     Height="400"
     ResizeMode="NoResize"
     mc:Ignorable="d">
+    <mah:MetroWindow.Resources>
+        <BooleanToVisibilityConverter x:Key="VisibilityConverter" />
+    </mah:MetroWindow.Resources>
     <mah:MetroAnimatedSingleRowTabControl x:Name="MainTabs">
         <mah:MetroTabItem x:Name="TabItemDown" Header="Down">
             <Grid Margin="25">
@@ -101,10 +104,30 @@
                 <!--  Start Stop Button  -->
 
                 <Border Grid.Row="5" Grid.ColumnSpan="2">
-                    <ToggleButton
-                        Command="{Binding StartStopTimerCommand}"
-                        Content="{Binding StartStop}"
-                        IsChecked="False" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <ToggleButton
+                            Grid.Column="0"
+                            Command="{Binding StartStopTimerCommand}"
+                            Content="{Binding StartStop}"
+                            IsChecked="False" />
+                        <Button
+                            Grid.Column="1"
+                            Margin="10,0"
+                            Command="{Binding AddMinuteCommand}"
+                            Content="Add Minute"
+                            IsEnabled="{Binding IsBusy}"
+                            Visibility="{Binding IsDown, Converter={StaticResource VisibilityConverter}}" />
+                        <Button
+                            Grid.Column="2"
+                            Command="{Binding ResetCommand}"
+                            Content="Reset"
+                            IsEnabled="{Binding IsBusy}" />
+                    </Grid>
                 </Border>
 
                 <!--  Current Output  -->
@@ -189,10 +212,30 @@
 
                 <!--  Start Stop Button  -->
                 <Border Grid.Row="5" Grid.ColumnSpan="2">
-                    <ToggleButton
-                        Command="{Binding StartStopTimerCommand}"
-                        Content="{Binding StartStop}"
-                        IsChecked="False" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <ToggleButton
+                            Grid.Column="0"
+                            Command="{Binding StartStopTimerCommand}"
+                            Content="{Binding StartStop}"
+                            IsChecked="False" />
+                        <Button
+                            Grid.Column="1"
+                            Margin="10,0"
+                            Command="{Binding AddMinuteCommand}"
+                            Content="Add Minute"
+                            IsEnabled="{Binding IsBusy}"
+                            Visibility="{Binding IsDown, Converter={StaticResource VisibilityConverter}}" />
+                        <Button
+                            Grid.Column="2"
+                            Command="{Binding ResetCommand}"
+                            Content="Reset"
+                            IsEnabled="{Binding IsBusy}" />
+                    </Grid>
                 </Border>
 
                 <!--  Current Output  -->
@@ -291,10 +334,30 @@
                 <!--  Start Stop Button  -->
 
                 <Border Grid.Row="5" Grid.ColumnSpan="2">
-                    <ToggleButton
-                        Command="{Binding StartStopTimerCommand}"
-                        Content="{Binding StartStop}"
-                        IsChecked="False" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <ToggleButton
+                            Grid.Column="0"
+                            Command="{Binding StartStopTimerCommand}"
+                            Content="{Binding StartStop}"
+                            IsChecked="False" />
+                        <Button
+                            Grid.Column="1"
+                            Margin="10,0"
+                            Command="{Binding AddMinuteCommand}"
+                            Content="Add Minute"
+                            IsEnabled="{Binding IsBusy}"
+                            Visibility="{Binding IsDown, Converter={StaticResource VisibilityConverter}}" />
+                        <Button
+                            Grid.Column="2"
+                            Command="{Binding ResetCommand}"
+                            Content="Reset"
+                            IsEnabled="{Binding IsBusy}" />
+                    </Grid>
                 </Border>
 
                 <!--  Current Output  -->

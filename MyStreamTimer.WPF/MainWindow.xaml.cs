@@ -1,4 +1,5 @@
 ﻿using MahApps.Metro.Controls;
+using MahApps.Metro.Controls.Dialogs;
 using MyStreamTimer.Shared.Helpers;
 using MyStreamTimer.Shared.ViewModel;
 using System;
@@ -24,12 +25,16 @@ namespace MyStreamTimer.WPF
     /// </summary>
     public partial class MainWindow : MetroWindow
     {
+        public static StartupEventArgs StartArgs { get; set; }
         public MainWindow()
         {
             InitializeComponent();
             TabItemDown.DataContext = new TimerViewModel(Constants.Countdown);
             TabItemUp.DataContext = new TimerViewModel(Constants.Countup);
             TabItemGiveaway.DataContext = new TimerViewModel(Constants.Giveaway);
+
+            //var uri = new Uri("mystreamtimer://single-player/level3?godmode=1&ammo=200");
+            
         }
 
         void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)

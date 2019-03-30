@@ -24,6 +24,11 @@ namespace MyStreamTimer.Shared.ViewModel
         string identifier;
 
         Settings settings;
+        public ICommand StartStopTimerCommand { get; }
+        public ICommand CopyFilePathCommand { get; }
+        public ICommand ResetCommand { get; }
+        public ICommand AddMinuteCommand { get; }
+
 
         public TimerViewModel(string id)
         {
@@ -45,6 +50,8 @@ namespace MyStreamTimer.Shared.ViewModel
 
             StartStopTimerCommand = new Command(ExecuteStartStopTimerCommand);
             CopyFilePathCommand = new Command(ExecuteCopyFilePathCommand);
+            ResetCommand = new Command(ExecuteResetCommand);
+            AddMinuteCommand = new Command(ExecuteAddMinuteCommand);
             timer = new Timer(250);
             timer.Elapsed += TimerElapsed;
             timer.AutoReset = true;
@@ -123,8 +130,6 @@ namespace MyStreamTimer.Shared.ViewModel
             set => SetProperty(ref startStop, value);
         }
 
-        public ICommand CopyFilePathCommand { get; set; }
-
         string GetDirectory()
         {
             var clipboard = ServiceContainer.Resolve<IClipboard>();
@@ -142,7 +147,22 @@ namespace MyStreamTimer.Shared.ViewModel
             clipboard?.CopyToClipboard(directory);
         }
 
-        public ICommand StartStopTimerCommand { get; set; }
+        void ExecuteAddMinuteCommand()
+        {
+            if (!IsBusy)
+                return;
+            endTime = endTime.AddMinutes(1);
+        }
+
+        void ExecuteResetCommand()
+        {
+            if (!IsBusy)
+                return;
+            //Stop
+            ExecuteStartStopTimerCommand();
+            //Start
+            ExecuteStartStopTimerCommand();
+        }
 
         void ExecuteStartStopTimerCommand()
         {
