@@ -7,5 +7,6 @@ namespace MyStreamTimer.Shared.Interfaces
     public interface IClipboard
     {
         void CopyToClipboard(string text);
+        string BaseDirectory { get; }
     }
 }

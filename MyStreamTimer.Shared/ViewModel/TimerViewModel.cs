@@ -125,14 +125,21 @@ namespace MyStreamTimer.Shared.ViewModel
 
         public ICommand CopyFilePathCommand { get; set; }
 
+        string GetDirectory()
+        {
+            var clipboard = ServiceContainer.Resolve<IClipboard>();
+            if (clipboard == null)
+                throw new Exception("Clipboard must be implemented");
+
+            var folder = clipboard.BaseDirectory;
+            return Path.Combine(folder, "MyStreamTimer");
+        }
+
         void ExecuteCopyFilePathCommand()
         {
-            var folder = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            folder = Path.Combine(folder, "MyStreamTimer");
-
+            var directory = GetDirectory();
             var clipboard = ServiceContainer.Resolve<IClipboard>();
-
-            clipboard?.CopyToClipboard(folder);
+            clipboard?.CopyToClipboard(directory);
         }
 
         public ICommand StartStopTimerCommand { get; set; }
@@ -151,8 +158,8 @@ namespace MyStreamTimer.Shared.ViewModel
 
             try
             {
-                currentFileName = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-                currentFileName = Path.Combine(currentFileName, "MyStreamTimer");
+                currentFileName = GetDirectory();
+
                 if (!Directory.Exists(currentFileName))
                     Directory.CreateDirectory(currentFileName);
 
