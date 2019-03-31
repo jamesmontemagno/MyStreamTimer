@@ -29,13 +29,15 @@ namespace MyStreamTimer.Shared.ViewModel
         public ICommand ResetCommand { get; }
         public ICommand AddMinuteCommand { get; }
 
+        int bootMins = -1;
 
-        public TimerViewModel(string id)
+        public TimerViewModel(string id, bool bootStart = false, int bootMins = -1)
         {
             identifier = id;
             settings = new Settings(id);
+            this.bootMins = bootMins;
 
-            switch(identifier)
+            switch (identifier)
             {
                 case Constants.Countdown:
                     IsDown = true;
@@ -56,7 +58,7 @@ namespace MyStreamTimer.Shared.ViewModel
             timer.Elapsed += TimerElapsed;
             timer.AutoReset = true;
 
-            if (AutoStart)
+            if (AutoStart || bootStart)
                 ExecuteStartStopTimerCommand();
         }
 
@@ -201,7 +203,15 @@ namespace MyStreamTimer.Shared.ViewModel
 
             currentFinished = Finish;
             currentIsDown = IsDown;
-            currentMinutes = Minutes;
+            if (bootMins > 0)
+            {
+                currentMinutes = bootMins;
+                bootMins = -1;
+            }
+            else
+            {
+                currentMinutes = Minutes;
+            }
             currentOutput = Output;
 
             startTime = DateTime.Now;

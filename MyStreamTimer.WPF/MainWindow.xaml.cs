@@ -29,12 +29,29 @@ namespace MyStreamTimer.WPF
         public MainWindow()
         {
             InitializeComponent();
-            TabItemDown.DataContext = new TimerViewModel(Constants.Countdown);
-            TabItemUp.DataContext = new TimerViewModel(Constants.Countup);
-            TabItemGiveaway.DataContext = new TimerViewModel(Constants.Giveaway);
 
-            //var uri = new Uri("mystreamtimer://single-player/level3?godmode=1&ammo=200");
-            
+            var start = false;
+            var mins = -1;
+            try
+            {
+                var first = StartArgs?.Args?.FirstOrDefault();
+                if (first != null)
+                {
+                    var uri = new Uri(first);
+                    if(uri.Host.ToLower() == "countdown" && uri.Query.ToLower().Contains("?mins=") && int.TryParse(uri.Query.Remove(0, 6), out mins))
+                    {
+                        start = true;
+                    }
+                }
+            }
+            catch (Exception)
+            {
+
+            }
+
+            TabItemDown.DataContext = new TimerViewModel(Constants.Countdown, start, mins);
+            TabItemUp.DataContext = new TimerViewModel(Constants.Countup);
+            TabItemGiveaway.DataContext = new TimerViewModel(Constants.Giveaway);            
         }
 
         void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)
