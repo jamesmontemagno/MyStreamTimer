@@ -4,6 +4,9 @@ My Stream Timer is an easy to use countdown and count-up timer for streamers. Mu
 ![](Art/demo.png)
 
 
+Download today from the [Microsoft Store](https://www.microsoft.com/en-us/p/my-stream-timer/9n5nxx3wk7k7)
+
+
 ## Integrating into OBS/SLOBS
 
 Open My Stream Timer and tap the copy icon to copy the location on disk where My Stream Timer saves output files.
