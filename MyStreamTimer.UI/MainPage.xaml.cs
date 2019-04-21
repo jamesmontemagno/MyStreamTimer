@@ -13,14 +13,14 @@ namespace MyStreamTimer.UI
    
     public partial class MainPage : TabbedPage
     {
+        public static (bool start, int mins) OpeningArgs { get; set;  }
+        public static TimerViewModel DownVM { get; set; }
         public MainPage()
         {
             InitializeComponent();
 
-            var start = false;
-            var mins = -1;
-
-            TabItemDown.BindingContext = new TimerViewModel(Constants.Countdown, start, mins);
+            
+            TabItemDown.BindingContext = DownVM = new TimerViewModel(Constants.Countdown, OpeningArgs.start, OpeningArgs.mins);
             TabItemUp.BindingContext = new TimerViewModel(Constants.Countup);
             TabItemGiveaway.BindingContext = new TimerViewModel(Constants.Giveaway);
         }

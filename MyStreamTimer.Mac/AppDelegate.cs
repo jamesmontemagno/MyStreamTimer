@@ -43,12 +43,26 @@ namespace MyStreamTimer.Mac
         private void HandleGetURLEvent(NSAppleEventDescriptor descriptor, NSAppleEventDescriptor replyEvent)
         {
             // Breakpoint here, debug normally and *then* call your URL
-            var keyDirectObject = "----";
-            var keyword = (((uint)keyDirectObject[0]) << 24 |
-                           ((uint)keyDirectObject[1]) << 16 |
-                           ((uint)keyDirectObject[2]) << 8 |
-                           ((uint)keyDirectObject[3]));
-            var urlString = descriptor.ParamDescriptorForKeyword(keyword).StringValue;
+            try
+            {
+                var keyDirectObject = "----";
+                var keyword = (((uint)keyDirectObject[0]) << 24 |
+                               ((uint)keyDirectObject[1]) << 16 |
+                               ((uint)keyDirectObject[2]) << 8 |
+                               ((uint)keyDirectObject[3]));
+
+                var openinArgs = descriptor.ParamDescriptorForKeyword(keyword).StringValue;
+                var (start, mins) = Utils.ParseStartupArgs(openinArgs);
+                MainPage.OpeningArgs = (start, mins);
+                if(start && mins > 0)
+                    MainPage.DownVM?.Init(mins);
+            }
+            catch
+            {
+
+            }
+
+
         }
 
         public override void OpenUrls(NSApplication application, NSUrl[] urls)

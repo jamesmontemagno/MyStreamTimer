@@ -62,6 +62,16 @@ namespace MyStreamTimer.Shared.ViewModel
                 ExecuteStartStopTimerCommand();
         }
 
+        public void Init(int mins)
+        {
+            if (IsBusy)
+                ExecuteStartStopTimerCommand();
+
+            bootMins = mins;
+
+            ExecuteStartStopTimerCommand();
+        }
+
         bool isDown = true;
         public bool IsDown
         {
