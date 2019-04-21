@@ -9,8 +9,8 @@
             <Style x:Key="ButtonMainStyle" TargetType="Button">
                 <Setter Property="TextColor" Value="Black" />
                 <Setter Property="BackgroundColor" Value="#f6f6f6"/>
-                <Setter Property="BorderRadius" Value="2"/>
-                <Setter Property="BorderWidth" Value="1"/>
+                <Setter Property="CornerRadius" Value="10"/>
+                <Setter Property="BorderWidth" Value="2"/>
                 <Setter Property="BorderColor" Value="#d8d8d8"/>
             </Style>
         </ResourceDictionary>
