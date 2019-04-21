@@ -52,10 +52,7 @@ namespace MyStreamTimer.Mac
                                ((uint)keyDirectObject[3]));
 
                 var openinArgs = descriptor.ParamDescriptorForKeyword(keyword).StringValue;
-                var (start, mins) = Utils.ParseStartupArgs(openinArgs);
-                MainPage.OpeningArgs = (start, mins);
-                if(start && mins > 0)
-                    MainPage.DownVM?.Init(mins);
+                ParseOpeningString(openinArgs);
             }
             catch
             {
@@ -65,10 +62,22 @@ namespace MyStreamTimer.Mac
 
         }
 
+        void ParseOpeningString(string openinArgs)
+        {
+            var (start, mins) = Utils.ParseStartupArgs(openinArgs);
+            MainPage.OpeningArgs = (start, mins);
+            if (start && mins > 0)
+                MainPage.DownVM?.Init(mins);
+        }
+
         public override void OpenUrls(NSApplication application, NSUrl[] urls)
         {
             
-            base.OpenUrls(application, urls);
+            if(urls != null && urls.Length > 0)
+            {
+                var openinArgs = urls[0].AbsoluteString;
+                ParseOpeningString(openinArgs);
+            }
         }
 
 
