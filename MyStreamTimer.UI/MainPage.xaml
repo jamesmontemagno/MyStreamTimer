@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TabbedPage xmlns="http://xamarin.com/schemas/2014/forms" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" x:Class="MyStreamTimer.UI.MainPage" BackgroundColor="{StaticResource WindowBackground}">
+    <ContentPage x:Name="TabItemDown" Title="Down">
+        <Grid Margin="25">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <!--  How Much Time for Countdown  -->
+            <Label Grid.Row="0" HorizontalOptions="End" Text="Time:" />
+            <StackLayout Orientation="Horizontal" Grid.Row="0" Grid.Column="1">
+                <Label Text="{Binding Minutes}" WidthRequest="50" HorizontalTextAlignment="End" />
+                <Stepper HorizontalOptions="Start" IsEnabled="{Binding IsNotBusy}" Minimum="1" Maximum="1000" Value="{Binding Minutes}" />
+            </StackLayout>
+            <!--  Live Output text  -->
+            <Label Grid.Row="1" HorizontalOptions="End" Text="Live output:" />
+            <Entry Grid.Row="1" Grid.Column="1" IsEnabled="{Binding IsNotBusy}" Text="{Binding Output}" TextColor="Black" />
+            <!--  Finish output text  -->
+            <Label Grid.Row="2" HorizontalOptions="End" Text="Finish output:" />
+            <Entry Grid.Row="2" Grid.Column="1" IsEnabled="{Binding IsNotBusy}" Text="{Binding Finish}" />
+            <!--  File Name Settings  -->
+            <Label Grid.Row="3" HorizontalOptions="End" Text="File Name:" />
+            <Entry Grid.Row="3" Grid.Column="1" IsEnabled="{Binding IsNotBusy}" Text="{Binding FileName}" />
+            <Button Grid.Row="3" Grid.Column="2" Command="{Binding CopyFilePathCommand}" Text="Copy" Style="{StaticResource ButtonMainStyle}" Padding="10,0" />
+            <!--  Auto Start  -->
+            <Label Grid.Row="4" HorizontalOptions="End" Text="Auto Start:" />
+            <Switch Grid.Row="4" Grid.Column="1" OnColor="{StaticResource Primary}" IsToggled="{Binding AutoStart}" />
+            <!--  Start Stop Button  -->
+            <Grid Grid.Row="5" Grid.ColumnSpan="2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Button Grid.Column="0" Command="{Binding StartStopTimerCommand}" Text="{Binding StartStop}" Style="{StaticResource ButtonMainStyle}" />
+                <Button Grid.Column="1" Margin="10,0" Command="{Binding AddMinuteCommand}" Text="Add Minute" TextColor="Black" IsEnabled="{Binding IsBusy}" Style="{StaticResource ButtonMainStyle}" />
+                <Button Grid.Column="2" Command="{Binding ResetCommand}" Text="Reset" IsEnabled="{Binding IsBusy}" Style="{StaticResource ButtonMainStyle}" />
+            </Grid>
+            <!--  Current Output  -->
+            <Label Grid.Row="6" Grid.ColumnSpan="2" HorizontalOptions="Center" Text="{Binding CountdownOutput}" LineBreakMode="WordWrap" />
+        </Grid>
+    </ContentPage>
+    <ContentPage x:Name="TabItemUp" Title="Up">
+        <Grid Margin="25">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Label Grid.Row="1" HorizontalOptions="End" Text="Live output:" />
+            <Entry Grid.Row="1" Grid.Column="1" IsEnabled="{Binding IsNotBusy}" Text="{Binding Output}" />
+            <!--  Finish output text                               <Label Grid.Row="2" HorizontalOptions="End" Text="Finish output:" />                            <Label Grid.Row="2" Grid.Column="1" IsEnabled="{Binding IsNotBusy}" Text="{Binding Finish}" />                                -->
+            <!--  File Name Settings  -->
+            <Label Grid.Row="3" HorizontalOptions="End" Text="File Name:" />
+            <Entry Grid.Row="3" Grid.Column="1" IsEnabled="{Binding IsNotBusy}" Text="{Binding FileName}" />
+            <Button Grid.Row="3" Grid.Column="2" Command="{Binding CopyFilePathCommand}" Style="{StaticResource ButtonMainStyle}" Text="Copy" />
+            <!--  Auto Start  -->
+            <Label Grid.Row="4" HorizontalOptions="End" Text="Auto Start:" />
+            <Switch Grid.Row="4" Grid.Column="1" IsToggled="{Binding AutoStart}" />
+            <!--  Start Stop Button  -->
+            <Grid Grid.Row="5" Grid.ColumnSpan="2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Button Grid.Column="0" Command="{Binding StartStopTimerCommand}" Text="{Binding StartStop}" Style="{StaticResource ButtonMainStyle}" />
+                <Button Grid.Column="2" Command="{Binding ResetCommand}" Text="Reset" IsEnabled="{Binding IsBusy}" Style="{StaticResource ButtonMainStyle}" />
+            </Grid>
+            <!--  Current Output  -->
+            <Label Grid.Row="6" Grid.ColumnSpan="2" HorizontalOptions="Center" Text="{Binding CountdownOutput}" LineBreakMode="WordWrap" />
+        </Grid>
+    </ContentPage>
+    <ContentPage x:Name="TabItemGiveaway" Title="Giveaway">
+        <Grid Margin="25">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <!--  How Much Time for Countdown  -->
+            <Label Grid.Row="0" HorizontalOptions="End" Text="Time:" />
+            <StackLayout Orientation="Horizontal" Grid.Row="0" Grid.Column="1">
+                <Label Text="{Binding Minutes}" WidthRequest="50" HorizontalTextAlignment="End" />
+                <Stepper HorizontalOptions="Start" IsEnabled="{Binding IsNotBusy}" Minimum="1" Maximum="1000" Value="{Binding Minutes}" />
+            </StackLayout>
+            <!--  Live Output text  -->
+            <Label Grid.Row="1" HorizontalOptions="End" Text="Live output:" />
+            <Entry Grid.Row="1" Grid.Column="1" IsEnabled="{Binding IsNotBusy}" Text="{Binding Output}" />
+            <!--  Finish output text  -->
+            <Label Grid.Row="2" HorizontalOptions="End" Text="Finish output:" />
+            <Entry Grid.Row="2" Grid.Column="1" IsEnabled="{Binding IsNotBusy}" Text="{Binding Finish}" />
+            <!--  File Name Settings  -->
+            <Label Grid.Row="3" HorizontalOptions="End" Text="File Name:" />
+            <Entry Grid.Row="3" Grid.Column="1" IsEnabled="{Binding IsNotBusy}" Text="{Binding FileName}" />
+            <Button Grid.Row="3" Grid.Column="2" Command="{Binding CopyFilePathCommand}" Text="Copy" Style="{StaticResource ButtonMainStyle}" />
+            <!--  Auto Start  -->
+            <Label Grid.Row="4" HorizontalOptions="End" Text="Auto Start:" />
+            <Switch Grid.Row="4" Grid.Column="1" IsToggled="{Binding AutoStart}" />
+            <!--  Start Stop Button  -->
+            <Grid Grid.Row="5" Grid.ColumnSpan="2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Button Grid.Column="0" Command="{Binding StartStopTimerCommand}" Text="{Binding StartStop}" Style="{StaticResource ButtonMainStyle}" />
+                <Button Grid.Column="1" Margin="10,0" Command="{Binding AddMinuteCommand}" Text="Add Minute" IsEnabled="{Binding IsBusy}" Style="{StaticResource ButtonMainStyle}" />
+                <Button Grid.Column="2" Command="{Binding ResetCommand}" Text="Reset" IsEnabled="{Binding IsBusy}" Style="{StaticResource ButtonMainStyle}" />
+            </Grid>
+            <!--  Current Output  -->
+            <Label Grid.Row="6" Grid.ColumnSpan="2" HorizontalOptions="Center" Text="{Binding CountdownOutput}" LineBreakMode="WordWrap" />
+        </Grid>
+    </ContentPage>
+    <ContentPage Title="About">
+        <StackLayout Margin="10">
+            <Label Text="My Stream Timer is an open source project by James Montemagno." />
+            <!--
+            <TextBlock Margin="0,20,0,0">
+                <Hyperlink NavigateUri="http://www.github.com/jamesmontemagno/MyStreamTimer" RequestNavigate="Hyperlink_RequestNavigate">                        MyStreamTimer on GitHub                    </Hyperlink>
+            </TextBlock>
+            <TextBlock Margin="0,10,0,0" Text="Follow James on:" />
+            <TextBlock Margin="0,10,0,0">
+                <Hyperlink NavigateUri="http://www.github.com/jamesmontemagno" RequestNavigate="Hyperlink_RequestNavigate">                        GitHub                    </Hyperlink>
+            </TextBlock>
+            <TextBlock Margin="0,10,0,0">
+                <Hyperlink NavigateUri="http://www.twitter.com/jamesmontemagno" RequestNavigate="Hyperlink_RequestNavigate">                        Twitter                    </Hyperlink>
+            </TextBlock>
+            <TextBlock Margin="0,10,0,0">
+                <Hyperlink NavigateUri="http://www.twitch.tv/jamesmontemagno" RequestNavigate="Hyperlink_RequestNavigate">                        Twitch                    </Hyperlink>
+            </TextBlock>
+            <TextBlock Margin="0,10,0,0">
+                <Hyperlink NavigateUri="http://www.montemagno.com" RequestNavigate="Hyperlink_RequestNavigate">                        Blog (montemagno.com)                    </Hyperlink>
+            </TextBlock>-->
+            <Label Margin="0,10,0,0" Text="Version 1.0.0" />
+        </StackLayout>
+    </ContentPage>
+</TabbedPage>
