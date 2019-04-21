@@ -32,5 +32,18 @@
 	<string>public.app-category.utilities</string>
 	<key>NSRequiresAquaSystemAppearance</key>
 	<true/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.refractored.mystreamtimer</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>mystreamtimer</string>
+			</array>
+			<key>CFBundleURLTypes</key>
+			<string>None</string>
+		</dict>
+	</array>
 </dict>
 </plist>
