@@ -174,61 +174,61 @@
       "idiom": "watch-marketing"
     },
     {
-      "filename": "AppIcon-16.png",
+      "filename": "Art16.png",
       "size": "16x16",
       "scale": "1x",
       "idiom": "mac"
     },
     {
-      "filename": "AppIcon-16@2x.png",
+      "filename": "Art32.png",
       "size": "16x16",
       "scale": "2x",
       "idiom": "mac"
     },
     {
-      "filename": "AppIcon-32.png",
+      "filename": "Art32-1.png",
       "size": "32x32",
       "scale": "1x",
       "idiom": "mac"
     },
     {
-      "filename": "AppIcon-32@2x.png",
+      "filename": "Art64.png",
       "size": "32x32",
       "scale": "2x",
       "idiom": "mac"
     },
     {
-      "filename": "AppIcon-128.png",
+      "filename": "Art128.png",
       "size": "128x128",
       "scale": "1x",
       "idiom": "mac"
     },
     {
-      "filename": "AppIcon-128@2x.png",
+      "filename": "Art256.png",
       "size": "128x128",
       "scale": "2x",
       "idiom": "mac"
     },
     {
-      "filename": "AppIcon-256.png",
+      "filename": "Art256-1.png",
       "size": "256x256",
       "scale": "1x",
       "idiom": "mac"
     },
     {
-      "filename": "AppIcon-256@2x.png",
+      "filename": "Art512.png",
       "size": "256x256",
       "scale": "2x",
       "idiom": "mac"
     },
     {
-      "filename": "AppIcon-512.png",
+      "filename": "Art512-1.png",
       "size": "512x512",
       "scale": "1x",
       "idiom": "mac"
     },
     {
-      "filename": "AppIcon-512@2x.png",
+      "filename": "Art1024.png",
       "size": "512x512",
       "scale": "2x",
       "idiom": "mac"
@@ -237,8 +237,5 @@
   "info": {
     "version": 1,
     "author": "xcode"
-  },
-  "properties": {
-    "pre-rendered": true
   }
 }
