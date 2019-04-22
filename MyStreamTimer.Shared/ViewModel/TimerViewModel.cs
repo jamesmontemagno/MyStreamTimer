@@ -176,6 +176,8 @@ namespace MyStreamTimer.Shared.ViewModel
             ExecuteStartStopTimerCommand();
         }
 
+        
+
         void ExecuteStartStopTimerCommand()
         {
             try

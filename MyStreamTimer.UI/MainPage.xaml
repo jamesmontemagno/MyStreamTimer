@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<TabbedPage xmlns="http://xamarin.com/schemas/2014/forms" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" x:Class="MyStreamTimer.UI.MainPage" BackgroundColor="{StaticResource WindowBackground}">
+<TabbedPage xmlns="http://xamarin.com/schemas/2014/forms" 
+            xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" 
+            x:Class="MyStreamTimer.UI.MainPage"  
+            xmlns:viewmodels="clr-namespace:MyStreamTimer.Shared.ViewModel;assembly=MyStreamTimer.Shared"
+            BackgroundColor="{StaticResource WindowBackground}">
     <ContentPage x:Name="TabItemDown" Title="Down">
         <Grid Margin="25">
             <Grid.ColumnDefinitions>
@@ -141,25 +145,37 @@
         </Grid>
     </ContentPage>
     <ContentPage Title="About">
-        <StackLayout Margin="10">
+        <ContentPage.BindingContext>
+            <viewmodels:AboutViewModel/>
+        </ContentPage.BindingContext>
+        <StackLayout Margin="10" Spacing="5">
             <Label Text="My Stream Timer is an open source project by James Montemagno." />
-            <!--
-            <TextBlock Margin="0,20,0,0">
-                <Hyperlink NavigateUri="http://www.github.com/jamesmontemagno/MyStreamTimer" RequestNavigate="Hyperlink_RequestNavigate">                        MyStreamTimer on GitHub                    </Hyperlink>
-            </TextBlock>
-            <TextBlock Margin="0,10,0,0" Text="Follow James on:" />
-            <TextBlock Margin="0,10,0,0">
-                <Hyperlink NavigateUri="http://www.github.com/jamesmontemagno" RequestNavigate="Hyperlink_RequestNavigate">                        GitHub                    </Hyperlink>
-            </TextBlock>
-            <TextBlock Margin="0,10,0,0">
-                <Hyperlink NavigateUri="http://www.twitter.com/jamesmontemagno" RequestNavigate="Hyperlink_RequestNavigate">                        Twitter                    </Hyperlink>
-            </TextBlock>
-            <TextBlock Margin="0,10,0,0">
-                <Hyperlink NavigateUri="http://www.twitch.tv/jamesmontemagno" RequestNavigate="Hyperlink_RequestNavigate">                        Twitch                    </Hyperlink>
-            </TextBlock>
-            <TextBlock Margin="0,10,0,0">
-                <Hyperlink NavigateUri="http://www.montemagno.com" RequestNavigate="Hyperlink_RequestNavigate">                        Blog (montemagno.com)                    </Hyperlink>
-            </TextBlock>-->
+            <Label Margin="0,10,0,0" Text="MyStreamTimer on GitHub">
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding OpenUrlCommand}" CommandParameter="http://www.github.com/jamesmontemagno/MyStreamTimer" />
+                </Label.GestureRecognizers>
+            </Label>
+            <Label Margin="0,10,0,0" Text="Follow James on:" />
+            <Label Text="GitHub" Style="{StaticResource LabelHyperlink}">
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding OpenUrlCommand}" CommandParameter="http://www.github.com/jamesmontemagno" />
+                </Label.GestureRecognizers>
+            </Label>
+            <Label Text="Twitter" Style="{StaticResource LabelHyperlink}">
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding OpenUrlCommand}" CommandParameter="http://www.twitter.com/jamesmontemagno" />
+                </Label.GestureRecognizers>
+            </Label>
+            <Label Text="Twitch" Style="{StaticResource LabelHyperlink}">
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding OpenUrlCommand}" CommandParameter="http://www.twitch.tv/jamesmontemagno" />
+                </Label.GestureRecognizers>
+            </Label>
+            <Label Text="Blog (montemagno.com)" Style="{StaticResource LabelHyperlink}">
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding OpenUrlCommand}" CommandParameter="http://www.montemagno.com" />
+                </Label.GestureRecognizers>
+            </Label>
             <Label Margin="0,10,0,0" Text="Version 1.0.0" />
         </StackLayout>
     </ContentPage>

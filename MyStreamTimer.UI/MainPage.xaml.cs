@@ -23,6 +23,7 @@ namespace MyStreamTimer.UI
             TabItemDown.BindingContext = DownVM = new TimerViewModel(Constants.Countdown, OpeningArgs.start, OpeningArgs.mins);
             TabItemUp.BindingContext = new TimerViewModel(Constants.Countup);
             TabItemGiveaway.BindingContext = new TimerViewModel(Constants.Giveaway);
+
         }
     }
 }

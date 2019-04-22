@@ -13,6 +13,10 @@
                 <Setter Property="BorderWidth" Value="2"/>
                 <Setter Property="BorderColor" Value="#d8d8d8"/>
             </Style>
+             <Style x:Key="LabelHyperlink" TargetType="Label">
+                <Setter Property="TextColor" Value="Blue" />
+                <Setter Property="TextDecorations" Value="Underline"/>
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

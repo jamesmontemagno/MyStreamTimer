@@ -28,5 +28,10 @@ namespace MyStreamTimer.Mac
             Pasteboard.ClearContents();
             Pasteboard.SetStringForType(text, pasteboardType);
         }
+
+        public void OpenUrl(string url)
+        {
+            NSWorkspace.SharedWorkspace.OpenUrl(new NSUrl(url));
+        }
     }
 }

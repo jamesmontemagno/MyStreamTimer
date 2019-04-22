@@ -8,5 +8,7 @@ namespace MyStreamTimer.Shared.Interfaces
     {
         void CopyToClipboard(string text);
         string BaseDirectory { get; }
+
+        void OpenUrl(string url);
     }
 }
