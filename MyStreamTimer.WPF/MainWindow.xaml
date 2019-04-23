@@ -9,7 +9,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:viewmodel="clr-namespace:MyStreamTimer.Shared.ViewModel;assembly=MyStreamTimer.Shared"
     Title="My Stream Timer"
-    Width="500"
+    Width="540"
     Height="400"
     ResizeMode="NoResize"
     mc:Ignorable="d">
@@ -370,6 +370,41 @@
                 </Border>
             </Grid>
         </mah:MetroTabItem>
+        <mah:MetroTabItem Header="Commands">
+            <mah:MetroTabItem.DataContext>
+                <viewmodel:CommandsViewModel />
+            </mah:MetroTabItem.DataContext>
+            <StackPanel Margin="10">
+                <TextBlock Text="You can launch My Stream Timer in popular stream tools or by command line with the following commands (tap to copy to clipboard):" TextWrapping="Wrap" />
+
+                <Label
+                    Margin="0,10,0,0"
+                    Content="Count down from X minutes:"
+                    FontWeight="Bold" />
+                <Label
+                    x:Name="LabelCommandsMins"
+                    Content="mystreamtimer://countdown/?mins=15"
+                    MouseLeftButtonUp="LabelCommandsMins_MouseLeftButtonUp" />
+
+                <Label
+                    Margin="0,10,0,0"
+                    Content="Count down to specific time (24 hour clock):"
+                    FontWeight="Bold" />
+                <Label
+                    x:Name="LabelCommandsTo"
+                    Content="mystreamtimer://countdown/?to=15:30"
+                    MouseLeftButtonUp="LabelCommandsMins_MouseLeftButtonUp" />
+
+                <Label
+                    Margin="0,10,0,0"
+                    Content="Count down to top of the hour."
+                    FontWeight="Bold" />
+                <Label
+                    x:Name="LabelCommandsTopOfHour"
+                    Content="mystreamtimer://countdown/?topofhour"
+                    MouseLeftButtonUp="LabelCommandsMins_MouseLeftButtonUp" />
+            </StackPanel>
+        </mah:MetroTabItem>
         <mah:MetroTabItem Header="About">
             <StackPanel Margin="10">
                 <TextBlock Text="My Stream Timer is an open source project by James Montemagno." />
@@ -400,7 +435,7 @@
                     </Hyperlink>
                 </TextBlock>
 
-                <Label Margin="0,10,0,0" Content="Version 1.0.0" />
+                <Label Margin="0,10,0,0" Content="Version 1.1" />
             </StackPanel>
         </mah:MetroTabItem>
 

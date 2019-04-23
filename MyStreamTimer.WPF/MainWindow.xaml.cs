@@ -1,6 +1,7 @@
 ﻿using MahApps.Metro.Controls;
 using MahApps.Metro.Controls.Dialogs;
 using MyStreamTimer.Shared.Helpers;
+using MyStreamTimer.Shared.Interfaces;
 using MyStreamTimer.Shared.ViewModel;
 using System;
 using System.Collections.Generic;
@@ -17,6 +18,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using Utils = MyStreamTimer.Shared.Helpers.Utils;
 
 namespace MyStreamTimer.WPF
 {
@@ -31,18 +33,11 @@ namespace MyStreamTimer.WPF
             InitializeComponent();
 
             var start = false;
-            var mins = -1;
+            float mins = -1;
             try
             {
                 var first = StartArgs?.Args?.FirstOrDefault();
-                if (first != null)
-                {
-                    var uri = new Uri(first);
-                    if(uri.Host.ToLower() == "countdown" && uri.Query.ToLower().Contains("?mins=") && int.TryParse(uri.Query.Remove(0, 6), out mins))
-                    {
-                        start = true;
-                    }
-                }
+                (start, mins) = Utils.ParseStartupArgs(first);
             }
             catch (Exception)
             {
@@ -56,11 +51,24 @@ namespace MyStreamTimer.WPF
 
         void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)
         {
-            var process = new Process();
-            process.StartInfo.UseShellExecute = true;
-            process.StartInfo.FileName = e.Uri.OriginalString;
-            process.Start();
+            var clipboard = ServiceContainer.Resolve<IClipboard>();
+            if (clipboard == null)
+                throw new Exception("Clipboard must be implemented");
+
+            clipboard.OpenUrl(e.Uri.OriginalString);
+
             e.Handled = true;
+        }
+
+        private void LabelCommandsMins_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            
+            var clipboard = ServiceContainer.Resolve<IClipboard>();
+            if (clipboard == null)
+                throw new Exception("Clipboard must be implemented");
+
+            var text = ((Label)sender).Content as string;
+            clipboard.CopyToClipboard(text);
         }
     }
 }

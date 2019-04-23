@@ -54,15 +54,15 @@
     <TargetPlatformVersion>10.0.17763.0</TargetPlatformVersion>
     <TargetPlatformMinVersion>10.0.17134.0</TargetPlatformMinVersion>
     <DefaultLanguage>en-US</DefaultLanguage>
-    <PackageCertificateKeyFile>StreamTimer.pfx</PackageCertificateKeyFile>
     <EntryPointProjectUniqueName>..\MyStreamTimer.WPF\MyStreamTimer.WPF.csproj</EntryPointProjectUniqueName>
     <GenerateAppInstallerFile>True</GenerateAppInstallerFile>
     <AppxAutoIncrementPackageRevision>True</AppxAutoIncrementPackageRevision>
     <AppxBundlePlatforms>x86|x64</AppxBundlePlatforms>
     <AppInstallerUpdateFrequency>1</AppInstallerUpdateFrequency>
     <AppInstallerCheckForUpdateFrequency>Daily</AppInstallerCheckForUpdateFrequency>
-    <PackageCertificateThumbprint>9758D5C659AD11355664AC74E9AEC87D6633CC1E</PackageCertificateThumbprint>
+    <PackageCertificateThumbprint>BE02D22169ED57C4BB67D4CC19989FF5FF1B8676</PackageCertificateThumbprint>
     <AppInstallerUri>https://mystreamtimer.azurewebsites.net</AppInstallerUri>
+    <PackageCertificateKeyFile>MyStreamTimer.Packaging_StoreKey.pfx</PackageCertificateKeyFile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <AppxBundle>Always</AppxBundle>
