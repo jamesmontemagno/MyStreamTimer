@@ -18,19 +18,26 @@ namespace MyStreamTimer.Shared.ViewModel
         DateTime startTime;
         DateTime endTime;
         bool currentIsDown;
-        int currentMinutes;
+        float currentMinutes;
         string currentFinished, currentOutput, currentFileName;
         readonly Timer timer;
         string identifier;
 
         Settings settings;
+        public ICommand StartStopTimerCommand { get; }
+        public ICommand CopyFilePathCommand { get; }
+        public ICommand ResetCommand { get; }
+        public ICommand AddMinuteCommand { get; }
 
-        public TimerViewModel(string id)
+        float bootMins = -1;
+
+        public TimerViewModel(string id, bool bootStart = false, float bootMins = -1)
         {
             identifier = id;
             settings = new Settings(id);
+            this.bootMins = bootMins;
 
-            switch(identifier)
+            switch (identifier)
             {
                 case Constants.Countdown:
                     IsDown = true;
@@ -45,12 +52,24 @@ namespace MyStreamTimer.Shared.ViewModel
 
             StartStopTimerCommand = new Command(ExecuteStartStopTimerCommand);
             CopyFilePathCommand = new Command(ExecuteCopyFilePathCommand);
+            ResetCommand = new Command(ExecuteResetCommand);
+            AddMinuteCommand = new Command(ExecuteAddMinuteCommand);
             timer = new Timer(250);
             timer.Elapsed += TimerElapsed;
             timer.AutoReset = true;
 
-            if (AutoStart)
+            if (AutoStart || bootStart)
                 ExecuteStartStopTimerCommand();
+        }
+
+        public void Init(float mins)
+        {
+            if (IsBusy)
+                ExecuteStartStopTimerCommand();
+
+            bootMins = mins;
+
+            ExecuteStartStopTimerCommand();
         }
 
         bool isDown = true;
@@ -123,19 +142,41 @@ namespace MyStreamTimer.Shared.ViewModel
             set => SetProperty(ref startStop, value);
         }
 
-        public ICommand CopyFilePathCommand { get; set; }
+        string GetDirectory()
+        {
+            var clipboard = ServiceContainer.Resolve<IClipboard>();
+            if (clipboard == null)
+                throw new Exception("Clipboard must be implemented");
+
+            var folder = clipboard.BaseDirectory;
+            return Path.Combine(folder, "MyStreamTimer");
+        }
 
         void ExecuteCopyFilePathCommand()
         {
-            var folder = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            folder = Path.Combine(folder, "MyStreamTimer");
-
+            var directory = GetDirectory();
             var clipboard = ServiceContainer.Resolve<IClipboard>();
-
-            clipboard?.CopyToClipboard(folder);
+            clipboard?.CopyToClipboard(directory);
         }
 
-        public ICommand StartStopTimerCommand { get; set; }
+        void ExecuteAddMinuteCommand()
+        {
+            if (!IsBusy)
+                return;
+            endTime = endTime.AddMinutes(1);
+        }
+
+        void ExecuteResetCommand()
+        {
+            if (!IsBusy)
+                return;
+            //Stop
+            ExecuteStartStopTimerCommand();
+            //Start
+            ExecuteStartStopTimerCommand();
+        }
+
+        
 
         void ExecuteStartStopTimerCommand()
         {
@@ -151,8 +192,8 @@ namespace MyStreamTimer.Shared.ViewModel
 
             try
             {
-                currentFileName = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-                currentFileName = Path.Combine(currentFileName, "MyStreamTimer");
+                currentFileName = GetDirectory();
+
                 if (!Directory.Exists(currentFileName))
                     Directory.CreateDirectory(currentFileName);
 
@@ -174,7 +215,15 @@ namespace MyStreamTimer.Shared.ViewModel
 
             currentFinished = Finish;
             currentIsDown = IsDown;
-            currentMinutes = Minutes;
+            if (bootMins > 0)
+            {
+                currentMinutes = bootMins;
+                bootMins = -1;
+            }
+            else
+            {
+                currentMinutes = Minutes;
+            }
             currentOutput = Output;
 
             startTime = DateTime.Now;

@@ -8,6 +8,8 @@ namespace MyStreamTimer.WPF
 {
     public class ClipboardImplementation : IClipboard
     {
+        public string BaseDirectory => Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+
         public void CopyToClipboard(string text) => Clipboard.SetText(text);
     }
 }
