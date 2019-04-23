@@ -60,9 +60,9 @@
     <AppxBundlePlatforms>x86|x64</AppxBundlePlatforms>
     <AppInstallerUpdateFrequency>1</AppInstallerUpdateFrequency>
     <AppInstallerCheckForUpdateFrequency>Daily</AppInstallerCheckForUpdateFrequency>
-    <PackageCertificateThumbprint>BE02D22169ED57C4BB67D4CC19989FF5FF1B8676</PackageCertificateThumbprint>
+    <PackageCertificateThumbprint>9758D5C659AD11355664AC74E9AEC87D6633CC1E</PackageCertificateThumbprint>
     <AppInstallerUri>https://mystreamtimer.azurewebsites.net</AppInstallerUri>
-    <PackageCertificateKeyFile>MyStreamTimer.Packaging_StoreKey.pfx</PackageCertificateKeyFile>
+    <PackageCertificateKeyFile>StreamTimer.pfx</PackageCertificateKeyFile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <AppxBundle>Always</AppxBundle>
