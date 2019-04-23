@@ -18,7 +18,7 @@ namespace MyStreamTimer.Shared.ViewModel
         DateTime startTime;
         DateTime endTime;
         bool currentIsDown;
-        int currentMinutes;
+        float currentMinutes;
         string currentFinished, currentOutput, currentFileName;
         readonly Timer timer;
         string identifier;
@@ -29,9 +29,9 @@ namespace MyStreamTimer.Shared.ViewModel
         public ICommand ResetCommand { get; }
         public ICommand AddMinuteCommand { get; }
 
-        int bootMins = -1;
+        float bootMins = -1;
 
-        public TimerViewModel(string id, bool bootStart = false, int bootMins = -1)
+        public TimerViewModel(string id, bool bootStart = false, float bootMins = -1)
         {
             identifier = id;
             settings = new Settings(id);
@@ -62,7 +62,7 @@ namespace MyStreamTimer.Shared.ViewModel
                 ExecuteStartStopTimerCommand();
         }
 
-        public void Init(int mins)
+        public void Init(float mins)
         {
             if (IsBusy)
                 ExecuteStartStopTimerCommand();

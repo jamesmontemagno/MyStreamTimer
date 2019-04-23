@@ -8,10 +8,8 @@
 	<string>com.refractored.mystreamtimer</string>
 	<key>CFBundleShortVersionString</key>
 	<string>1.0</string>
-	<key>CFBundleVersion</key>
-	<string>1</string>
 	<key>LSMinimumSystemVersion</key>
-	<string>10.13</string>
+	<string>10.10</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleInfoDictionaryVersion</key>
@@ -45,5 +43,9 @@
 			<string>None</string>
 		</dict>
 	</array>
+	<key>CFBundleSupportedPlatforms</key>
+	<string>MacOSX</string>
+	<key>CFBundleVersion</key>
+	<string>2</string>
 </dict>
 </plist>

@@ -13,7 +13,7 @@ namespace MyStreamTimer.UI
    
     public partial class MainPage : TabbedPage
     {
-        public static (bool start, int mins) OpeningArgs { get; set;  }
+        public static (bool start, float mins) OpeningArgs { get; set;  }
         public static TimerViewModel DownVM { get; set; }
         public MainPage()
         {

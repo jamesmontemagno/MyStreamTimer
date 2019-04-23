@@ -29,21 +29,22 @@
     <UseSGen>true</UseSGen>
     <UseRefCounting>true</UseRefCounting>
     <HttpClientHandler></HttpClientHandler>
-    <LinkMode></LinkMode>
+    <LinkMode>None</LinkMode>
     <XamMacArch></XamMacArch>
     <PackageSigningKey>3rd Party Mac Developer Installer</PackageSigningKey>
     <AOTMode>None</AOTMode>
+    <CodeSignProvision>My Stream Timer Dev</CodeSignProvision>
+    <CodeSignEntitlements>Entitlements.plist</CodeSignEntitlements>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release</OutputPath>
     <DefineConstants></DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <EnableCodeSigning>false</EnableCodeSigning>
-    <CreatePackage>true</CreatePackage>
-    <EnablePackageSigning>false</EnablePackageSigning>
+    <EnableCodeSigning>true</EnableCodeSigning>
+    <CreatePackage>false</CreatePackage>
+    <EnablePackageSigning>true</EnablePackageSigning>
     <IncludeMonoRuntime>true</IncludeMonoRuntime>
     <UseSGen>true</UseSGen>
     <UseRefCounting>true</UseRefCounting>
@@ -51,6 +52,10 @@
     <HttpClientHandler></HttpClientHandler>
     <XamMacArch></XamMacArch>
     <AOTMode>None</AOTMode>
+    <CodeSigningKey>3rd Party Mac Developer Application</CodeSigningKey>
+    <CodeSignProvision>Automatic</CodeSignProvision>
+    <PackageSigningKey>3rd Party Mac Developer Installer</PackageSigningKey>
+    <CodeSignEntitlements>Entitlements.plist</CodeSignEntitlements>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
