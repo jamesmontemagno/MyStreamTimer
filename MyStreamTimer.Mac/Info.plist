@@ -3,11 +3,11 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleName</key>
-	<string>MyStreamTimer</string>
+	<string>My Stream Timer</string>
 	<key>CFBundleIdentifier</key>
 	<string>com.refractored.mystreamtimer</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.0</string>
+	<string>1.1</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>10.10</string>
 	<key>CFBundleDevelopmentRegion</key>
@@ -22,8 +22,6 @@
 	<string>${AuthorCopyright:HtmlEncode}</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
-	<key>NSMainStoryboardFile</key>
-	<string>Main</string>
 	<key>XSAppIconAssets</key>
 	<string>Assets.xcassets/AppIcon.appiconset</string>
 	<key>LSApplicationCategoryType</key>
@@ -45,7 +43,9 @@
 	</array>
 	<key>CFBundleSupportedPlatforms</key>
 	<string>MacOSX</string>
+	<key>NSMainStoryboardFile</key>
+	<string>Main</string>
 	<key>CFBundleVersion</key>
-	<string>2</string>
+	<string>4</string>
 </dict>
 </plist>

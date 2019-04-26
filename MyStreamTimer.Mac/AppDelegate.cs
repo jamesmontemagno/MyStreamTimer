@@ -43,6 +43,8 @@ namespace MyStreamTimer.Mac
             clipboard.OpenUrl("https://jamesmontemagno.github.io/MyStreamTimer/");
         }
 
+
+
         public override void PerformClose(NSObject sender)
         {
             NSApplication.SharedApplication.Terminate(sender);
@@ -82,7 +84,12 @@ namespace MyStreamTimer.Mac
             base.DidFinishLaunching(notification);
         }
 
-  
+
+        public override bool ApplicationShouldTerminateAfterLastWindowClosed(NSApplication sender)
+        {
+            return true;
+        }
+
 
         [Export("handleGetURLEvent:withReplyEvent:")]
         private void HandleGetURLEvent(NSAppleEventDescriptor descriptor, NSAppleEventDescriptor replyEvent)
