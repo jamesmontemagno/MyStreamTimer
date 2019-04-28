@@ -32,5 +32,5 @@ You can integrate a **Open** command under **System** to launch My Stream Timer 
 View the walkthrough on [YouTube](https://youtu.be/j_GdGIdDRxI)
 
 ## Development 
-Currently consists of a WPF app written with [.NET Core 3-preview](https://devblogs.microsoft.com/dotnet/announcing-net-core-3-preview-3/) and VS 2019. Contains all logic in a .NET Standard Library so we can port it over to macOS.
+Currently consists of a WPF app written with [.NET Core 3-preview](https://devblogs.microsoft.com/dotnet/announcing-net-core-3-preview-3/) and VS 2019 & a macOS app powered by [Xamarin.Forms](http://xamarin.com/forms) with a shared .NET Standard Library.
 
