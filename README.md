@@ -1,10 +1,12 @@
 # My Stream Timer
 My Stream Timer is an easy to use countdown and count-up timer for streamers. Multiple timers are available that write a file to disk to use with OBS, SLOBS, or your favorite streaming application. Have it auto start so it works with Stream Deck!
 
+
+Download today on Windows or macOS:
+* Windows 10 via the [Microsoft Store](https://www.microsoft.com/en-us/p/my-stream-timer/9n5nxx3wk7k7)
+* macOS 10.10+ via the [App Store](https://itunes.apple.com/us/app/my-stream-timer/id1460539461?mt=12)
+
 ![](Art/demo.png)
-
-
-Download today from the [Microsoft Store](https://www.microsoft.com/en-us/p/my-stream-timer/9n5nxx3wk7k7)
 
 
 ## Integrating into OBS/SLOBS
@@ -21,7 +23,9 @@ Next, Open OBS/SLOBS and add a **Text** source. Check "Read from file" and click
 
 You can integrate a **Open** command under **System** to launch My Stream Timer and start a countdown from a specific amoutn of time. You don't need to browse for a file location at all as you can input a protocol url:
 
-Format: mystreamtimer://countdown/?mins=6
+* Count down from X minutes: mystreamtimer://countdown/?mins=6
+* Count down to specific time (24 hour clock): mystreamtimer://countdown/?to=15:30
+* Count down to top of the hour: mystreamtimer://countdown/?topofhour
 
 ## In Action
 
