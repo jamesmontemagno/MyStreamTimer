@@ -155,6 +155,7 @@ namespace MyStreamTimer.Shared.ViewModel
         void ExecuteCopyFilePathCommand()
         {
             var directory = GetDirectory();
+            directory = Path.Combine(directory, FileName);
             var clipboard = ServiceContainer.Resolve<IClipboard>();
             clipboard?.CopyToClipboard(directory);
         }
