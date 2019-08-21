@@ -19,6 +19,8 @@ Next, Open OBS/SLOBS and add a **Text** source. Check "Read from file" and click
 
 ![](Art/SelectFromFile.png)
 
+If you are on macOS when you set click "Browse" in OBS/SLOBS the file picker will come up. To browse to a folder use the following command on your keyboard: (CMD + SHIFT + G) and then paste the directory from My Stream Timer
+
 ## Integrating into Stream Deck
 
 You can integrate a **Open** command under **System** to launch My Stream Timer and start a countdown from a specific amoutn of time. You don't need to browse for a file location at all as you can input a protocol url:
