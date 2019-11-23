@@ -23,7 +23,7 @@ If you are on macOS when you set click "Browse" in OBS/SLOBS the file picker wil
 
 ## Integrating into Stream Deck
 
-You can integrate a **Webiste** command under **System** to launch My Stream Timer and start a countdown from a specific amount of time. You don't need to browse for a file location at all as you can input a protocol url:
+You can integrate a **Website** command under **System** to launch My Stream Timer and start a countdown from a specific amount of time. You don't need to browse for a file location at all as you can input a protocol url:
 
 * Count down from X minutes: mystreamtimer://countdown/?mins=6
 * Count down to specific time (24 hour clock): mystreamtimer://countdown/?to=15:30
