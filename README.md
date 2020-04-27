@@ -29,10 +29,14 @@ You can integrate a **Website** command under **System** to launch My Stream Tim
 * Count down to specific time (24 hour clock): mystreamtimer://countdown/?to=15:30
 * Count down to top of the hour: mystreamtimer://countdown/?topofhour
 
+## Integrating into Deckboard (using an Extension App for Windows)
+If you do not own a Stream Deck but use other apps to control your stream, [Dara Oladapo](https://twitter.com/daraoladapo) created an extension app for Windows that he uses for Deckboard. You can check out the project [here](https://github.com/DaraOladapo/stream-deckboard).
+
 ## In Action
 
 View the walkthrough on [YouTube](https://youtu.be/j_GdGIdDRxI)
 
 ## Development 
 Currently consists of a WPF app written with [.NET Core 3-preview](https://devblogs.microsoft.com/dotnet/announcing-net-core-3-preview-3/) and VS 2019 & a macOS app powered by [Xamarin.Forms](http://xamarin.com/forms) with a shared .NET Standard Library.
+
 
