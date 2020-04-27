@@ -30,7 +30,7 @@ You can integrate a **Website** command under **System** to launch My Stream Tim
 * Count down to top of the hour: mystreamtimer://countdown/?topofhour
 
 ## Integrating into Deckboard (using an Extension App for Windows)
-If you do not own a Stream Deck but use other apps to control your stream, [Dara Oladapo](https://twitter.com/daraoladapo) created an extension app for Windows that he uses for Deckboard. You can check out the project [here](https://github.com/DaraOladapo/stream-deckboard).
+If you do not own a Stream Deck but use other apps to control your stream, [Dara Oladapo](https://twitter.com/daraoladapo) created an extension app for Windows that he uses for Deckboard. You can check out the project [here](https://github.com/DaraOladapo/stream-deckboard) and web link [here](https://daraoladapo.github.io/stream-deckboard/).
 
 ## In Action
 
