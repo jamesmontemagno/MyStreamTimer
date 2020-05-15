@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Windows.Input;
 using MvvmHelpers;
+using MvvmHelpers.Commands;
 using MyStreamTimer.Shared.Helpers;
 using MyStreamTimer.Shared.Interfaces;
-using MyStreamTimer.Shared.Model;
 
 namespace MyStreamTimer.Shared.ViewModel
 {
@@ -17,7 +17,7 @@ namespace MyStreamTimer.Shared.ViewModel
 
         void ExecuteCopyTextCommand(string text)
         {
-            var clipboard = ServiceContainer.Resolve<IClipboard>();
+            var clipboard = ServiceContainer.Resolve<IPlatformHelpers>();
             if (clipboard == null)
                 throw new Exception("Clipboard must be implemented");
 

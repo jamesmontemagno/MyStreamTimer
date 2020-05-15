@@ -1,11 +1,33 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
+using MyStreamTimer.Shared.Interfaces;
 using Plugin.Settings;
 using Plugin.Settings.Abstractions;
 
+// msgpacket subscribe via Twitch PRIME! May 15th 2020
+
 namespace MyStreamTimer.Shared.Helpers
 {
+
+    public static class GlobalSettings
+    {
+        static string defaultDirectoryPath;
+        const string directoryPathKey = "global_directory_path";
+
+        static GlobalSettings()
+        {
+            var platform = ServiceContainer.Resolve<IPlatformHelpers>();
+            defaultDirectoryPath = Path.Combine(platform.BaseDirectory, "MyStreamTimer");
+        }
+        static ISettings AppSettings => CrossSettings.Current;
+        public static string DirectoryPath
+        {
+            get => AppSettings.GetValueOrDefault(directoryPathKey, defaultDirectoryPath);
+            set => AppSettings.AddOrUpdateValue(directoryPathKey, value);
+        }
+    }
     public class Settings
     {
         readonly string id;
@@ -15,6 +37,8 @@ namespace MyStreamTimer.Shared.Helpers
             fileNameDefault = $"{id}.txt";
             switch(id)
             {
+                case Constants.Countdown2:
+                case Constants.Countdown3:
                 case Constants.Countdown:
                     minutesDefault = 5;
                     break;
@@ -33,6 +57,9 @@ namespace MyStreamTimer.Shared.Helpers
 
         const string minutesKey = "key_minutes";
         readonly int minutesDefault = 5;
+
+        const string secondsKey = "key_seconds";
+        readonly int secondsDefault = 0;
 
         const string outputKey = "key_output";
         readonly string outputDefault = @"Starting in {0:mm\:ss}";
@@ -53,6 +80,12 @@ namespace MyStreamTimer.Shared.Helpers
         {
             get => AppSettings.GetValueOrDefault($"{autoStartKey}_{id}", autoStartDefault);
             set => AppSettings.AddOrUpdateValue($"{autoStartKey}_{id}", value);
+        }
+
+        public int Seconds
+        {
+            get => AppSettings.GetValueOrDefault($"{secondsKey}_{id}", secondsDefault);
+            set => AppSettings.AddOrUpdateValue($"{secondsKey}_{id}", value);
         }
 
         public int Minutes
@@ -78,6 +111,5 @@ namespace MyStreamTimer.Shared.Helpers
             get => AppSettings.GetValueOrDefault($"{fileNameKey}_{id}", fileNameDefault);
             set => AppSettings.AddOrUpdateValue($"{fileNameKey}_{id}", value);
         }
-
     }
 }

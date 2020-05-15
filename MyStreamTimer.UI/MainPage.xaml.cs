@@ -18,12 +18,10 @@ namespace MyStreamTimer.UI
         public MainPage()
         {
             InitializeComponent();
-
-            
             TabItemDown.BindingContext = DownVM = new TimerViewModel(Constants.Countdown, OpeningArgs.start, OpeningArgs.mins);
+            TabItemDown2.BindingContext = new TimerViewModel(Constants.Countdown2);
+            TabItemDown3.BindingContext = new TimerViewModel(Constants.Countdown3);
             TabItemUp.BindingContext = new TimerViewModel(Constants.Countup);
-            TabItemGiveaway.BindingContext = new TimerViewModel(Constants.Giveaway);
-
         }
     }
 }

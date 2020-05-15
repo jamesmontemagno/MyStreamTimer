@@ -29,7 +29,7 @@
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.utilities</string>
 	<key>NSRequiresAquaSystemAppearance</key>
-	<true/>
+	<false/>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

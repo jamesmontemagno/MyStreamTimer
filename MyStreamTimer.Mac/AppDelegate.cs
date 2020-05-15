@@ -2,6 +2,7 @@
 using AppKit;
 using CoreGraphics;
 using Foundation;
+using MyStreamTimer.Mac.Services;
 using MyStreamTimer.Shared.Helpers;
 using MyStreamTimer.Shared.Interfaces;
 using MyStreamTimer.UI;
@@ -39,7 +40,7 @@ namespace MyStreamTimer.Mac
         [Export("showHelp:")]
         private void HandleShowHelp(NSObject sender)
         {
-            var clipboard = ServiceContainer.Resolve<IClipboard>();
+            var clipboard = ServiceContainer.Resolve<IPlatformHelpers>();
             clipboard.OpenUrl("https://jamesmontemagno.github.io/MyStreamTimer/");
         }
 
@@ -60,6 +61,7 @@ namespace MyStreamTimer.Mac
 
             var rect = new CoreGraphics.CGRect(500, 300, 560, 300);
             window = new MyWindow(rect, style, NSBackingStore.Buffered, false);
+            window.Level = NSWindowLevel.ScreenSaver;
             window.Title = "My Stream Timer"; // choose your own Title here
             window.TitleVisibility = NSWindowTitleVisibility.Visible;
             
@@ -71,7 +73,7 @@ namespace MyStreamTimer.Mac
         {
             Forms.Init();
 
-            ServiceContainer.Register<IClipboard>(() => new ClipboardImplementation());
+            ServiceContainer.Register<IPlatformHelpers>(() => new PlatformHelpers());
             LoadApplication(new MyStreamTimer.UI.App());
            
             
@@ -111,7 +113,7 @@ namespace MyStreamTimer.Mac
         {
             var (start, mins) = Utils.ParseStartupArgs(openinArgs);
             MainPage.OpeningArgs = (start, mins);
-            if (start && mins > 0)
+            if (start && mins >= 0)
                 MainPage.DownVM?.Init(mins);
         }
 
