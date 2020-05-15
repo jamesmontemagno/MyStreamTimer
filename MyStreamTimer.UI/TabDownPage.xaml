@@ -17,6 +17,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <!--  How Much Time for Countdown  -->
         <Label
@@ -123,9 +124,17 @@
         <!--  Current Output  -->
         <Label
             Grid.Row="6"
-            Grid.ColumnSpan="2"
+            Grid.ColumnSpan="3"
             HorizontalOptions="Center"
             LineBreakMode="WordWrap"
             Text="{Binding CountdownOutput}" />
+
+        
+        <Label
+            Grid.Row="7"
+            Grid.ColumnSpan="3"
+            IsVisible="{Binding IsBusy}"
+            HorizontalOptions="Center"
+            Text="Do not minimize window." />
     </Grid>
 </ContentPage>

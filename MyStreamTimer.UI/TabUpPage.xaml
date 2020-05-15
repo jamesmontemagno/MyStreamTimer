@@ -76,9 +76,17 @@
         <!--  Current Output  -->
         <Label
             Grid.Row="6"
-            Grid.ColumnSpan="2"
+            Grid.ColumnSpan="3"
             HorizontalOptions="Center"
             LineBreakMode="WordWrap"
             Text="{Binding CountdownOutput}" />
+
+        
+        <Label
+            Grid.Row="7"
+            Grid.ColumnSpan="3"
+            HorizontalOptions="Center"
+            IsVisible="{Binding IsBusy}"
+            Text="Do not minimize window." />
     </Grid>
 </ContentPage>
