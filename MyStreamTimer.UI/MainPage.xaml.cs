@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using MyStreamTimer.Shared.Helpers;
+using MyStreamTimer.Shared.Interfaces;
 using MyStreamTimer.Shared.ViewModel;
 using Xamarin.Forms;
 using Xamarin.Forms.Xaml;
@@ -22,6 +23,21 @@ namespace MyStreamTimer.UI
             TabItemDown2.BindingContext = new TimerViewModel(Constants.Countdown2);
             TabItemDown3.BindingContext = new TimerViewModel(Constants.Countdown3);
             TabItemUp.BindingContext = new TimerViewModel(Constants.Countup);
+
+            
+        }
+
+        protected override void OnAppearing()
+        {
+            base.OnAppearing();
+            if (GlobalSettings.TimesUsed < 20)
+            {
+                GlobalSettings.TimesUsed++;
+                if (GlobalSettings.TimesUsed == 20)
+                {
+                    ServiceContainer.Resolve<IPlatformHelpers>()?.StoreReview();
+                }
+            }
         }
     }
 }

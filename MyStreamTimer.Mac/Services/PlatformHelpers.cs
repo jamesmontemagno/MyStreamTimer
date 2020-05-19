@@ -5,6 +5,7 @@ using Foundation;
 using MyStreamTimer.Shared.Interfaces;
 using Xamarin.Forms;
 using Xamarin.Essentials;
+using StoreKit;
 
 namespace MyStreamTimer.Mac.Services
 {
@@ -36,6 +37,19 @@ namespace MyStreamTimer.Mac.Services
             }
 
             return Task.CompletedTask;
+        }
+
+        public void StoreReview()
+        {
+            if(DeviceInfo.Version >= new Version(10, 14))
+            {
+                SKStoreReviewController.RequestReview();
+            }
+        }
+
+        public void InvokeOnMainThread(Action action)
+        {
+            Xamarin.Forms.Device.BeginInvokeOnMainThread(action);
         }
     }
 }

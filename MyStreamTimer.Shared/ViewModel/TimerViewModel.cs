@@ -31,11 +31,13 @@ namespace MyStreamTimer.Shared.ViewModel
         public AsyncCommand CopyFilePathCommand { get; }
         public ICommand ResetCommand { get; }
         public ICommand AddMinuteCommand { get; }
-
+        IPlatformHelpers platformHelpers;
         float bootMins = -1;
 
         public TimerViewModel(string id, bool bootStart = false, float bootMins = -1)
         {
+
+            platformHelpers = ServiceContainer.Resolve<IPlatformHelpers>();
             identifier = id;
             settings = new Settings(id);
             this.bootMins = bootMins;
@@ -147,7 +149,13 @@ namespace MyStreamTimer.Shared.ViewModel
         public string CountdownOutput
         {
             get => countdownOutput;
-            set => SetProperty(ref countdownOutput, value);
+            set
+            {
+                platformHelpers.InvokeOnMainThread(() =>
+                {
+                    SetProperty(ref countdownOutput, value);
+                });
+            }
         }
 
         string startStop = "Start";
@@ -162,17 +170,16 @@ namespace MyStreamTimer.Shared.ViewModel
         Task ExecuteCopyFilePathCommand()
         {
             var directory = GetDirectory();
-            var helpers = ServiceContainer.Resolve<IPlatformHelpers>();
-
-            if (helpers == null)
+            
+            if (platformHelpers == null)
                 return Task.CompletedTask;
-            helpers.CopyToClipboard(directory);
-            if(helpers.IsMac)
+            platformHelpers.CopyToClipboard(directory);
+            if(platformHelpers.IsMac)
             {
-                return helpers.DisplayAlert("Path Copied", $"Path to file is located at {directory}, use Command + Shift + G to bring up directory selection in Finder.");
+                return platformHelpers.DisplayAlert("Path Copied", $"Path to file is located at {directory}, use Command + Shift + G to bring up directory selection in Finder.");
             }
 
-            return helpers.DisplayAlert("Path Copied", $"Path to file is located at {directory}");
+            return platformHelpers.DisplayAlert("Path Copied", $"Path to file is located at {directory}");
 
         }
 

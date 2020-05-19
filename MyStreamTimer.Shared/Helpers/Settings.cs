@@ -27,6 +27,12 @@ namespace MyStreamTimer.Shared.Helpers
             get => AppSettings.GetValueOrDefault(directoryPathKey, defaultDirectoryPath);
             set => AppSettings.AddOrUpdateValue(directoryPathKey, value);
         }
+
+        public static int TimesUsed
+        {
+            get => AppSettings.GetValueOrDefault(nameof(TimesUsed), 0);
+            set => AppSettings.AddOrUpdateValue(nameof(TimesUsed), value);
+        }
     }
     public class Settings
     {

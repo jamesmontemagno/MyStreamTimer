@@ -12,5 +12,9 @@ namespace MyStreamTimer.Shared.Interfaces
         bool IsMac { get; }
         Task DisplayAlert(string title, string message);
         void OpenUrl(string url);
+
+        void InvokeOnMainThread(Action action);
+
+        void StoreReview();
     }
 }

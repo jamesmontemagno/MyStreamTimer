@@ -8,10 +8,14 @@
         <viewmodels:AboutViewModel />
     </ContentPage.BindingContext>
     <StackLayout Margin="10" Spacing="5">
-        <Label Text="My Stream Timer is an open source project by James Montemagno and Refractored LLC." />
-        <Label Margin="0,10,0,0" Text="MyStreamTimer on GitHub">
+        <Label Text="My Stream Timer (v1.2) is an open source project by James Montemagno and Refractored LLC.">
             <Label.GestureRecognizers>
-                <TapGestureRecognizer Command="{Binding OpenUrlCommand}" CommandParameter="http://www.github.com/jamesmontemagno/MyStreamTimer" />
+                <TapGestureRecognizer Command="{Binding OpenUrlCommand}" CommandParameter="https://github.com/jamesmontemagno/mystreamtimer" />
+            </Label.GestureRecognizers>
+        </Label>
+        <Label Margin="0,10,0,0" Text="Support MyStreamTimer by sponsoring on GitHub">
+            <Label.GestureRecognizers>
+                <TapGestureRecognizer Command="{Binding OpenUrlCommand}" CommandParameter="https://github.com/sponsors/jamesmontemagno" />
             </Label.GestureRecognizers>
         </Label>
         <Label Margin="0,10,0,0" Text="Follow James on:" />

@@ -59,7 +59,7 @@ namespace MyStreamTimer.Mac
         {
             var style = NSWindowStyle.Closable | NSWindowStyle.Miniaturizable | NSWindowStyle.Titled;
 
-            var rect = new CoreGraphics.CGRect(500, 300, 560, 300);
+            var rect = new CoreGraphics.CGRect(500, 300, 560, 325);
             window = new MyWindow(rect, style, NSBackingStore.Buffered, false);
             window.Level = NSWindowLevel.ScreenSaver;
             window.Title = "My Stream Timer"; // choose your own Title here
@@ -68,6 +68,11 @@ namespace MyStreamTimer.Mac
         }
 
         public override NSWindow MainWindow => window;
+
+        public override bool ApplicationShouldTerminateAfterLastWindowClosed(NSApplication sender)
+        {
+            return true;
+        }
 
         public override void DidFinishLaunching(NSNotification notification)
         {
