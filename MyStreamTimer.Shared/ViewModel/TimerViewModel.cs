@@ -86,6 +86,35 @@ namespace MyStreamTimer.Shared.ViewModel
             set => SetProperty(ref isDown, value);
         }
 
+        bool useMinutes = true;
+        public bool UseMinutes
+        {
+            get => useMinutes;
+            set
+            {
+                if(SetProperty(ref useMinutes, value))
+                    UseFinishAt = !value;
+            }
+        }
+
+        bool useFinishAt;
+        public bool UseFinishAt
+        {
+            get => useFinishAt;
+            set
+            {
+                if (SetProperty(ref useFinishAt, value))
+                    UseMinutes = !value;
+            }
+        }
+
+        TimeSpan finishAtTime = new TimeSpan(DateTime.Now.Hour, DateTime.Now.Minute + 15, 0);
+        public TimeSpan FinishAtTime
+        {
+            get => finishAtTime;
+            set => SetProperty(ref finishAtTime, value);
+        }
+
         public int Seconds
         {
             get => settings.Seconds;
@@ -265,8 +294,22 @@ namespace MyStreamTimer.Shared.ViewModel
             }
             else
             {
-                currentMinutes = Minutes;
-                currentSeconds = Seconds;
+                if (UseFinishAt)
+                {
+                    if (FinishAtTime <= DateTime.Now.TimeOfDay)
+                    {
+                        CountdownOutput = "Select time in future";
+                        return;
+                    }
+
+                    currentMinutes = (float)(FinishAtTime.TotalMinutes - DateTime.Now.TimeOfDay.TotalMinutes);
+                    
+                }
+                else
+                {
+                    currentMinutes = Minutes;
+                    currentSeconds = Seconds;
+                }
             }
             currentOutput = Output;
 
@@ -282,8 +325,12 @@ namespace MyStreamTimer.Shared.ViewModel
             {
                 if (now >= endTime)
                 {
+                    CountdownOutput = currentFinished;
+                    WriteTimeToDisk(e == null);
                     ExecuteStartStopTimerCommand();
                     CountdownOutput = currentFinished;
+                    WriteTimeToDisk(e == null);
+                    return;
                 }
                 else
                 {
