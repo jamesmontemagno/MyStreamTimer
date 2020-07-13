@@ -259,7 +259,26 @@ namespace MyStreamTimer.Shared.ViewModel
         {
             try
             {
-                File.WriteAllText(currentFileName, CountdownOutput);
+                // This is a bit of a shell game to reduce the chance that two programs get into a race 
+                // condition by accessing a file while it's being written.
+                // To do this, we write to a temp file, then move the old file to a "DeleteMe" name, 
+                // move the temp file to our timer filename, then delete the "DeleteMe" file.
+                // The slowest operation is WriteAllText, and this method makes sure that operation happens on 
+                // a throwaway filename, so that OBS or another application doesn't try to hit the file
+                // while it's being written
+                var path = Path.GetDirectoryName(currentFileName);
+                var tempFilename = Path.Combine(path, Path.GetRandomFileName());
+                var deleteMeFilename = Path.Combine(path, Path.GetRandomFileName());
+
+                // write to the temp file
+                File.WriteAllText(tempFilename, CountdownOutput);
+
+                // do the swap
+                File.Move(currentFileName, deleteMeFilename);
+                File.Move(tempFilename, currentFileName);
+
+                // kill the old timer file
+                File.Delete(deleteMeFilename);
             }
             catch (Exception ex)
             {
