@@ -1,0 +1,93 @@
+﻿<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage
+    x:Class="MyStreamTimer.UI.TabUpPage"
+    xmlns="http://xamarin.com/schemas/2014/forms"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+    <Grid Margin="25">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="75" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <Label
+            Grid.Row="1"
+            HorizontalOptions="End"
+            Text="Live output:" />
+        <Entry
+            Grid.Row="1"
+            Grid.Column="1"
+            IsEnabled="{Binding IsNotBusy}"
+            Text="{Binding Output}" />
+        <!--  Finish output text                               <Label Grid.Row="2" HorizontalOptions="End" Text="Finish output:" />                            <Label Grid.Row="2" Grid.Column="1" IsEnabled="{Binding IsNotBusy}" Text="{Binding Finish}" />                                -->
+        <!--  File Name Settings  -->
+        <Label
+            Grid.Row="3"
+            HorizontalOptions="End"
+            Text="File Name:" />
+        <Entry
+            Grid.Row="3"
+            Grid.Column="1"
+            IsEnabled="{Binding IsNotBusy}"
+            Text="{Binding FileName}" />
+        <Button
+            Grid.Row="3"
+            Grid.Column="2"
+            Command="{Binding CopyFilePathCommand}"
+            HorizontalOptions="FillAndExpand"
+            Style="{StaticResource ButtonMainStyle}"
+            Text=" Copy " />
+        <!--  Auto Start  -->
+        <Label
+            Grid.Row="4"
+            HorizontalOptions="End"
+            Text="Auto Start:" />
+        <Switch
+            Grid.Row="4"
+            Grid.Column="1"
+            IsToggled="{Binding AutoStart}" />
+        <!--  Start Stop Button  -->
+        <Grid Grid.Row="5" Grid.ColumnSpan="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Button
+                Grid.Column="0"
+                Command="{Binding StartStopTimerCommand}"
+                Style="{StaticResource ButtonMainStyle}"
+                Text="{Binding StartStop}" />
+            <Button
+                Grid.Column="2"
+                Command="{Binding ResetCommand}"
+                IsEnabled="{Binding IsBusy}"
+                Style="{StaticResource ButtonMainStyle}"
+                Text="Reset" />
+        </Grid>
+        <!--  Current Output  -->
+        <Label
+            Grid.Row="6"
+            Grid.ColumnSpan="3"
+            HorizontalOptions="Center"
+            LineBreakMode="WordWrap"
+            Text="{Binding CountdownOutput}" />
+
+        
+        <Label
+            Grid.Row="7"
+            Grid.ColumnSpan="3"
+            HorizontalOptions="Center"
+            TextColor="Red"
+            IsVisible="{Binding IsBusy}"
+            Text="Do not minimize window." />
+    </Grid>
+</ContentPage>

@@ -23,6 +23,12 @@ namespace MyStreamTimer.Shared.Helpers
                     {
                         start = true;
                     }
+                    else if(query.Contains("?secs=") &&
+                        float.TryParse(query.Remove(0, 6), out var secs))
+                    {
+                        mins = secs / 60.0f;
+                        start = true;
+                    }
                     else if(query.Contains("?topofhour"))
                     {
                         mins = 60.0f - (float)DateTime.Now.Minute;

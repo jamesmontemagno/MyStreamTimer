@@ -1,0 +1,55 @@
+﻿<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage
+    x:Class="MyStreamTimer.UI.TabsCommandsPage"
+    xmlns="http://xamarin.com/schemas/2014/forms"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:viewmodels="clr-namespace:MyStreamTimer.Shared.ViewModel;assembly=MyStreamTimer.Shared">
+    <ContentPage.BindingContext>
+        <viewmodels:CommandsViewModel />
+    </ContentPage.BindingContext>
+    <StackLayout Margin="10" Spacing="5">
+        <Label Text="You can launch My Stream Timer in popular stream tools or by command line with the following commands:" />
+
+        <Label
+            Margin="0,10,0,0"
+            FontAttributes="Bold"
+            Text="Countdown from X minutes:" />
+        <StackLayout Orientation="Horizontal">
+            <Label x:Name="LabelCommandsMins" Text="mystreamtimer://countdown/?mins=15" />
+            <Button
+                Command="{Binding CopyTextCommand}"
+                CommandParameter="{Binding Path=Text, Source={x:Reference LabelCommandsMins}}"
+                Text="Copy" />
+        </StackLayout>
+
+        <Label
+            Margin="0,10,0,0"
+            FontAttributes="Bold"
+            Text="Countdown to specific time (24 hour clock):" />
+
+        <StackLayout Orientation="Horizontal">
+            <Label x:Name="LabelCommandsTo" Text="mystreamtimer://countdown/?to=15:30" />
+            <Button
+                Command="{Binding CopyTextCommand}"
+                CommandParameter="{Binding Path=Text, Source={x:Reference LabelCommandsTo}}"
+                Text="Copy" />
+        </StackLayout>
+
+        <Label
+            Margin="0,10,0,0"
+            FontAttributes="Bold"
+            Text="Countdown to top of the hour." />
+
+        <StackLayout Orientation="Horizontal">
+            <Label x:Name="LabelCommandsTopOfHour"
+                   Text="mystreamtimer://countdown/?topofhour"/>
+
+            <Button
+                Command="{Binding CopyTextCommand}"
+                CommandParameter="{Binding Path=Text, Source={x:Reference LabelCommandsTopOfHour}}"
+                Text="Copy" />
+        </StackLayout>
+
+
+    </StackLayout>
+</ContentPage>

@@ -34,7 +34,7 @@ namespace MyStreamTimer.WPF
 
             MyStreamTimer.WPF.MainWindow.StartArgs = e;
             base.OnStartup(e);
-            ServiceContainer.Register<IClipboard>(() => new ClipboardImplementation());
+            ServiceContainer.Register<IPlatformHelpers>(() => new ClipboardImplementation());
 
         }
     }

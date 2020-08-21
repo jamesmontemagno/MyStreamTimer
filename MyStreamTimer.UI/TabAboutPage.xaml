@@ -1,0 +1,70 @@
+﻿<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage
+    x:Class="MyStreamTimer.UI.TabAboutPage"
+    xmlns="http://xamarin.com/schemas/2014/forms"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:viewmodels="clr-namespace:MyStreamTimer.Shared.ViewModel;assembly=MyStreamTimer.Shared">
+    <ContentPage.BindingContext>
+        <viewmodels:AboutViewModel />
+    </ContentPage.BindingContext>
+    <StackLayout Margin="10" Spacing="5">
+        <Label Text="My Stream Timer (v1.2.2) is an open source project by James Montemagno and Refractored LLC.">
+            <Label.GestureRecognizers>
+                <TapGestureRecognizer Command="{Binding OpenUrlCommand}" CommandParameter="https://github.com/jamesmontemagno/mystreamtimer" />
+            </Label.GestureRecognizers>
+        </Label>
+        <Label Margin="0,10,0,0" Text="Support MyStreamTimer by sponsoring on GitHub">
+            <Label.GestureRecognizers>
+                <TapGestureRecognizer Command="{Binding OpenUrlCommand}" CommandParameter="https://github.com/sponsors/jamesmontemagno" />
+            </Label.GestureRecognizers>
+        </Label>
+        <Label Margin="0,10,0,0" Text="Follow James on:" />
+        <StackLayout Orientation="Horizontal" HorizontalOptions="Center">
+            <Label Style="{StaticResource LabelHyperlink}" Text="GitHub">
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding OpenUrlCommand}" CommandParameter="http://www.github.com/jamesmontemagno" />
+                </Label.GestureRecognizers>
+            </Label>
+            <Label Text="|"/>
+            <Label Style="{StaticResource LabelHyperlink}" Text="Twitter">
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding OpenUrlCommand}" CommandParameter="http://www.twitter.com/jamesmontemagno" />
+                </Label.GestureRecognizers>
+            </Label>
+            <Label Text="|"/>
+            <Label Style="{StaticResource LabelHyperlink}" Text="Twitch">
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding OpenUrlCommand}" CommandParameter="http://www.twitch.tv/jamesmontemagno" />
+                </Label.GestureRecognizers>
+            </Label>
+            <Label Text="|"/>
+            <Label Style="{StaticResource LabelHyperlink}" Text="Blog">
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding OpenUrlCommand}" CommandParameter="http://www.montemagno.com" />
+                </Label.GestureRecognizers>
+            </Label>
+        </StackLayout>
+        <Label Margin="0,10,0,0" FontAttributes="Bold" Text="Settings:" />
+        <Grid Margin="0,0,40,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Label Text="File Directory:"
+                   VerticalOptions="Start"/>
+            <Button Grid.Row="1" Text="Reset" Clicked="Button_Clicked"/>
+            <Editor
+                Grid.RowSpan="2"
+                    Grid.Column="1"
+                    HeightRequest="60"
+                    BackgroundColor="#3d3d3d"
+                    TextColor="White"
+                    Text="{Binding Directory}"
+                    HorizontalOptions="FillAndExpand"/>
+        </Grid>
+    </StackLayout>
+</ContentPage>

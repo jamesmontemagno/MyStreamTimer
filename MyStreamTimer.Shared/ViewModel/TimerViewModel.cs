@@ -1,13 +1,16 @@
 ﻿using MvvmHelpers;
+using MvvmHelpers.Commands;
 using MyStreamTimer.Shared.Helpers;
 using MyStreamTimer.Shared.Interfaces;
-using MyStreamTimer.Shared.Model;
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using System.Timers;
 using System.Windows.Input;
+using Command = MvvmHelpers.Commands.Command;
 
 // kymphillpotts cheered 150 March 9th 2019
+// lubdubw subscribed view twitch prime! May 15th 2020
 
 namespace MyStreamTimer.Shared.ViewModel
 {
@@ -25,36 +28,40 @@ namespace MyStreamTimer.Shared.ViewModel
 
         Settings settings;
         public ICommand StartStopTimerCommand { get; }
-        public ICommand CopyFilePathCommand { get; }
+        public AsyncCommand CopyFilePathCommand { get; }
         public ICommand ResetCommand { get; }
         public ICommand AddMinuteCommand { get; }
-
+        IPlatformHelpers platformHelpers;
         float bootMins = -1;
 
         public TimerViewModel(string id, bool bootStart = false, float bootMins = -1)
         {
+
+            platformHelpers = ServiceContainer.Resolve<IPlatformHelpers>();
             identifier = id;
             settings = new Settings(id);
             this.bootMins = bootMins;
 
+            InitializeFile();
+
             switch (identifier)
             {
+                case Constants.Giveaway:
+                case Constants.Countdown2:
+                case Constants.Countdown3:
                 case Constants.Countdown:
                     IsDown = true;
                     break;
                 case Constants.Countup:
                     IsDown = false;
                     break;
-                case Constants.Giveaway:
-                    IsDown = true;
-                    break;
             }
 
             StartStopTimerCommand = new Command(ExecuteStartStopTimerCommand);
-            CopyFilePathCommand = new Command(ExecuteCopyFilePathCommand);
+            CopyFilePathCommand = new AsyncCommand(ExecuteCopyFilePathCommand);
             ResetCommand = new Command(ExecuteResetCommand);
             AddMinuteCommand = new Command(ExecuteAddMinuteCommand);
-            timer = new Timer(250);
+            timer = new Timer(1000);
             timer.Elapsed += TimerElapsed;
             timer.AutoReset = true;
 
@@ -79,13 +86,52 @@ namespace MyStreamTimer.Shared.ViewModel
             set => SetProperty(ref isDown, value);
         }
 
+        bool useMinutes = true;
+        public bool UseMinutes
+        {
+            get => useMinutes;
+            set
+            {
+                if(SetProperty(ref useMinutes, value))
+                    UseFinishAt = !value;
+            }
+        }
+
+        bool useFinishAt;
+        public bool UseFinishAt
+        {
+            get => useFinishAt;
+            set
+            {
+                if (SetProperty(ref useFinishAt, value))
+                    UseMinutes = !value;
+            }
+        }
+
+        TimeSpan finishAtTime = new TimeSpan(DateTime.Now.Hour, DateTime.Now.Minute + 15, 0);
+        public TimeSpan FinishAtTime
+        {
+            get => finishAtTime;
+            set => SetProperty(ref finishAtTime, value);
+        }
+
+        public int Seconds
+        {
+            get => settings.Seconds;
+            set
+            {
+                settings.Seconds = value;
+                OnPropertyChanged();
+            }
+        }
+
         public int Minutes
         {
             get => settings.Minutes;
             set
             {
                 settings.Minutes = value;
-                OnPropertyChanged(nameof(Minutes));
+                OnPropertyChanged();
             }
         }
 
@@ -95,7 +141,7 @@ namespace MyStreamTimer.Shared.ViewModel
             set
             {
                 settings.Output = value;
-                OnPropertyChanged(nameof(Output));
+                OnPropertyChanged();
             }
         }
 
@@ -132,7 +178,13 @@ namespace MyStreamTimer.Shared.ViewModel
         public string CountdownOutput
         {
             get => countdownOutput;
-            set => SetProperty(ref countdownOutput, value);
+            set
+            {
+                platformHelpers.InvokeOnMainThread(() =>
+                {
+                    SetProperty(ref countdownOutput, value);
+                });
+            }
         }
 
         string startStop = "Start";
@@ -142,21 +194,22 @@ namespace MyStreamTimer.Shared.ViewModel
             set => SetProperty(ref startStop, value);
         }
 
-        string GetDirectory()
-        {
-            var clipboard = ServiceContainer.Resolve<IClipboard>();
-            if (clipboard == null)
-                throw new Exception("Clipboard must be implemented");
+        string GetDirectory() => GlobalSettings.DirectoryPath;
 
-            var folder = clipboard.BaseDirectory;
-            return Path.Combine(folder, "MyStreamTimer");
-        }
-
-        void ExecuteCopyFilePathCommand()
+        Task ExecuteCopyFilePathCommand()
         {
             var directory = GetDirectory();
-            var clipboard = ServiceContainer.Resolve<IClipboard>();
-            clipboard?.CopyToClipboard(directory);
+            
+            if (platformHelpers == null)
+                return Task.CompletedTask;
+            platformHelpers.CopyToClipboard(directory);
+            if(platformHelpers.IsMac)
+            {
+                return platformHelpers.DisplayAlert("Path Copied", $"Path to file is located at {directory}, use Command + Shift + G to bring up directory selection in Finder.");
+            }
+
+            return platformHelpers.DisplayAlert("Path Copied", $"Path to file is located at {directory}");
+
         }
 
         void ExecuteAddMinuteCommand()
@@ -176,7 +229,25 @@ namespace MyStreamTimer.Shared.ViewModel
             ExecuteStartStopTimerCommand();
         }
 
-        
+        void InitializeFile()
+        {
+            try
+            {
+
+                var dir = GetDirectory();
+
+                if (!Directory.Exists(dir))
+                    Directory.CreateDirectory(dir);
+
+                dir = Path.Combine(dir, FileName);
+                if(!File.Exists(dir))
+                    File.WriteAllText(dir, string.Empty);
+            }
+            catch
+            {
+
+            }
+        }
 
         void ExecuteStartStopTimerCommand()
         {
@@ -215,6 +286,7 @@ namespace MyStreamTimer.Shared.ViewModel
 
             currentFinished = Finish;
             currentIsDown = IsDown;
+            var currentSeconds = 0;
             if (bootMins > 0)
             {
                 currentMinutes = bootMins;
@@ -222,14 +294,30 @@ namespace MyStreamTimer.Shared.ViewModel
             }
             else
             {
-                currentMinutes = Minutes;
+                if (UseFinishAt)
+                {
+                    if (FinishAtTime <= DateTime.Now.TimeOfDay)
+                    {
+                        CountdownOutput = "Select time in future";
+                        return;
+                    }
+
+                    currentMinutes = (float)(FinishAtTime.TotalMinutes - DateTime.Now.TimeOfDay.TotalMinutes);
+                    
+                }
+                else
+                {
+                    currentMinutes = Minutes;
+                    currentSeconds = Seconds;
+                }
             }
             currentOutput = Output;
 
             startTime = DateTime.Now;
-            endTime = DateTime.Now.AddMinutes(currentMinutes);
+            endTime = DateTime.Now.AddMinutes(currentMinutes).AddSeconds(currentSeconds);
             TimerElapsed(null, null);
         }
+
         void TimerElapsed(object sender, ElapsedEventArgs e)
         {
             var now = DateTime.Now;
@@ -237,8 +325,12 @@ namespace MyStreamTimer.Shared.ViewModel
             {
                 if (now >= endTime)
                 {
+                    CountdownOutput = currentFinished;
+                    WriteTimeToDisk(e == null);
                     ExecuteStartStopTimerCommand();
                     CountdownOutput = currentFinished;
+                    WriteTimeToDisk(e == null);
+                    return;
                 }
                 else
                 {
@@ -252,14 +344,20 @@ namespace MyStreamTimer.Shared.ViewModel
                 CountdownOutput = string.Format(currentOutput, elapsedTime);
             }
 
-            WriteTimeToDisk();
+            WriteTimeToDisk(e == null);
         }
 
-        void WriteTimeToDisk()
+        void WriteTimeToDisk(bool create)
         {
             try
             {
-                File.WriteAllText(currentFileName, CountdownOutput);
+                if(create)
+                    File.WriteAllText(currentFileName, CountdownOutput);
+                else
+                {
+                    using var streamWriter = new StreamWriter(currentFileName, false);
+                    streamWriter.WriteLine(CountdownOutput);
+                }
             }
             catch (Exception ex)
             {

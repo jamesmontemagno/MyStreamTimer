@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Windows.Input;
 using MvvmHelpers;
+using MvvmHelpers.Commands;
 using MyStreamTimer.Shared.Helpers;
 using MyStreamTimer.Shared.Interfaces;
-using MyStreamTimer.Shared.Model;
-
 namespace MyStreamTimer.Shared.ViewModel
 {
     public class AboutViewModel: BaseViewModel
@@ -13,15 +12,28 @@ namespace MyStreamTimer.Shared.ViewModel
         public AboutViewModel()
         {
             OpenUrlCommand = new Command<string>(ExecuteOpenUrlCommand);
+            directory = GlobalSettings.DirectoryPath;
         }
 
         void ExecuteOpenUrlCommand(string url)
         {
-            var clipboard = ServiceContainer.Resolve<IClipboard>();
-            if (clipboard == null)
-                throw new Exception("Clipboard must be implemented");
+            var platform = ServiceContainer.Resolve<IPlatformHelpers>();
+            if (platform == null)
+                throw new Exception("Platform Helpers must be implemented");
 
-            clipboard.OpenUrl(url);
+            platform.OpenUrl(url);
+        }
+
+        string directory;
+        public string Directory
+        {
+            get => directory;
+            set
+            {
+                if (SetProperty(ref directory, value))
+                    GlobalSettings.DirectoryPath = value;
+            }
+
         }
     }
 }

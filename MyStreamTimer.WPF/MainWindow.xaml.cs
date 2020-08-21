@@ -51,7 +51,7 @@ namespace MyStreamTimer.WPF
 
         void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)
         {
-            var clipboard = ServiceContainer.Resolve<IClipboard>();
+            var clipboard = ServiceContainer.Resolve<IPlatformHelpers>();
             if (clipboard == null)
                 throw new Exception("Clipboard must be implemented");
 
@@ -63,7 +63,7 @@ namespace MyStreamTimer.WPF
         private void LabelCommandsMins_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
             
-            var clipboard = ServiceContainer.Resolve<IClipboard>();
+            var clipboard = ServiceContainer.Resolve<IPlatformHelpers>();
             if (clipboard == null)
                 throw new Exception("Clipboard must be implemented");
 
