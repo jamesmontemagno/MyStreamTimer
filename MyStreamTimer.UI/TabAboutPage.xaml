@@ -61,8 +61,8 @@
                 Grid.RowSpan="2"
                     Grid.Column="1"
                     HeightRequest="60"
-                    BackgroundColor="#3d3d3d"
-                    TextColor="White"
+                    BackgroundColor="{OnPlatform macOS='#3d3d3d'}"
+                    TextColor="{OnPlatform macOS=White}"
                     Text="{Binding Directory}"
                     HorizontalOptions="FillAndExpand"/>
         </Grid>

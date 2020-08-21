@@ -61,7 +61,7 @@
     <CodeSignEntitlements>Entitlements.plist</CodeSignEntitlements>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Xamarin.Forms" Version="4.8.0.1269" />
+    <PackageReference Include="Xamarin.Forms" Version="5.0.1.1320-nightly" />
     <PackageReference Include="Refractored.MvvmHelpers" Version="1.6.1-beta" />
     <PackageReference Include="Xam.Plugins.Settings" Version="4.1.0-beta" />
     <PackageReference Include="Xamarin.Essentials" Version="1.5.3-preview1333" />
@@ -73,7 +73,7 @@
     <Reference Include="System.Drawing.Common.dll" />
     <Reference Include="System.Numerics" />
     <Reference Include="System.Numerics.Vectors" />
-    <Reference Include="netstandard"/>
+    <Reference Include="netstandard" />
   </ItemGroup>
   <ItemGroup>
     <ImageAsset Include="Assets.xcassets\AppIcon.appiconset\Contents.json" />

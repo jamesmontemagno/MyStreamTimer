@@ -11,7 +11,7 @@ namespace MyStreamTimer.Mac.Services
 {
     public class PlatformHelpers : IPlatformHelpers
     {
-        public bool IsMac { get; } = true;
+        public bool IsMac => true;
         public string BaseDirectory
         {
             get
