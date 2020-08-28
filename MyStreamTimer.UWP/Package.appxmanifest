@@ -42,7 +42,10 @@
       </uap:VisualElements>
       <Extensions>
         <uap:Extension Category="windows.protocol">
-          <uap:Protocol Name="mystreamtimer"/>
+          <uap:Protocol Name="mystreamtimer2" DesiredView="useMinimum">
+            <uap:DisplayName>My Stream Timer</uap:DisplayName>
+            <uap:Logo>Art.png</uap:Logo>
+          </uap:Protocol >
         </uap:Extension>
       </Extensions>
     </Application>

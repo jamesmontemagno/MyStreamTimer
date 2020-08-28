@@ -1,8 +1,10 @@
-﻿using MyStreamTimer.Shared.Helpers;
+﻿using System;
+using MyStreamTimer.Shared.Helpers;
 using MyStreamTimer.Shared.Interfaces;
 using MyStreamTimer.UWP.Services;
 using Windows.Foundation;
 using Windows.UI.ViewManagement;
+using Windows.UI.Xaml.Navigation;
 
 // csharpfritz gifted 10 subs on August 21st 2020
 // adenearnshaw cheered 100 bits on August 21st 2020
@@ -30,5 +32,27 @@ namespace MyStreamTimer.UWP
 
 
         }
+        protected override void OnNavigatedTo(NavigationEventArgs e)
+        {
+            base.OnNavigatedTo(e);
+            OnLaunchedEvent(e?.Parameter?.ToString());
+        }
+
+        public void OnLaunchedEvent(string arguments)
+        {
+            if (string.IsNullOrEmpty(arguments))
+                return;
+
+            try
+            {
+                Xamarin.Forms.Application.Current.SendOnAppLinkRequestReceived(new Uri(arguments));
+            }
+            catch
+            {
+
+            }
+            
+        }
+
     }
 }

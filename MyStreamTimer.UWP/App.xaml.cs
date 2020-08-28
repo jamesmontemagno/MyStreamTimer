@@ -7,6 +7,7 @@ using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.UI.Popups;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
@@ -30,6 +31,76 @@ namespace MyStreamTimer.UWP
         {
             this.InitializeComponent();
             this.Suspending += OnSuspending;
+        }
+
+        protected override async void OnActivated(IActivatedEventArgs args)
+        {
+            try
+            {
+                if (args.Kind == ActivationKind.Protocol)
+                {
+                    
+                    var rootFrame = Window.Current.Content as Frame;
+
+                    if (rootFrame == null)
+                    {
+                        rootFrame = new Frame();
+                        rootFrame.NavigationFailed += OnNavigationFailed;
+                        Xamarin.Forms.Forms.Init(args); // requires the `e` parameter
+                        Window.Current.Content = rootFrame;
+                    }
+                    if (rootFrame.Content == null)
+                    {
+                        rootFrame.Navigate(typeof(MainPage), null);
+                    }
+
+                    var eventArgs = args as ProtocolActivatedEventArgs;
+                    // TODO: Handle URI activation
+                    // The received URI is eventArgs.Uri.AbsoluteUri
+                    try
+                    {
+
+                        Xamarin.Forms.Application.Current.SendOnAppLinkRequestReceived(new Uri(eventArgs.Uri.AbsoluteUri));
+
+                    }
+                    catch (Exception ex)
+                    {
+                    }
+
+                    Window.Current.Activate();
+                }
+            }
+            catch(Exception ex)
+            {
+                var dialog = new MessageDialog(ex.ToString());
+                await dialog.ShowAsync();
+            }
+        }
+
+        Frame EnsureFrame(IActivatedEventArgs e)
+        {
+            var rootFrame = Window.Current.Content as Frame;
+
+            // Do not repeat app initialization when the Window already has content,
+            // just ensure that the window is active
+            if (rootFrame == null)
+            {
+                // Create a Frame to act as the navigation context and navigate to the first page
+                rootFrame = new Frame();
+
+                rootFrame.NavigationFailed += OnNavigationFailed;
+                Xamarin.Forms.Forms.Init(e); // requires the `e` parameter
+                if (e.PreviousExecutionState == ApplicationExecutionState.Terminated)
+                {
+                    //TODO: Load state from previously suspended application
+                }
+
+                // Place the frame in the current Window
+                Window.Current.Content = rootFrame;
+            }
+
+            return rootFrame;
+            
         }
 
         /// <summary>
@@ -67,6 +138,11 @@ namespace MyStreamTimer.UWP
                     // configuring the new page by passing required information as a navigation
                     // parameter
                     rootFrame.Navigate(typeof(MainPage), e.Arguments);
+                }
+                else
+                {
+                    var page = rootFrame.Content as MainPage;
+                    page?.OnLaunchedEvent(e.Arguments);
                 }
                 // Ensure the current window is active
                 Window.Current.Activate();
