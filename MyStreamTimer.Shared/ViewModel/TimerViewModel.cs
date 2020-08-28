@@ -54,7 +54,7 @@ namespace MyStreamTimer.Shared.ViewModel
             CopyFilePathCommand = new Command(ExecuteCopyFilePathCommand);
             ResetCommand = new Command(ExecuteResetCommand);
             AddMinuteCommand = new Command(ExecuteAddMinuteCommand);
-            timer = new Timer(250);
+            timer = new Timer(100);
             timer.Elapsed += TimerElapsed;
             timer.AutoReset = true;
 
