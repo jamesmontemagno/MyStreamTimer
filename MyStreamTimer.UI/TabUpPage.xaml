@@ -21,6 +21,7 @@
         <Label
             Grid.Row="1"
             HorizontalOptions="End"
+            VerticalOptions="Center"
             Text="Live output:" />
         <Entry
             Grid.Row="1"
@@ -32,6 +33,7 @@
         <Label
             Grid.Row="3"
             HorizontalOptions="End"
+            VerticalOptions="Center"
             Text="File Name:" />
         <Entry
             Grid.Row="3"
@@ -49,11 +51,12 @@
         <Label
             Grid.Row="4"
             HorizontalOptions="End"
+            VerticalOptions="Center"
             Text="Auto Start:" />
-        <Switch
+        <CheckBox
             Grid.Row="4"
             Grid.Column="1"
-            IsToggled="{Binding AutoStart}" />
+            IsChecked="{Binding AutoStart}" />
         <!--  Start Stop Button  -->
         <Grid Grid.Row="5" Grid.ColumnSpan="2">
             <Grid.ColumnDefinitions>

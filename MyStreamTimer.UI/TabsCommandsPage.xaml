@@ -15,7 +15,10 @@
             FontAttributes="Bold"
             Text="Countdown from X minutes:" />
         <StackLayout Orientation="Horizontal">
-            <Label x:Name="LabelCommandsMins" Text="mystreamtimer://countdown/?mins=15" />
+            <Label
+                x:Name="LabelCommandsMins"
+                Text="mystreamtimer://countdown/?mins=15"
+                VerticalOptions="Center" />
             <Button
                 Command="{Binding CopyTextCommand}"
                 CommandParameter="{Binding Path=Text, Source={x:Reference LabelCommandsMins}}"
@@ -28,7 +31,10 @@
             Text="Countdown to specific time (24 hour clock):" />
 
         <StackLayout Orientation="Horizontal">
-            <Label x:Name="LabelCommandsTo" Text="mystreamtimer://countdown/?to=15:30" />
+            <Label
+                x:Name="LabelCommandsTo"
+                Text="mystreamtimer://countdown/?to=15:30"
+                VerticalOptions="Center" />
             <Button
                 Command="{Binding CopyTextCommand}"
                 CommandParameter="{Binding Path=Text, Source={x:Reference LabelCommandsTo}}"
@@ -41,8 +47,10 @@
             Text="Countdown to top of the hour." />
 
         <StackLayout Orientation="Horizontal">
-            <Label x:Name="LabelCommandsTopOfHour"
-                   Text="mystreamtimer://countdown/?topofhour"/>
+            <Label
+                x:Name="LabelCommandsTopOfHour"
+                Text="mystreamtimer://countdown/?topofhour"
+                VerticalOptions="Center" />
 
             <Button
                 Command="{Binding CopyTextCommand}"

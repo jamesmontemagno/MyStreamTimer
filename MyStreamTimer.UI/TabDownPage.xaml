@@ -24,7 +24,7 @@
             Grid.Row="0"
             HorizontalOptions="End"
             Text="Time:"
-            VerticalTextAlignment="Center" />
+            VerticalTextAlignment="Center"/>
         <StackLayout
             Grid.Row="0"
             Grid.Column="1"
@@ -71,6 +71,7 @@
         <Label
             Grid.Row="1"
             HorizontalOptions="End"
+            VerticalOptions="Center"
             Text="Live output:" />
         <Entry
             Grid.Row="1"
@@ -81,6 +82,7 @@
         <Label
             Grid.Row="2"
             HorizontalOptions="End"
+            VerticalOptions="Center"
             Text="Finish output:" />
         <Entry
             Grid.Row="2"
@@ -91,6 +93,7 @@
         <Label
             Grid.Row="3"
             HorizontalOptions="End"
+            VerticalOptions="Center"
             Text="File Name:" />
         <Entry
             Grid.Row="3"
@@ -109,6 +112,7 @@
         <Label
             Grid.Row="4"
             HorizontalOptions="End"
+            VerticalOptions="Center"
             Text="Auto Start:" />
         <CheckBox
             Grid.Row="4"
