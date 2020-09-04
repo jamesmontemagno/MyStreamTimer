@@ -3,21 +3,9 @@
     x:Class="MyStreamTimer.UI.TabUpPage"
     xmlns="http://xamarin.com/schemas/2014/forms"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
-    <Grid Margin="25">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto" />
-            <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="75" />
-        </Grid.ColumnDefinitions>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
+    <Grid Margin="25"
+          ColumnDefinitions="Auto,*,75"
+          RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto">
         <Label
             Grid.Row="1"
             HorizontalOptions="End"
@@ -58,17 +46,17 @@
             Grid.Column="1"
             IsChecked="{Binding AutoStart}" />
         <!--  Start Stop Button  -->
-        <Grid Grid.Row="5" Grid.ColumnSpan="2">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
+        <Grid Grid.Row="5" Grid.ColumnSpan="2"
+              ColumnDefinitions="*,*,*">
             <Button
                 Grid.Column="0"
                 Command="{Binding StartStopTimerCommand}"
                 Style="{StaticResource ButtonMainStyle}"
                 Text="{Binding StartStop}" />
+            <Button
+                Grid.Column="1"
+                Command="{Binding PauseResumeTimerCommand}"
+                Text="{Binding PauseResume}" />
             <Button
                 Grid.Column="2"
                 Command="{Binding ResetCommand}"

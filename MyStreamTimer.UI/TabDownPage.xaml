@@ -3,22 +3,9 @@
     x:Class="MyStreamTimer.UI.TabDownPage"
     xmlns="http://xamarin.com/schemas/2014/forms"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
-    <Grid Padding="25">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto" />
-            <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="100" />
-        </Grid.ColumnDefinitions>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
+    <Grid Padding="25"
+          ColumnDefinitions="Auto,*,100"
+          RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
         <!--  How Much Time for Countdown  -->
         <Label
             Grid.Row="0"
@@ -121,25 +108,26 @@
         <!--  Start Stop Button  -->
         <Grid
             Grid.Row="5"
-            Grid.ColumnSpan="2"
+            Grid.ColumnSpan="3"
             Padding="10"
-            ColumnSpacing="10">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
+            ColumnSpacing="10"
+            ColumnDefinitions="*,*,*,*">
             <Button
                 Grid.Column="0"
                 Command="{Binding StartStopTimerCommand}"
                 Text="{Binding StartStop}" />
             <Button
                 Grid.Column="1"
+                Command="{Binding PauseResumeTimerCommand}"
+                IsEnabled="{Binding CanPauseResume}"
+                Text="{Binding PauseResume}" />
+            <Button
+                Grid.Column="2"
                 Command="{Binding AddMinuteCommand}"
                 IsEnabled="{Binding IsBusy}"
                 Text="Add Minute" />
             <Button
-                Grid.Column="2"
+                Grid.Column="3"
                 Command="{Binding ResetCommand}"
                 IsEnabled="{Binding IsBusy}"
                 Text="Reset" />
