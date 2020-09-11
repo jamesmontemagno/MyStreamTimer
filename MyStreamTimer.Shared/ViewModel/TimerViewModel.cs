@@ -277,6 +277,7 @@ namespace MyStreamTimer.Shared.ViewModel
             if(forceReset)
             {
                 bootMins = -1;
+                extraTicksForUp = 0;
             }
 
             try
@@ -363,12 +364,20 @@ namespace MyStreamTimer.Shared.ViewModel
             timerCTS = new CancellationTokenSource();
             Task.Factory.StartNew(UpdateTimer, TaskCreationOptions.LongRunning, timerCTS.Token);
         }
-
+        long extraTicksForUp;
         void ExecutePauseResumeTimerCommand()
         {
             if(IsBusy)
             {
-                bootMins = (float)(endTime - DateTime.Now).TotalMinutes;
+                if (currentIsDown)
+                {
+                    bootMins = (float)(endTime - DateTime.Now).TotalMinutes;
+                }
+                else
+                {
+                    var elapsedTime = DateTime.Now.AddTicks(extraTicksForUp) - startTime;
+                    extraTicksForUp = elapsedTime.Ticks;
+                }
                 PauseResume = "Resume";
             }
 
@@ -402,7 +411,7 @@ namespace MyStreamTimer.Shared.ViewModel
                 }
                 else
                 {
-                    var elapsedTime = DateTime.Now - startTime;
+                    var elapsedTime = DateTime.Now.AddTicks(extraTicksForUp) - startTime;
                     text = string.Format(currentOutput, elapsedTime);
                 }
                 if (text != CountdownOutput)
