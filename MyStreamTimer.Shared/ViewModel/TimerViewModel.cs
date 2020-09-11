@@ -390,8 +390,8 @@ namespace MyStreamTimer.Shared.ViewModel
         {
             while(!timerCTS.IsCancellationRequested)
             {
-                var text = string.Empty;
                 var now = DateTime.Now;
+                string text;
                 if (currentIsDown)
                 {
                     if (now >= endTime)
