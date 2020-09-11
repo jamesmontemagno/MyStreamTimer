@@ -40,6 +40,11 @@ namespace MyStreamTimer.Shared.ViewModel
         float bootMins = -1;
         CancellationTokenSource timerCTS;
 
+        public TimerViewModel()
+        {
+
+        }
+
         public TimerViewModel(string id, bool bootStart = false, float bootMins = -1)
         {
 
@@ -93,33 +98,31 @@ namespace MyStreamTimer.Shared.ViewModel
             set => SetProperty(ref isDown, value);
         }
 
-        bool useMinutes = true;
         public bool UseMinutes
         {
-            get => useMinutes;
+            get => settings.UseMinutes;
             set
             {
-                if(SetProperty(ref useMinutes, value))
-                    UseFinishAt = !value;
+                if (settings.UseMinutes != value)
+                {
+                    settings.UseMinutes = value;
+                    OnPropertyChanged();
+                }
             }
         }
 
-        bool useFinishAt;
-        public bool UseFinishAt
-        {
-            get => useFinishAt;
-            set
-            {
-                if (SetProperty(ref useFinishAt, value))
-                    UseMinutes = !value;
-            }
-        }
 
-        TimeSpan finishAtTime = new TimeSpan(DateTime.Now.Hour, DateTime.Now.Minute + 15, 0);
         public TimeSpan FinishAtTime
         {
-            get => finishAtTime;
-            set => SetProperty(ref finishAtTime, value);
+            get => settings.FinishAtTime;
+            set
+            {
+                if (settings.FinishAtTime != value)
+                {
+                    settings.FinishAtTime = value;
+                    OnPropertyChanged();
+                }
+            }
         }
 
         public int Seconds
@@ -333,7 +336,14 @@ namespace MyStreamTimer.Shared.ViewModel
             }
             else
             {
-                if (UseFinishAt)
+                if (UseMinutes)
+                {
+
+                    currentMinutes = Minutes;
+                    currentSeconds = Seconds;
+                    
+                }
+                else
                 {
                     if (FinishAtTime <= DateTime.Now.TimeOfDay)
                     {
@@ -342,12 +352,6 @@ namespace MyStreamTimer.Shared.ViewModel
                     }
 
                     currentMinutes = (float)(FinishAtTime.TotalMinutes - DateTime.Now.TimeOfDay.TotalMinutes);
-                    
-                }
-                else
-                {
-                    currentMinutes = Minutes;
-                    currentSeconds = Seconds;
                 }
             }
             currentOutput = Output;

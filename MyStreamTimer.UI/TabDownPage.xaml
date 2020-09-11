@@ -2,7 +2,20 @@
 <ContentPage
     x:Class="MyStreamTimer.UI.TabDownPage"
     xmlns="http://xamarin.com/schemas/2014/forms"
-    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" 
+    xmlns:converters="clr-namespace:MyStreamTimer.UI.Converters"
+    xmlns:d="http://xamarin.com/schemas/2014/forms/design"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:viewmodel="clr-namespace:MyStreamTimer.Shared.ViewModel;assembly=MyStreamTimer.Shared"
+    mc:Ignorable="d">
+    <d:ContentPage.BindingContext>
+        <viewmodel:TimerViewModel/>
+    </d:ContentPage.BindingContext>
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <converters:InvertedBooleanConverter x:Key="InvertedBooleanConverter"/>
+        </ResourceDictionary>
+    </ContentPage.Resources>
+    
     <Grid Padding="25"
           ColumnDefinitions="Auto,*,100"
           RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
@@ -19,7 +32,8 @@
             Orientation="Vertical">
 
             <StackLayout Orientation="Horizontal">
-                <CheckBox IsChecked="{Binding UseMinutes}" IsEnabled="{Binding IsNotBusy}" />
+                <CheckBox IsChecked="{Binding UseMinutes}" 
+                          IsEnabled="{Binding IsNotBusy}" />
                 <Stepper
                     HorizontalOptions="Start"
                     IsEnabled="{Binding IsNotBusy}"
@@ -48,7 +62,7 @@
                 
 
                 <CheckBox
-                    IsChecked="{Binding UseFinishAt}"
+                    IsChecked="{Binding UseMinutes, Converter={StaticResource InvertedBooleanConverter}}"
                     IsEnabled="{Binding IsNotBusy}" />
 
                 <TimePicker IsEnabled="{Binding IsNotBusy}" Time="{Binding FinishAtTime}" />
