@@ -7,15 +7,15 @@
   IgnorableNamespaces="uap mp">
 
   <Identity
-    Name="f73724a6-48a3-4976-83df-e3025efc8257"
-    Publisher="CN=Motz"
-    Version="1.0.0.0" />
+    Name="23875RefractoredLLC.MyStreamTimer"
+    Publisher="CN=Refractored LLC"
+    Version="2.0.2.0" />
 
-  <mp:PhoneIdentity PhoneProductId="f73724a6-48a3-4976-83df-e3025efc8257" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
+  <mp:PhoneIdentity PhoneProductId="fc2690a8-0f80-44cd-a516-0e3d2d7b7d7e" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
   <Properties>
     <DisplayName>My Stream Timer</DisplayName>
-    <PublisherDisplayName>Motz</PublisherDisplayName>
+    <PublisherDisplayName>Refractored LLC</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
 
@@ -46,7 +46,7 @@
       </uap:VisualElements>
       <Extensions>
         <uap:Extension Category="windows.protocol">
-          <uap:Protocol Name="mystreamtimer2" DesiredView="useMinimum">
+          <uap:Protocol Name="mystreamtimer" DesiredView="useMinimum">
             <uap:DisplayName>My Stream Timer</uap:DisplayName>
             <uap:Logo>Art.png</uap:Logo>
           </uap:Protocol >

@@ -1,0 +1,73 @@
+{
+  "Actions": [
+    {
+      "Icon": "images/actionIcon",
+      "Name": "Minute Countdown",
+      "States": [
+        {
+          "Image": "images/actionDefaultImage",
+          "TitleAlignment": "middle",
+          "FontSize": "11"
+        }
+      ],
+      "PropertyInspectorPath": "property_inspector/property_inspector_mins.html",
+      "SupportedInMultiActions": true,
+      "Tooltip": "Start My Stream Timer and countdown from a specific amount of minutes.",
+      "UUID": "com.refractored.mystreamtimer.action.countdown"
+    },
+    {
+      "Icon": "images/actionIcon",
+      "Name": "Top of Hour",
+      "States": [
+        {
+          "Image": "images/actionDefaultImage",
+          "TitleAlignment": "bottom",
+          "FontSize": "11"
+        }
+      ],
+      "SupportedInMultiActions": true,
+      "Tooltip": "Launch My Stream Timer and start a countdown to the top of the hour.",
+      "UUID": "com.refractored.mystreamtimer.action.topofhour"
+    },
+    {
+      "Icon": "images/actionIcon",
+      "Name": "Countdown to Time",
+      "States": [
+        {
+          "Image": "images/actionDefaultImage",
+          "TitleAlignment": "bottom",
+          "FontSize": "11"
+        }
+      ],
+      "PropertyInspectorPath": "property_inspector/property_inspector_time.html",
+      "SupportedInMultiActions": true,
+      "Tooltip": "Launch My Stream Timer and start a countdown to a specific time.",
+      "UUID": "com.refractored.mystreamtimer.action.time"
+    }
+  ],
+	"Category": "My Stream Timer",
+	"CategoryIcon": "images/category/categoryIcon.png",
+	"Disabled":  false,
+	"Author": "Refractored LLC",
+	"CodePathWin": "MyStreamTimer.StreamDeck.exe",
+	"CodePathMac":  "MyStreamTimer.StreamDeck",
+  "Description": "Actions to easily launch My Stream Timer to specific minutes, time, or top of the hour.",
+  "Name": "My Stream Timer",
+  "Icon": "images/pluginIcon",
+  "URL": "https://www.mystreamtimer.com",
+  "Version": "1.0",
+	"SDKVersion": 2,
+	"Software": {
+		"MinimumVersion":  "4.1"
+	},
+	"OS": [
+    {
+        "Platform": "mac",
+        "MinimumVersion" : "10.11"
+    },
+    {
+        "Platform": "windows",
+        "MinimumVersion" : "10"
+    }
+  ]
+}
