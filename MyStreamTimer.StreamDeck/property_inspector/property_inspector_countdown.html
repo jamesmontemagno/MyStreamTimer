@@ -1,0 +1,35 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<title>My Steram Timer Property Inspector - Mins</title>
+	<link rel="stylesheet" href="css/sdpi.css">
+	<link rel="stylesheet" href="css/property-inspector.css">
+</head>
+<body>
+	<div class="sdpi-wrapper">
+		<!-- for more examples of the types of fields supported in property inspector visit:
+			Elgato Github PiSamples -> https://github.com/elgatosf/streamdeck-pisamples
+			and
+			Elgato SDK Documentation -> https://developer.elgato.com/documentation/stream-deck/sdk/property-inspector/
+	-->
+
+		<div class="sdpi-item" id="minutes_value">
+			<div class="sdpi-item-label">Minutes</div>
+			<input id="txtMinutesValue" class="sdpi-item-value" type="number" inputmode="numeric" pattern="[0-9]*" placeholder="Enter number of minutes" onchange="setSettings(event.target.value, 'Minutes')" required />
+		</div>
+
+		<div class="sdpi-item" id="seconds_value">
+			<div class="sdpi-item-label">Seconds</div>
+			<input id="txtSecondsValue" class="sdpi-item-value" type="number" inputmode="numeric" pattern="[0-9]*" placeholder="Enter number of seconds" onchange="setSettings(event.target.value, 'Seconds')" required />
+		</div>
+
+		<div class="sdpi-item" id="filename_value">
+			<div class="sdpi-item-label">Minutes</div>
+			<input id="txtFileNameValue" class="sdpi-item-value" placeholder="Enter file name" onchange="setSettings(event.target.value, 'FileName')" required />
+		</div>
+
+	</div>
+	<script src="js/property-inspector-countdown.js"></script>
+</body>
+</html>

@@ -4,9 +4,10 @@ using System.Text;
 
 namespace MyStreamTimer.StreamDeck.Models
 {
-    public class CountdownSettingsModel
+    public class BuiltInCountdownSettingsModel
     {
         public int Minutes { get; set; } = 5;
-        public string Time { get; set; } = "12:00";
+        public int Seconds { get; set; } = 0;
+        public string FileName { get; set; } = "countdown.txt";
     }
 }

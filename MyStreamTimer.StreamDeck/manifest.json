@@ -2,7 +2,22 @@
   "Actions": [
     {
       "Icon": "images/actionIcon",
-      "Name": "Minute Countdown",
+      "Name": "Built-In Countdown",
+      "States": [
+        {
+          "Image": "images/actionDefaultImage",
+          "TitleAlignment": "middle",
+          "FontSize": "11"
+        }
+      ],
+      "PropertyInspectorPath": "property_inspector/property_inspector_countdown.html",
+      "SupportedInMultiActions": true,
+      "Tooltip": "Start My Stream Timer and countdown from a specific amount of minutes.",
+      "UUID": "com.refractored.mystreamtimer.action.builtincountdown"
+    },
+    {
+      "Icon": "images/actionIcon",
+      "Name": "Launch Minute Countdown",
       "States": [
         {
           "Image": "images/actionDefaultImage",
@@ -17,7 +32,7 @@
     },
     {
       "Icon": "images/actionIcon",
-      "Name": "Top of Hour",
+      "Name": "Launch Top of Hour",
       "States": [
         {
           "Image": "images/actionDefaultImage",
@@ -31,7 +46,7 @@
     },
     {
       "Icon": "images/actionIcon",
-      "Name": "Countdown to Time",
+      "Name": "Launch Countdown to Time",
       "States": [
         {
           "Image": "images/actionDefaultImage",
