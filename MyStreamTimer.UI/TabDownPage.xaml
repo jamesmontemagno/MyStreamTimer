@@ -2,70 +2,77 @@
 <ContentPage
     x:Class="MyStreamTimer.UI.TabDownPage"
     xmlns="http://xamarin.com/schemas/2014/forms"
-    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
-    <Grid Padding="25">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto" />
-            <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="100" />
-        </Grid.ColumnDefinitions>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" 
+    xmlns:converters="clr-namespace:MyStreamTimer.UI.Converters"
+    xmlns:d="http://xamarin.com/schemas/2014/forms/design"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:viewmodel="clr-namespace:MyStreamTimer.Shared.ViewModel;assembly=MyStreamTimer.Shared"
+    mc:Ignorable="d">
+    <d:ContentPage.BindingContext>
+        <viewmodel:TimerViewModel/>
+    </d:ContentPage.BindingContext>
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <converters:InvertedBooleanConverter x:Key="InvertedBooleanConverter"/>
+        </ResourceDictionary>
+    </ContentPage.Resources>
+    
+    <Grid Padding="25"
+          ColumnDefinitions="Auto,*,100"
+          RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
         <!--  How Much Time for Countdown  -->
         <Label
             Grid.Row="0"
             HorizontalOptions="End"
-            Text="Time:" />
+            Text="Time:"
+            VerticalTextAlignment="Center"/>
         <StackLayout
             Grid.Row="0"
             Grid.Column="1"
             Grid.ColumnSpan="2"
-            Orientation="Horizontal">
-            <CheckBox 
-                IsEnabled="{Binding IsNotBusy}"
-                IsChecked="{Binding UseMinutes}"/>
-            <Stepper
-                HorizontalOptions="Start"
-                IsEnabled="{Binding IsNotBusy}"
-                Maximum="1000"
-                Minimum="0"
-                Value="{Binding Minutes}" />
-            <Label
-                HorizontalTextAlignment="Start"
-                Text="{Binding Minutes, StringFormat='{0} mins'}"
-                WidthRequest="80"/>
-            <Stepper
-                HorizontalOptions="Start"
-                IsEnabled="{Binding IsNotBusy}"
-                Maximum="59"
-                Minimum="0"
-                Value="{Binding Seconds}" />
-             <Label
-                HorizontalTextAlignment="Start"
-                Text="{Binding Seconds, StringFormat='{0} secs'}"
-                WidthRequest="60" />
-            
+            Orientation="Vertical">
 
+            <StackLayout Orientation="Horizontal">
+                <CheckBox IsChecked="{Binding UseMinutes}" 
+                          IsEnabled="{Binding IsNotBusy}" />
+                <Stepper
+                    HorizontalOptions="Start"
+                    IsEnabled="{Binding IsNotBusy}"
+                    Maximum="1000"
+                    Minimum="0"
+                    Value="{Binding Minutes}" />
+                <Label
+                    HorizontalTextAlignment="Start"
+                    Text="{Binding Minutes, StringFormat='{0} mins'}"
+                    VerticalTextAlignment="Center"
+                    WidthRequest="80" />
+                <Stepper
+                    HorizontalOptions="Start"
+                    IsEnabled="{Binding IsNotBusy}"
+                    Maximum="59"
+                    Minimum="0"
+                    Value="{Binding Seconds}" />
+                <Label
+                    HorizontalTextAlignment="Start"
+                    Text="{Binding Seconds, StringFormat='{0} secs'}"
+                    VerticalTextAlignment="Center"
+                    WidthRequest="60" />
 
-            <CheckBox 
-                IsEnabled="{Binding IsNotBusy}"
-                IsChecked="{Binding UseFinishAt}" Margin="20,0,0,0"/>
+            </StackLayout>
+            <StackLayout Orientation="Horizontal">
+                
 
-            <TimePicker
-                IsEnabled="{Binding IsNotBusy}" Time="{Binding FinishAtTime}"/>
+                <CheckBox
+                    IsChecked="{Binding UseMinutes, Converter={StaticResource InvertedBooleanConverter}}"
+                    IsEnabled="{Binding IsNotBusy}" />
+
+                <TimePicker IsEnabled="{Binding IsNotBusy}" Time="{Binding FinishAtTime}" />
+            </StackLayout>
         </StackLayout>
         <!--  Live Output text  -->
         <Label
             Grid.Row="1"
             HorizontalOptions="End"
+            VerticalOptions="Center"
             Text="Live output:" />
         <Entry
             Grid.Row="1"
@@ -76,6 +83,7 @@
         <Label
             Grid.Row="2"
             HorizontalOptions="End"
+            VerticalOptions="Center"
             Text="Finish output:" />
         <Entry
             Grid.Row="2"
@@ -86,6 +94,7 @@
         <Label
             Grid.Row="3"
             HorizontalOptions="End"
+            VerticalOptions="Center"
             Text="File Name:" />
         <Entry
             Grid.Row="3"
@@ -104,32 +113,35 @@
         <Label
             Grid.Row="4"
             HorizontalOptions="End"
+            VerticalOptions="Center"
             Text="Auto Start:" />
         <CheckBox
             Grid.Row="4"
             Grid.Column="1"
             IsChecked="{Binding AutoStart}" />
         <!--  Start Stop Button  -->
-        <Grid Grid.Row="5"
-              Grid.ColumnSpan="2"
-              ColumnSpacing="10"
-              Padding="10">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
+        <Grid
+            Grid.Row="5"
+            Grid.ColumnSpan="3"
+            Padding="10"
+            ColumnSpacing="10"
+            ColumnDefinitions="*,*,*,*">
             <Button
                 Grid.Column="0"
                 Command="{Binding StartStopTimerCommand}"
                 Text="{Binding StartStop}" />
             <Button
                 Grid.Column="1"
-                Command="{Binding AddMinuteCommand}"
-                IsEnabled="{Binding IsBusy}"
-                Text="Add Minute"/>
+                Command="{Binding PauseResumeTimerCommand}"
+                IsEnabled="{Binding CanPauseResume}"
+                Text="{Binding PauseResume}" />
             <Button
                 Grid.Column="2"
+                Command="{Binding AddMinuteCommand}"
+                IsEnabled="{Binding IsBusy}"
+                Text="Add Minute" />
+            <Button
+                Grid.Column="3"
                 Command="{Binding ResetCommand}"
                 IsEnabled="{Binding IsBusy}"
                 Text="Reset" />
@@ -142,14 +154,14 @@
             LineBreakMode="WordWrap"
             Text="{Binding CountdownOutput}" />
 
-        
+
         <Label
             Grid.Row="7"
             Grid.ColumnSpan="3"
             FontSize="Small"
-            TextColor="Red"
-            IsVisible="{Binding IsBusy}"
             HorizontalOptions="Center"
-            Text="Do not minimize window." />
+            IsVisible="{Binding IsBusy}"
+            Text="Do not minimize window."
+            TextColor="Red" />
     </Grid>
 </ContentPage>

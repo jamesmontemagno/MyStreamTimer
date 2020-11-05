@@ -116,10 +116,17 @@ namespace MyStreamTimer.Mac
 
         void ParseOpeningString(string openinArgs)
         {
-            var (start, mins) = Utils.ParseStartupArgs(openinArgs);
-            MainPage.OpeningArgs = (start, mins);
-            if (start && mins >= 0)
-                MainPage.DownVM?.Init(mins);
+            try
+            {
+
+                Xamarin.Forms.Application.Current.SendOnAppLinkRequestReceived(new Uri(openinArgs));
+
+            }
+            catch (Exception)
+            {
+
+            }
+            
         }
 
         public override void OpenUrls(NSApplication application, NSUrl[] urls)

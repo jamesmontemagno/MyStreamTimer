@@ -4,10 +4,13 @@ using MyStreamTimer.Shared.Helpers;
 using MyStreamTimer.Shared.Interfaces;
 using System;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Windows.Input;
 using Command = MvvmHelpers.Commands.Command;
+using Timer = System.Timers.Timer;
+using ElapsedEventArgs = System.Timers.ElapsedEventArgs;
 
 // kymphillpotts cheered 150 March 9th 2019
 // lubdubw subscribed view twitch prime! May 15th 2020
@@ -31,8 +34,16 @@ namespace MyStreamTimer.Shared.ViewModel
         public AsyncCommand CopyFilePathCommand { get; }
         public ICommand ResetCommand { get; }
         public ICommand AddMinuteCommand { get; }
+        public ICommand PauseResumeTimerCommand { get; }
+
         IPlatformHelpers platformHelpers;
         float bootMins = -1;
+        CancellationTokenSource timerCTS;
+
+        public TimerViewModel()
+        {
+
+        }
 
         public TimerViewModel(string id, bool bootStart = false, float bootMins = -1)
         {
@@ -57,11 +68,12 @@ namespace MyStreamTimer.Shared.ViewModel
                     break;
             }
 
-            StartStopTimerCommand = new Command(ExecuteStartStopTimerCommand);
+            StartStopTimerCommand = new Command(()=>ExecuteStartStopTimerCommand(true));
             CopyFilePathCommand = new AsyncCommand(ExecuteCopyFilePathCommand);
             ResetCommand = new Command(ExecuteResetCommand);
             AddMinuteCommand = new Command(ExecuteAddMinuteCommand);
-            timer = new Timer(1000);
+            PauseResumeTimerCommand = new Command(ExecutePauseResumeTimerCommand);
+            timer = new Timer(800);
             timer.Elapsed += TimerElapsed;
             timer.AutoReset = true;
 
@@ -86,33 +98,31 @@ namespace MyStreamTimer.Shared.ViewModel
             set => SetProperty(ref isDown, value);
         }
 
-        bool useMinutes = true;
         public bool UseMinutes
         {
-            get => useMinutes;
+            get => settings.UseMinutes;
             set
             {
-                if(SetProperty(ref useMinutes, value))
-                    UseFinishAt = !value;
+                if (settings.UseMinutes != value)
+                {
+                    settings.UseMinutes = value;
+                    OnPropertyChanged();
+                }
             }
         }
 
-        bool useFinishAt;
-        public bool UseFinishAt
-        {
-            get => useFinishAt;
-            set
-            {
-                if (SetProperty(ref useFinishAt, value))
-                    UseMinutes = !value;
-            }
-        }
 
-        TimeSpan finishAtTime = new TimeSpan(DateTime.Now.Hour, DateTime.Now.Minute + 15, 0);
         public TimeSpan FinishAtTime
         {
-            get => finishAtTime;
-            set => SetProperty(ref finishAtTime, value);
+            get => settings.FinishAtTime;
+            set
+            {
+                if (settings.FinishAtTime != value)
+                {
+                    settings.FinishAtTime = value;
+                    OnPropertyChanged();
+                }
+            }
         }
 
         public int Seconds
@@ -194,6 +204,19 @@ namespace MyStreamTimer.Shared.ViewModel
             set => SetProperty(ref startStop, value);
         }
 
+        bool canPauseResume = false;
+        public bool CanPauseResume
+        {
+            get => canPauseResume;
+            set => SetProperty(ref canPauseResume, value);
+        }
+        string pauseResume = "Resume";
+        public string PauseResume
+        {
+            get => pauseResume;
+            set => SetProperty(ref pauseResume, value);
+        }
+
         string GetDirectory() => GlobalSettings.DirectoryPath;
 
         Task ExecuteCopyFilePathCommand()
@@ -249,8 +272,14 @@ namespace MyStreamTimer.Shared.ViewModel
             }
         }
 
-        void ExecuteStartStopTimerCommand()
+        void ExecuteStartStopTimerCommand(bool forceReset = false)
         {
+            if(forceReset)
+            {
+                bootMins = -1;
+                extraTicksForUp = 0;
+            }
+
             try
             {
                 string.Format(Output, TimeSpan.FromSeconds(5));
@@ -276,13 +305,27 @@ namespace MyStreamTimer.Shared.ViewModel
                 return;
             }
 
+            if(IsBusy)
+            {
+                timerCTS?.Cancel();
+            }
+
             IsBusy = !IsBusy;
             StartStop = IsBusy ? "Stop" : "Start";
 
-            timer.Enabled = IsBusy;
+            //timer.Enabled = IsBusy;
+
+            if(forceReset && !IsBusy)
+            {
+                CanPauseResume = false;
+                PauseResume = "Resume";
+            }
 
             if (!IsBusy)
                 return;
+
+            CanPauseResume = true;
+            PauseResume = "Pause";
 
             currentFinished = Finish;
             currentIsDown = IsDown;
@@ -294,7 +337,14 @@ namespace MyStreamTimer.Shared.ViewModel
             }
             else
             {
-                if (UseFinishAt)
+                if (UseMinutes)
+                {
+
+                    currentMinutes = Minutes;
+                    currentSeconds = Seconds;
+                    
+                }
+                else
                 {
                     if (FinishAtTime <= DateTime.Now.TimeOfDay)
                     {
@@ -303,60 +353,114 @@ namespace MyStreamTimer.Shared.ViewModel
                     }
 
                     currentMinutes = (float)(FinishAtTime.TotalMinutes - DateTime.Now.TimeOfDay.TotalMinutes);
-                    
-                }
-                else
-                {
-                    currentMinutes = Minutes;
-                    currentSeconds = Seconds;
                 }
             }
             currentOutput = Output;
 
             startTime = DateTime.Now;
             endTime = DateTime.Now.AddMinutes(currentMinutes).AddSeconds(currentSeconds);
-            TimerElapsed(null, null);
-        }
+            //TimerElapsed(null, null);
 
-        void TimerElapsed(object sender, ElapsedEventArgs e)
+            timerCTS = new CancellationTokenSource();
+            Task.Factory.StartNew(UpdateTimer, TaskCreationOptions.LongRunning, timerCTS.Token);
+        }
+        long extraTicksForUp;
+        void ExecutePauseResumeTimerCommand()
         {
-            var now = DateTime.Now;
-            if (currentIsDown)
+            if(IsBusy)
             {
-                if (now >= endTime)
+                if (currentIsDown)
                 {
-                    CountdownOutput = currentFinished;
-                    WriteTimeToDisk(e == null);
-                    ExecuteStartStopTimerCommand();
-                    CountdownOutput = currentFinished;
-                    WriteTimeToDisk(e == null);
-                    return;
+                    bootMins = (float)(endTime - DateTime.Now).TotalMinutes;
                 }
                 else
                 {
-                    var elapsedTime = endTime - DateTime.Now;
-                    CountdownOutput = string.Format(currentOutput, elapsedTime);
+                    var elapsedTime = DateTime.Now.AddTicks(extraTicksForUp) - startTime;
+                    extraTicksForUp = elapsedTime.Ticks;
                 }
-            }
-            else
-            {
-                var elapsedTime = DateTime.Now - startTime;
-                CountdownOutput = string.Format(currentOutput, elapsedTime);
+                PauseResume = "Resume";
             }
 
-            WriteTimeToDisk(e == null);
+            ExecuteStartStopTimerCommand();
+
+            CanPauseResume = true;
         }
 
-        void WriteTimeToDisk(bool create)
+        async void UpdateTimer(object thing)
+        {
+            while(!timerCTS.IsCancellationRequested)
+            {
+                var now = DateTime.Now;
+                string text;
+                if (currentIsDown)
+                {
+                    if (now >= endTime)
+                    {
+                        text = currentFinished;
+                        //WriteTimeToDisk(false, text);
+                        ExecuteStartStopTimerCommand();
+                        CountdownOutput = text;
+                        WriteTimeToDisk(false, text);
+                        return;
+                    }
+                    else
+                    {
+                        var elapsedTime = endTime - DateTime.Now;
+                        text = string.Format(currentOutput, elapsedTime);
+                    }
+                }
+                else
+                {
+                    var elapsedTime = DateTime.Now.AddTicks(extraTicksForUp) - startTime;
+                    text = string.Format(currentOutput, elapsedTime);
+                }
+                if (text != CountdownOutput)
+                {
+                    WriteTimeToDisk(false, text);
+                    CountdownOutput = text;
+                }
+                await Task.Delay(500); 
+            }
+        }
+        void TimerElapsed(object sender, ElapsedEventArgs e)
+        {
+            //var now = DateTime.Now;
+            //if (currentIsDown)
+            //{
+            //    if (now >= endTime)
+            //    {
+            //        CountdownOutput = currentFinished;
+            //        WriteTimeToDisk(e == null);
+            //        ExecuteStartStopTimerCommand();
+            //        CountdownOutput = currentFinished;
+            //        WriteTimeToDisk(e == null);
+            //        return;
+            //    }
+            //    else
+            //    {
+            //        var elapsedTime = endTime - DateTime.Now;
+            //        CountdownOutput = string.Format(currentOutput, elapsedTime);
+            //    }
+            //}
+            //else
+            //{
+            //    var elapsedTime = DateTime.Now - startTime;
+            //    CountdownOutput = string.Format(currentOutput, elapsedTime);
+            //}
+
+            //WriteTimeToDisk(e == null);
+        }
+
+        void WriteTimeToDisk(bool create, string text)
         {
             try
             {
                 if(create)
-                    File.WriteAllText(currentFileName, CountdownOutput);
+                    File.WriteAllText(currentFileName, text);
                 else
                 {
                     using var streamWriter = new StreamWriter(currentFileName, false);
-                    streamWriter.WriteLine(CountdownOutput);
+                    streamWriter.WriteLine(text);
                 }
             }
             catch (Exception ex)

@@ -82,6 +82,34 @@ namespace MyStreamTimer.Shared.Helpers
 
         #endregion
 
+        public TimeSpan FinishAtTime
+        {
+            get
+            {
+                var defaultTicks = (long)-1.0;
+                var ticks = AppSettings.GetValueOrDefault($"{nameof(FinishAtTime)}_{id}", defaultTicks);
+
+                if (ticks == -1)
+                {
+                    var ts = new TimeSpan(DateTime.Now.Hour, DateTime.Now.Minute + 15, 0);
+                    return ts;
+                }
+
+                return new TimeSpan(ticks);
+            }
+            set
+            {
+                var ticks = value.Ticks;
+                AppSettings.AddOrUpdateValue($"{nameof(FinishAtTime)}_{id}", ticks);
+            }
+        }
+
+        public bool UseMinutes
+        {
+            get => AppSettings.GetValueOrDefault($"{nameof(UseMinutes)}_{id}", true);
+            set => AppSettings.AddOrUpdateValue($"{nameof(UseMinutes)}_{id}", value);
+        }
+
         public bool AutoStart
         {
             get => AppSettings.GetValueOrDefault($"{autoStartKey}_{id}", autoStartDefault);

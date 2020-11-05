@@ -8,7 +8,7 @@
         <viewmodels:AboutViewModel />
     </ContentPage.BindingContext>
     <StackLayout Margin="10" Spacing="5">
-        <Label Text="My Stream Timer (v1.2.2) is an open source project by James Montemagno and Refractored LLC.">
+        <Label Text="My Stream Timer (v2.0.0) is an open source project by James Montemagno and Refractored LLC.">
             <Label.GestureRecognizers>
                 <TapGestureRecognizer Command="{Binding OpenUrlCommand}" CommandParameter="https://github.com/jamesmontemagno/mystreamtimer" />
             </Label.GestureRecognizers>
@@ -56,14 +56,18 @@
             </Grid.ColumnDefinitions>
             <Label Text="File Directory:"
                    VerticalOptions="Start"/>
-            <Button Grid.Row="1" Text="Reset" Clicked="Button_Clicked"/>
+            <Button Grid.Row="1" 
+                    VerticalOptions="Center"
+                    Text="Reset" Clicked="Button_Clicked"
+                    IsVisible="{OnPlatform macOS=true, Default=false}"/>
             <Editor
                 Grid.RowSpan="2"
                     Grid.Column="1"
-                    HeightRequest="60"
-                    BackgroundColor="#3d3d3d"
-                    TextColor="White"
+                    HeightRequest="100"
+                    BackgroundColor="{OnPlatform macOS='#3d3d3d'}"
+                    TextColor="{OnPlatform macOS=White}"
                     Text="{Binding Directory}"
+                    IsEnabled="{OnPlatform macOS=true, Default=false}"
                     HorizontalOptions="FillAndExpand"/>
         </Grid>
     </StackLayout>
