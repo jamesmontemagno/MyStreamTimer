@@ -3,7 +3,7 @@ My Stream Timer is an easy to use countdown and count-up timer for streamers. Mu
 
 
 Download today on Windows or macOS:
-* Windows 10 via the [Microsoft Store](https://www.microsoft.com/p/my-stream-timer/9n5nxx3wk7k7?WT.mc_id=mystreamtimer-github-jamont)
+* Windows 10 via the [Microsoft Store](https://www.microsoft.com/p/my-stream-timer/9n5nxx3wk7k7?WT.mc_id=friends-0000-jamont)
 * macOS 10.10+ via the [App Store](https://itunes.apple.com/us/app/my-stream-timer/id1460539461?mt=12)
 
 ![](Art/demo.png)
@@ -37,6 +37,6 @@ If you do not own a Stream Deck but use other apps to control your stream, [Dara
 View the walkthrough on [YouTube](https://youtu.be/j_GdGIdDRxI)
 
 ## Development 
-Currently consists of a WPF app written with [.NET Core 3-preview](https://devblogs.microsoft.com/dotnet/announcing-net-core-3-preview-3/?WT.mc_id=mystreamtimer-github-jamont) and VS 2019 & a macOS app powered by [Xamarin.Forms](http://xamarin.com/forms) with a shared .NET Standard Library.
+Currently consists of a WPF app written with [.NET Core 3-preview](https://devblogs.microsoft.com/dotnet/announcing-net-core-3-preview-3/?WT.mc_id=friends-0000-jamont) and VS 2019 & a macOS app powered by [Xamarin.Forms](http://xamarin.com/forms) with a shared .NET Standard Library.
 
 
