@@ -228,7 +228,7 @@ namespace MyStreamTimer.Shared.ViewModel
             platformHelpers.CopyToClipboard(directory);
             if(platformHelpers.IsMac)
             {
-                return platformHelpers.DisplayAlert("Path Copied", $"Path to file is located at {directory}, use Command + Shift + G to bring up directory selection in Finder.");
+                return platformHelpers.DisplayAlert("Path Copied", $"Path to file is located at {directory}, use Command + Shift + G to bring up directory selection in Finder. The main folder may be name MyStreamTimer and not com.refractored.mystreamtimer in Finder.");
             }
 
             return platformHelpers.DisplayAlert("Path Copied", $"Path to file is located at {directory}");
