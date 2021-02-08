@@ -60,6 +60,7 @@
                 Grid.RowSpan="2"
                     Grid.Column="1"
                     HeightRequest="100"
+                TextColor="{AppThemeBinding Dark=White, Default=Black,Light=Black}"
                     Text="{Binding Directory}"
                     IsEnabled="{OnPlatform macOS=true, Default=false}"
                     HorizontalOptions="FillAndExpand"/>

@@ -13,13 +13,13 @@ namespace MyStreamTimer.Shared.ViewModel
     public class ProViewModel : BaseViewModel
     {
 
-        public AsyncCommand BuyCommand { get; }
+        public AsyncCommand<string> BuyCommand { get; }
         public AsyncCommand RestoreCommand { get; }
         IPlatformHelpers platformHelpers;
         public ProViewModel()
         {
             platformHelpers = ServiceContainer.Resolve<IPlatformHelpers>();
-            BuyCommand = new AsyncCommand(PurchasePro);
+            BuyCommand = new AsyncCommand<string>(PurchasePro);
             RestoreCommand = new AsyncCommand(RestorePurchases);
         }
 
@@ -27,17 +27,23 @@ namespace MyStreamTimer.Shared.ViewModel
         {
             get
             {
-                if (GlobalSettings.IsPro || string.IsNullOrWhiteSpace(GlobalSettings.ProPrice))
-                    return "PRO MODE";
+                if (string.IsNullOrWhiteSpace(GlobalSettings.ProPrice))
+                    return "PRO MODES";
 
-                return $"PRO MODE - {GlobalSettings.ProPrice}";
+                return $"PRO MODES - {GlobalSettings.ProPrice}";
             }
         }
 
-        public bool IsPro => GlobalSettings.IsPro;
-        public bool IsNotPro => !IsPro;
+        public bool IsBronze => GlobalSettings.IsBronze;
+        public bool IsNotBronze => !IsBronze;
 
-        async Task PurchasePro()
+        public bool IsSilver => GlobalSettings.IsSilver;
+        public bool IsNotSilver => !IsSilver;
+
+        public bool IsGold => GlobalSettings.IsGold;
+        public bool IsNotGold => !IsGold;
+
+        async Task PurchasePro(string productId)
         {
             if (IsBusy)
                 return;
@@ -74,9 +80,24 @@ namespace MyStreamTimer.Shared.ViewModel
                 }
                 else if (purchase.State == PurchaseState.Purchased)
                 {
-                    GlobalSettings.IsPro = true;
-                    OnPropertyChanged(nameof(IsPro));
-                    OnPropertyChanged(nameof(IsNotPro));
+                    if (productId == "mstbronze")
+                    {
+                        GlobalSettings.IsBronze = true;
+                        OnPropertyChanged(nameof(IsBronze));
+                        OnPropertyChanged(nameof(IsNotBronze));
+                    }
+                    else if (productId == "mstsilver")
+                    {
+                        GlobalSettings.IsBronze = true;
+                        OnPropertyChanged(nameof(IsBronze));
+                        OnPropertyChanged(nameof(IsNotBronze));
+                    }
+                    else if (productId == "mstgold")
+                    {
+                        GlobalSettings.IsGold = true;
+                        OnPropertyChanged(nameof(IsGold));
+                        OnPropertyChanged(nameof(IsNotGold));
+                    }
                     return;
                 }
 
@@ -129,7 +150,7 @@ namespace MyStreamTimer.Shared.ViewModel
             }
         }
 
-        const string productId = "prostreamtimer";
+       
 
         async Task RestorePurchases()
         {
@@ -167,18 +188,44 @@ namespace MyStreamTimer.Shared.ViewModel
 
                 var purchases = await CrossInAppBilling.Current.GetPurchasesAsync(ItemType.InAppPurchase);
 
-                if (purchases?.Any(p => p.ProductId == productId) ?? false)
+                var found = false;
+                if (purchases?.Any(p => p.ProductId == "mstgold") ?? false)
                 {
 
                     //Purchase restored
-                    GlobalSettings.IsPro = true;
+                    GlobalSettings.IsGold = true;
 
-                    OnPropertyChanged(nameof(IsPro));
-                    OnPropertyChanged(nameof(IsNotPro));
-
+                    OnPropertyChanged(nameof(IsGold));
+                    OnPropertyChanged(nameof(IsNotGold));
+                    found = true;
 
                 }
-                else
+
+                if (purchases?.Any(p => p.ProductId == "mstbronze") ?? false)
+                {
+
+                    //Purchase restored
+                    GlobalSettings.IsBronze = true;
+
+                    OnPropertyChanged(nameof(IsBronze));
+                    OnPropertyChanged(nameof(IsNotBronze));
+                    found = true;
+
+                }
+
+                if (purchases?.Any(p => p.ProductId == "mstsilver") ?? false)
+                {
+
+                    //Purchase restored
+                    GlobalSettings.IsSilver = true;
+
+                    OnPropertyChanged(nameof(IsSilver));
+                    OnPropertyChanged(nameof(IsNotSilver));
+                    found = true;
+
+                }
+
+                if (!found)
                 {
                     await platformHelpers.DisplayAlert("Hmmmm!", $"Looks like we couldn't find your previous purchase. Tap on the purchase button to attempt to purchase or restore My Cadence Pro.");
                 }
@@ -214,7 +261,10 @@ namespace MyStreamTimer.Shared.ViewModel
         }
         public async Task GoGetPrice()
         {
-            if (!GlobalSettings.IsPro && platformHelpers.HasInternet)
+            if (IsBronze || IsGold || IsSilver)
+                return;
+
+            if (platformHelpers.HasInternet)
             {
                 priceCTS = new CancellationTokenSource();
                 priceToken = priceCTS.Token;
@@ -240,7 +290,7 @@ namespace MyStreamTimer.Shared.ViewModel
             if (IsBusy)
                 return;
 
-            if (GlobalSettings.IsPro)
+            if (IsBronze || IsGold || IsSilver)
                 return;
 
 
@@ -280,19 +330,26 @@ namespace MyStreamTimer.Shared.ViewModel
                     return;
                 }
 
-                var items = await CrossInAppBilling.Current.GetProductInfoAsync(ItemType.InAppPurchase, productId);
+                var items = await CrossInAppBilling.Current.GetProductInfoAsync(ItemType.InAppPurchase, "mstbronze", "mstsilver", "mstgold");
+                if (items == null || items.Count() == 0)
+                    return;
 
-                var item = items.FirstOrDefault(i => i.ProductId == productId);
-                if (item != null)
+                var all = string.Empty;
+                foreach(var item in items.OrderBy(s => s.MicrosPrice))
                 {
-                    GlobalSettings.ProPrice = item.LocalizedPrice;
-                    platformHelpers.InvokeOnMainThread(() =>
-                    {
-                        OnPropertyChanged(nameof(ProPrice));
-                    });
-
-                    GlobalSettings.ProPriceDate = DateTime.UtcNow;
+                    all += $"{item.Name} - {item.LocalizedPrice} | ";
                 }
+
+                
+
+                GlobalSettings.ProPrice = all.Replace("My Stream Timer", string.Empty);
+                platformHelpers.InvokeOnMainThread(() =>
+                {
+                    OnPropertyChanged(nameof(ProPrice));
+                });
+
+                GlobalSettings.ProPriceDate = DateTime.UtcNow;
+                
             }
             catch (Exception ex)
             {

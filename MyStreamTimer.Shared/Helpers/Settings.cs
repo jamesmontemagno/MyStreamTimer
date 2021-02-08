@@ -34,10 +34,22 @@ namespace MyStreamTimer.Shared.Helpers
             set => AppSettings.AddOrUpdateValue(nameof(TimesUsed), value);
         }
 
-        public static bool IsPro
+        public static bool IsBronze
         {
-            get => AppSettings.GetValueOrDefault(nameof(IsPro), false);
-            set => AppSettings.AddOrUpdateValue(nameof(IsPro), value);
+            get => AppSettings.GetValueOrDefault(nameof(IsBronze), false);
+            set => AppSettings.AddOrUpdateValue(nameof(IsBronze), value);
+        }
+
+        public static bool IsSilver
+        {
+            get => AppSettings.GetValueOrDefault(nameof(IsSilver), false);
+            set => AppSettings.AddOrUpdateValue(nameof(IsSilver), value);
+        }
+
+        public static bool IsGold
+        {
+            get => AppSettings.GetValueOrDefault(nameof(IsGold), false);
+            set => AppSettings.AddOrUpdateValue(nameof(IsGold), value);
         }
 
         public static string ProPrice

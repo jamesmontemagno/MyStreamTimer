@@ -33,7 +33,6 @@
             Grid.Column="2"
             Command="{Binding CopyFilePathCommand}"
             HorizontalOptions="FillAndExpand"
-            Style="{StaticResource ButtonMainStyle}"
             Text=" Copy " />
         <!--  Auto Start  -->
         <Label
@@ -52,7 +51,6 @@
                 Grid.Column="0"
                 Padding="2"
                 Command="{Binding StartStopTimerCommand}"
-                Style="{StaticResource ButtonMainStyle}"
                 Text="{Binding StartStop}" />
             <Button
                 Grid.Column="1"
@@ -65,7 +63,6 @@
                 Padding="2"
                 Command="{Binding ResetCommand}"
                 IsEnabled="{Binding IsBusy}"
-                Style="{StaticResource ButtonMainStyle}"
                 Text="Reset" />
         </Grid>
         <!--  Current Output  -->

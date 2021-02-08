@@ -8,23 +8,47 @@
         <StackLayout Padding="20">
 
             <Label Text="{Binding ProPrice}"/>
-            <Label IsVisible="{Binding IsNotPro}" Text="Upgrade to Pro to support My Stream Timer, unlock thanks badge, and support independent development."/>
+            <Label IsVisible="{Binding IsNotPro}" Text="Upgrade to Pro modes to support My Stream Timer, unlock thanks badge, and support independent development."/>
+            
+            <Label HorizontalOptions="Center" IsVisible="{Binding IsBronze}"  TextColor="#CD7F32" Text="Bronze Unlocked!"/>
+            <Label HorizontalOptions="Center" IsVisible="{Binding IsSilver}"  TextColor="{AppThemeBinding Dark=Silver, Light=Gray, Default=Gray}" Text="Silver Unlocked!"/>
+            <Label HorizontalOptions="Center" IsVisible="{Binding IsGold}" TextColor="Gold" Text="Gold Unlocked!"/>
 
-            <Label IsVisible="{Binding IsPro}" Text="YOU ARE PRO!"/>
-
-            <Button IsVisible="{Binding IsNotPro}"
+            <Button IsVisible="{Binding IsNotBronze}"
                     IsEnabled="{Binding IsNotBusy}"
                     HorizontalOptions="Center"
                     Padding="5"
-                    Text="Purchase Pro"
-                    Command="{Binding BuyCommand}"/>
+                    Text="Purchase Bronze"
+                    Command="{Binding BuyCommand}"
+                    CommandParameter="mstbronze"/>
 
-            <Button IsVisible="{Binding IsNotPro}"
+            <Button IsVisible="{Binding IsNotSilver}"
                     IsEnabled="{Binding IsNotBusy}"
                     HorizontalOptions="Center"
                     Padding="5"
-                    Text="Restore Purchase"
+                    Text="Purchase Silver"
+                    Command="{Binding BuyCommand}"
+                    CommandParameter="mstsilver"/>
+
+            
+            <Button IsVisible="{Binding IsNotGold}"
+                    IsEnabled="{Binding IsNotBusy}"
+                    HorizontalOptions="Center"
+                    Padding="5"
+                    Text="Purchase Gold"
+                    Command="{Binding BuyCommand}"
+                    CommandParameter="mstgold"/>
+
+            <Button 
+                    IsEnabled="{Binding IsNotBusy}"
+                    HorizontalOptions="Center"
+                    Padding="5"
+                    Text="Restore Purchases"
                     Command="{Binding RestoreCommand}"/>
+
+            <ActivityIndicator IsVisible="{Binding IsBusy}"
+                               HorizontalOptions="Center"
+                               IsRunning="{Binding IsBusy}"/>
 
         </StackLayout>
         
