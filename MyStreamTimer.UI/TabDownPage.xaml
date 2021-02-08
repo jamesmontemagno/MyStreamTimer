@@ -128,20 +128,24 @@
             ColumnDefinitions="*,*,*,*">
             <Button
                 Grid.Column="0"
+                Padding="2"
                 Command="{Binding StartStopTimerCommand}"
                 Text="{Binding StartStop}" />
             <Button
                 Grid.Column="1"
+                Padding="2"
                 Command="{Binding PauseResumeTimerCommand}"
                 IsEnabled="{Binding CanPauseResume}"
                 Text="{Binding PauseResume}" />
             <Button
                 Grid.Column="2"
+                Padding="2"
                 Command="{Binding AddMinuteCommand}"
                 IsEnabled="{Binding IsBusy}"
                 Text="Add Minute" />
             <Button
                 Grid.Column="3"
+                Padding="2"
                 Command="{Binding ResetCommand}"
                 IsEnabled="{Binding IsBusy}"
                 Text="Reset" />

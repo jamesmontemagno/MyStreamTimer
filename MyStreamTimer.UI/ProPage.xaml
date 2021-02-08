@@ -14,11 +14,15 @@
 
             <Button IsVisible="{Binding IsNotPro}"
                     IsEnabled="{Binding IsNotBusy}"
+                    HorizontalOptions="Center"
+                    Padding="5"
                     Text="Purchase Pro"
                     Command="{Binding BuyCommand}"/>
 
             <Button IsVisible="{Binding IsNotPro}"
                     IsEnabled="{Binding IsNotBusy}"
+                    HorizontalOptions="Center"
+                    Padding="5"
                     Text="Restore Purchase"
                     Command="{Binding RestoreCommand}"/>
 
