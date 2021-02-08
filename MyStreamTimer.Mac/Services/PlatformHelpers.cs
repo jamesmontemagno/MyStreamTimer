@@ -53,5 +53,10 @@ namespace MyStreamTimer.Mac.Services
         {
             Xamarin.Forms.Device.BeginInvokeOnMainThread(action);
         }
+
+        public void SetScreenSaver(bool s)
+        {
+            ((AppDelegate)NSApplication.SharedApplication.Delegate).MainWindow.Level = s ? NSWindowLevel.ScreenSaver : NSWindowLevel.Normal;
+        }
     }
 }

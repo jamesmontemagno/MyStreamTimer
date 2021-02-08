@@ -28,9 +28,9 @@ namespace MyStreamTimer.Shared.ViewModel
             get
             {
                 if (string.IsNullOrWhiteSpace(GlobalSettings.ProPrice))
-                    return "PRO MODES";
+                    return "PATRON MODES";
 
-                return $"PRO MODES - {GlobalSettings.ProPrice}";
+                return $"PATRON MODES - {GlobalSettings.ProPrice}";
             }
         }
 
@@ -69,6 +69,7 @@ namespace MyStreamTimer.Shared.ViewModel
                 }
 
                 IsBusy = true;
+                platformHelpers.SetScreenSaver(false);
                 //CellPro.IsEnabled = false;
                 //CellRestore.IsEnabled = false;
                 //check purchases
@@ -143,6 +144,8 @@ namespace MyStreamTimer.Shared.ViewModel
             {
                 await CrossInAppBilling.Current.DisconnectAsync();
                 IsBusy = false;
+
+                platformHelpers.SetScreenSaver(true);
                 //IsBuying = false;
 
                 //CellPro.IsEnabled = true;

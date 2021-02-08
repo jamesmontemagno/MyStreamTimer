@@ -346,13 +346,16 @@ namespace MyStreamTimer.Shared.ViewModel
                 }
                 else
                 {
-                    if (FinishAtTime <= DateTime.Now.TimeOfDay)
+
+                    if (FinishAtTime > DateTime.Now.TimeOfDay)
+                        currentMinutes = (float)(FinishAtTime.TotalMinutes - DateTime.Now.TimeOfDay.TotalMinutes);
+                    else
                     {
-                        CountdownOutput = "Select time in future";
-                        return;
+                        //time until midnight
+                        currentMinutes = (float)(1440.0 - DateTime.Now.TimeOfDay.TotalMinutes);
+                        currentMinutes += (float)FinishAtTime.TotalMinutes;
                     }
 
-                    currentMinutes = (float)(FinishAtTime.TotalMinutes - DateTime.Now.TimeOfDay.TotalMinutes);
                 }
             }
             currentOutput = Output;

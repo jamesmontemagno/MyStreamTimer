@@ -3,20 +3,21 @@ namespace MyStreamTimer.Shared.Helpers
 {
     public static class Utils
     {
-        public static (bool, float) ParseStartupArgs(string args)
+        public static (bool, float, string) ParseStartupArgs(string args)
         {
             var start = false;
             float mins = -1;
+            var host = string.Empty;
             try
             {
                 if (!string.IsNullOrWhiteSpace(args))
                 {
                     var uri = new Uri(args);
-                    var host = uri.Host.ToLower();
+                    host = uri.Host.ToLower();
                     var query = uri.Query.ToLower();
 
-                    if (host != "countdown")
-                        return (start, mins);
+                    if (host != "countdown" && host != "countdown1" && host != "countdown2" && host != "countdown3")
+                        return (start, mins, string.Empty);
 
                     if (query.Contains("?mins=") &&
                         float.TryParse(query.Remove(0, 6), out mins))
@@ -34,13 +35,22 @@ namespace MyStreamTimer.Shared.Helpers
                         mins = 60.0f - (float)DateTime.Now.Minute;
                         mins += (60.0f - (float)DateTime.Now.Second) / 60.0f;
                         mins -= 1;
+                        if (mins < 0)
+                            mins = 0;
+
                         start = true;
                     }
                     else if(query.Contains("?to=") &&
-                        DateTime.TryParse(query.Remove(0, 4), out var date) &&
-                        date.TimeOfDay > DateTime.Now.TimeOfDay)
+                        DateTime.TryParse(query.Remove(0, 4), out var date))
                     {
-                        mins = (float)(date.TimeOfDay.TotalMinutes - DateTime.Now.TimeOfDay.TotalMinutes);
+                        if (date.TimeOfDay > DateTime.Now.TimeOfDay)
+                            mins = (float)(date.TimeOfDay.TotalMinutes - DateTime.Now.TimeOfDay.TotalMinutes);
+                        else
+                        {
+                            //time until midnight
+                            mins = (float)(1440.0 - DateTime.Now.TimeOfDay.TotalMinutes);
+                            mins += (float)date.TimeOfDay.TotalMinutes;
+                        }
                         start = true;
                     }
                     
@@ -51,7 +61,7 @@ namespace MyStreamTimer.Shared.Helpers
 
             }
 
-            return (start, mins);
+            return (start, mins, host);
         }
     }
 }
