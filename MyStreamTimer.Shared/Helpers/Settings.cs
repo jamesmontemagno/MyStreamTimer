@@ -33,6 +33,24 @@ namespace MyStreamTimer.Shared.Helpers
             get => AppSettings.GetValueOrDefault(nameof(TimesUsed), 0);
             set => AppSettings.AddOrUpdateValue(nameof(TimesUsed), value);
         }
+
+        public static bool IsPro
+        {
+            get => AppSettings.GetValueOrDefault(nameof(IsPro), false);
+            set => AppSettings.AddOrUpdateValue(nameof(IsPro), value);
+        }
+
+        public static string ProPrice
+        {
+            get => AppSettings.GetValueOrDefault(nameof(ProPrice), string.Empty);
+            set => AppSettings.AddOrUpdateValue(nameof(ProPrice), value);
+        }
+
+        public static DateTime ProPriceDate
+        {
+            get => AppSettings.GetValueOrDefault(nameof(ProPriceDate), DateTime.UtcNow);
+            set => AppSettings.AddOrUpdateValue(nameof(ProPriceDate), value);
+        }
     }
     public class Settings
     {
@@ -68,7 +86,7 @@ namespace MyStreamTimer.Shared.Helpers
         readonly int secondsDefault = 0;
 
         const string outputKey = "key_output";
-        readonly string outputDefault = @"Starting in {0:mm\:ss}";
+        readonly string outputDefault = @"Starting in {0:hh\:mm\:ss}";
 
         const string finishKey = "key_finish";
         readonly string finishDefault = @"Let's do this!";
@@ -145,5 +163,7 @@ namespace MyStreamTimer.Shared.Helpers
             get => AppSettings.GetValueOrDefault($"{fileNameKey}_{id}", fileNameDefault);
             set => AppSettings.AddOrUpdateValue($"{fileNameKey}_{id}", value);
         }
+
+
     }
 }

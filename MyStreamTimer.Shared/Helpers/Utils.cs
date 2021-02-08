@@ -33,6 +33,7 @@ namespace MyStreamTimer.Shared.Helpers
                     {
                         mins = 60.0f - (float)DateTime.Now.Minute;
                         mins += (60.0f - (float)DateTime.Now.Second) / 60.0f;
+                        mins -= 1;
                         start = true;
                     }
                     else if(query.Contains("?to=") &&

@@ -23,6 +23,8 @@ namespace MyStreamTimer.Mac.Services
             }
         }
 
+        public bool HasInternet => Connectivity.NetworkAccess == NetworkAccess.Internet;
+
         public void CopyToClipboard(string text) =>
             Clipboard.SetTextAsync(text).ContinueWith( _ => { });
 

@@ -28,6 +28,21 @@
         <Label
             Margin="0,10,0,0"
             FontAttributes="Bold"
+            Text="Countdown from X seconds:" />
+        <StackLayout Orientation="Horizontal">
+            <Label
+                x:Name="LabelCommandsSecs"
+                Text="mystreamtimer://countdown/?secs=90"
+                VerticalOptions="Center" />
+            <Button
+                Command="{Binding CopyTextCommand}"
+                CommandParameter="{Binding Path=Text, Source={x:Reference LabelCommandsSecs}}"
+                Text="Copy" />
+        </StackLayout>
+
+        <Label
+            Margin="0,10,0,0"
+            FontAttributes="Bold"
             Text="Countdown to specific time (24 hour clock):" />
 
         <StackLayout Orientation="Horizontal">

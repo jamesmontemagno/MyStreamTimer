@@ -11,4 +11,5 @@
     <local:TabUpPage x:Name="TabItemUp" Title="Up"/>
     <local:TabsCommandsPage Title="Commands"/>
     <local:TabAboutPage Title="About"/>
+    <local:ProPage Title="Pro"/>
 </TabbedPage>
