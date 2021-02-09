@@ -63,6 +63,12 @@ namespace MyStreamTimer.Shared.Helpers
             get => AppSettings.GetValueOrDefault(nameof(ProPriceDate), DateTime.UtcNow);
             set => AppSettings.AddOrUpdateValue(nameof(ProPriceDate), value);
         }
+
+        public static bool StayOnTop
+        {
+            get => AppSettings.GetValueOrDefault(nameof(StayOnTop), true);
+            set => AppSettings.AddOrUpdateValue(nameof(StayOnTop), value);
+        }
     }
     public class Settings
     {

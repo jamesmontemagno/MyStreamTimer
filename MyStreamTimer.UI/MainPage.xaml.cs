@@ -37,14 +37,19 @@ namespace MyStreamTimer.UI
         protected override void OnAppearing()
         {
             base.OnAppearing();
-            if (GlobalSettings.TimesUsed < 20)
+            var helper = ServiceContainer.Resolve<IPlatformHelpers>();
+            if (GlobalSettings.TimesUsed < 10)
             {
                 GlobalSettings.TimesUsed++;
-                if (GlobalSettings.TimesUsed == 20)
+                if (GlobalSettings.TimesUsed == 10)
                 {
-                    ServiceContainer.Resolve<IPlatformHelpers>()?.StoreReview();
+                    helper?.StoreReview();
                 }
             }
+            if (helper == null)
+                return;
+
+            helper.SetScreenSaver(GlobalSettings.StayOnTop);
         }
     }
 }

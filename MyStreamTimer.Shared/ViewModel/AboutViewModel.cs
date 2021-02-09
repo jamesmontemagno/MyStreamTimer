@@ -35,5 +35,20 @@ namespace MyStreamTimer.Shared.ViewModel
             }
 
         }
+
+        
+        public bool StayOnTop
+        {
+            get => GlobalSettings.StayOnTop;
+            set
+            {
+                GlobalSettings.StayOnTop = value;
+                var platform = ServiceContainer.Resolve<IPlatformHelpers>();
+                if (platform != null)
+                    platform.SetScreenSaver(value);
+
+                OnPropertyChanged();
+            }
+        }
     }
 }

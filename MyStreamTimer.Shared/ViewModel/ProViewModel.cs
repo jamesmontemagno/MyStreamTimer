@@ -145,7 +145,7 @@ namespace MyStreamTimer.Shared.ViewModel
                 await CrossInAppBilling.Current.DisconnectAsync();
                 IsBusy = false;
 
-                platformHelpers.SetScreenSaver(true);
+                platformHelpers.SetScreenSaver(GlobalSettings.StayOnTop);
                 //IsBuying = false;
 
                 //CellPro.IsEnabled = true;

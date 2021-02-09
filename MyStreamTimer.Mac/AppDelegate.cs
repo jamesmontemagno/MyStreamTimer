@@ -61,7 +61,6 @@ namespace MyStreamTimer.Mac
 
             var rect = new CoreGraphics.CGRect(500, 300, 560, 325);
             window = new MyWindow(rect, style, NSBackingStore.Buffered, false);
-            window.Level = NSWindowLevel.ScreenSaver;
             window.Title = "My Stream Timer"; // choose your own Title here
             window.TitleVisibility = NSWindowTitleVisibility.Visible;
             
