@@ -9,7 +9,7 @@
 	<key>CFBundleShortVersionString</key>
 	<string>2.1.0</string>
 	<key>LSMinimumSystemVersion</key>
-	<string>10.13.2</string>
+	<string>10.12</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleInfoDictionaryVersion</key>
