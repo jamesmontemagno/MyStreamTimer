@@ -5,7 +5,7 @@
     x:Class="MyStreamTimer.UI.ProPage">
     <ContentPage.Content>
 
-        <StackLayout Padding="20">
+        <StackLayout Padding="15">
 
             <Label Text="{Binding ProPrice}"/>
             <Label IsVisible="{Binding IsNotPro}" Text="Upgrade to Patron modes to support My Stream Timer, unlock thanks badge, and support independent development."/>

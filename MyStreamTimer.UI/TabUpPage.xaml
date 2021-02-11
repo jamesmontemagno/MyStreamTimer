@@ -3,7 +3,7 @@
     x:Class="MyStreamTimer.UI.TabUpPage"
     xmlns="http://xamarin.com/schemas/2014/forms"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
-    <Grid Margin="25"
+    <Grid Margin="15"
           ColumnDefinitions="Auto,*,75"
           RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto">
         <Label
