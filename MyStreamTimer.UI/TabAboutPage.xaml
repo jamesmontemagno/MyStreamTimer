@@ -9,7 +9,7 @@
     </ContentPage.BindingContext>
     <ScrollView>
         <StackLayout Padding="15" Spacing="5">
-            <Label Text="My Stream Timer (v2.1.0) is an open source project by James Montemagno and Refractored LLC.">
+            <Label Text="My Stream Timer (v2.2.0) is an open source project by James Montemagno and Refractored LLC.">
                 <Label.GestureRecognizers>
                     <TapGestureRecognizer Command="{Binding OpenUrlCommand}" CommandParameter="https://github.com/jamesmontemagno/mystreamtimer" />
                 </Label.GestureRecognizers>
