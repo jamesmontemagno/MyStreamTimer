@@ -19,7 +19,7 @@
     <WindowsXamlEnableOverview>true</WindowsXamlEnableOverview>
     <AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
     <GenerateAppInstallerFile>False</GenerateAppInstallerFile>
-    <PackageCertificateThumbprint>B142535457E59EB90AAA29B458959BECDC11A628</PackageCertificateThumbprint>
+    <PackageCertificateThumbprint>16A58E647C9319F6706D5BFE8397B0B4F142A7EF</PackageCertificateThumbprint>
     <AppxPackageSigningTimestampDigestAlgorithm>SHA256</AppxPackageSigningTimestampDigestAlgorithm>
     <AppxAutoIncrementPackageRevision>True</AppxAutoIncrementPackageRevision>
     <GenerateTestArtifacts>True</GenerateTestArtifacts>
@@ -209,11 +209,14 @@
     <PackageReference Include="Microsoft.NETCore.UniversalWindowsPlatform">
       <Version>6.2.10</Version>
     </PackageReference>
+    <PackageReference Include="Plugin.InAppBilling">
+      <Version>4.1.2-beta</Version>
+    </PackageReference>
     <PackageReference Include="Xamarin.Essentials">
-      <Version>1.5.3-preview1333</Version>
+      <Version>1.6.1</Version>
     </PackageReference>
     <PackageReference Include="Xamarin.Forms">
-      <Version>5.0.1.1320-nightly</Version>
+      <Version>5.0.1.1965-nightly</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>

@@ -9,7 +9,7 @@
     </ContentPage.BindingContext>
     <ScrollView>
         <StackLayout Padding="15" Spacing="5">
-            <Label Text="My Stream Timer (v2.2.0) is an open source project by James Montemagno and Refractored LLC.">
+            <Label Text="My Stream Timer (v2.2) is an open source project by James Montemagno and Refractored LLC.">
                 <Label.GestureRecognizers>
                     <TapGestureRecognizer Command="{Binding OpenUrlCommand}" CommandParameter="https://github.com/jamesmontemagno/mystreamtimer" />
                 </Label.GestureRecognizers>
@@ -71,7 +71,7 @@
                                                 Default=Black,
                                                 Light=Black}" />
             </Grid>
-            <StackLayout Margin="0,5,0,0" Orientation="Horizontal">
+            <StackLayout Margin="0,5,0,0" Orientation="Horizontal" IsVisible="{OnPlatform macOS=true, UWP=false, Default=true}">
                 <CheckBox IsChecked="{Binding StayOnTop}"
                           VerticalOptions="Center"/>
                 <Label Text="Stay on top (recommended)" VerticalOptions="Center"/>

@@ -3,8 +3,7 @@
             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" 
             x:Class="MyStreamTimer.UI.MainPage"
             xmlns:local="clr-namespace:MyStreamTimer.UI"
-            xmlns:viewmodels="clr-namespace:MyStreamTimer.Shared.ViewModel;assembly=MyStreamTimer.Shared"
-            BackgroundColor="{StaticResource WindowBackground}">
+            xmlns:viewmodels="clr-namespace:MyStreamTimer.Shared.ViewModel;assembly=MyStreamTimer.Shared">
     <local:TabDownPage x:Name="TabItemDown" Title="Down"/>
     <local:TabDownPage x:Name="TabItemDown2" Title="Down 2"/>
     <local:TabDownPage x:Name="TabItemDown3" Title="Down 3"/>

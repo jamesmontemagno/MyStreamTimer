@@ -21,6 +21,10 @@ namespace MyStreamTimer.Shared.ViewModel
             platformHelpers = ServiceContainer.Resolve<IPlatformHelpers>();
             BuyCommand = new AsyncCommand<string>(PurchasePro);
             RestoreCommand = new AsyncCommand(RestorePurchases);
+
+#if DEBUG
+            CrossInAppBilling.Current.InTestingMode = true;
+#endif
         }
 
         public string ProPrice
@@ -89,9 +93,9 @@ namespace MyStreamTimer.Shared.ViewModel
                     }
                     else if (productId == "mstsilver")
                     {
-                        GlobalSettings.IsBronze = true;
-                        OnPropertyChanged(nameof(IsBronze));
-                        OnPropertyChanged(nameof(IsNotBronze));
+                        GlobalSettings.IsSilver = true;
+                        OnPropertyChanged(nameof(IsSilver));
+                        OnPropertyChanged(nameof(IsNotSilver));
                     }
                     else if (productId == "mstgold")
                     {
