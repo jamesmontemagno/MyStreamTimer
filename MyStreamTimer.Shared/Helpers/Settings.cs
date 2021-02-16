@@ -33,6 +33,13 @@ namespace MyStreamTimer.Shared.Helpers
             get => AppSettings.GetValueOrDefault(nameof(TimesUsed), 0);
             set => AppSettings.AddOrUpdateValue(nameof(TimesUsed), value);
         }
+
+
+        public static bool FirstRun
+        {
+            get => AppSettings.GetValueOrDefault(nameof(FirstRun), true);
+            set => AppSettings.AddOrUpdateValue(nameof(FirstRun), value);
+        }
     }
     public class Settings
     {
