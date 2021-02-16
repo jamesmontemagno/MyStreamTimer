@@ -68,6 +68,11 @@ namespace MyStreamTimer.Shared.Helpers
         {
             get => AppSettings.GetValueOrDefault(nameof(StayOnTop), true);
             set => AppSettings.AddOrUpdateValue(nameof(StayOnTop), value);
+
+        public static bool FirstRun
+        {
+            get => AppSettings.GetValueOrDefault(nameof(FirstRun), true);
+            set => AppSettings.AddOrUpdateValue(nameof(FirstRun), value);
         }
     }
     public class Settings

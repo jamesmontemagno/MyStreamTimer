@@ -34,7 +34,7 @@ namespace MyStreamTimer.UI
             
         }
 
-        protected override void OnAppearing()
+        protected override async void OnAppearing()
         {
             base.OnAppearing();
             var helper = ServiceContainer.Resolve<IPlatformHelpers>();
@@ -45,7 +45,16 @@ namespace MyStreamTimer.UI
                 {
                     helper?.StoreReview();
                 }
+            
             }
+            
+            if(GlobalSettings.FirstRun && Device.RuntimePlatform == Device.UWP)
+            {
+                await DisplayAlert("Hello There!",
+                    "Welcome to My Stream Timer 2.0! It has been a long road, but this is a significant update with awesome functionality requested by you! If you were using a previous version of My Stream Timer the file save locations have changed! :( They are now per user automatically. Please update OBS/SLOBS with this new file location.", "OK");
+                GlobalSettings.FirstRun = false;
+            }
+            
             if (helper == null)
                 return;
 
