@@ -34,6 +34,41 @@ namespace MyStreamTimer.Shared.Helpers
             set => AppSettings.AddOrUpdateValue(nameof(TimesUsed), value);
         }
 
+        public static bool IsBronze
+        {
+            get => AppSettings.GetValueOrDefault(nameof(IsBronze), false);
+            set => AppSettings.AddOrUpdateValue(nameof(IsBronze), value);
+        }
+
+        public static bool IsSilver
+        {
+            get => AppSettings.GetValueOrDefault(nameof(IsSilver), false);
+            set => AppSettings.AddOrUpdateValue(nameof(IsSilver), value);
+        }
+
+        public static bool IsGold
+        {
+            get => AppSettings.GetValueOrDefault(nameof(IsGold), false);
+            set => AppSettings.AddOrUpdateValue(nameof(IsGold), value);
+        }
+
+        public static string ProPrice
+        {
+            get => AppSettings.GetValueOrDefault(nameof(ProPrice), string.Empty);
+            set => AppSettings.AddOrUpdateValue(nameof(ProPrice), value);
+        }
+
+        public static DateTime ProPriceDate
+        {
+            get => AppSettings.GetValueOrDefault(nameof(ProPriceDate), DateTime.UtcNow);
+            set => AppSettings.AddOrUpdateValue(nameof(ProPriceDate), value);
+        }
+
+        public static bool StayOnTop
+        {
+            get => AppSettings.GetValueOrDefault(nameof(StayOnTop), true);
+            set => AppSettings.AddOrUpdateValue(nameof(StayOnTop), value);
+        }
 
         public static bool FirstRun
         {
@@ -75,7 +110,7 @@ namespace MyStreamTimer.Shared.Helpers
         readonly int secondsDefault = 0;
 
         const string outputKey = "key_output";
-        readonly string outputDefault = @"Starting in {0:mm\:ss}";
+        readonly string outputDefault = @"Starting in {0:hh\:mm\:ss}";
 
         const string finishKey = "key_finish";
         readonly string finishDefault = @"Let's do this!";
@@ -152,5 +187,7 @@ namespace MyStreamTimer.Shared.Helpers
             get => AppSettings.GetValueOrDefault($"{fileNameKey}_{id}", fileNameDefault);
             set => AppSettings.AddOrUpdateValue($"{fileNameKey}_{id}", value);
         }
+
+
     }
 }

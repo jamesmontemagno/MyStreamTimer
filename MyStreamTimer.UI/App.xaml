@@ -6,7 +6,10 @@
         <ResourceDictionary>
             <Color x:Key="Primary">#39a8dd</Color>
             <Color x:Key="WindowBackground">#f5f5f5</Color>
-            <Style x:Key="ButtonMainStyle" TargetType="Button">
+            <Style TargetType="Button">
+                <Setter Property="TextColor" Value="{AppThemeBinding Dark=White, Default=Black,Light=Black}"/>
+                <Setter Property="FontSize" Value="{OnPlatform macOS=Small, UWP=14}"/>
+                <Setter Property="Padding" Value="2"/>
                 <!--<Setter Property="TextColor" Value="Black" />
                 <Setter Property="BackgroundColor" Value="#f6f6f6"/>
                 <Setter Property="CornerRadius" Value="10"/>

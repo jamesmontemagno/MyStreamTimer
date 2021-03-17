@@ -15,11 +15,13 @@ namespace MyStreamTimer.UWP.Services
         public string BaseDirectory =>
             Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
 
+        public bool HasInternet => Connectivity.NetworkAccess == NetworkAccess.Internet;
+
         public void CopyToClipboard(string text) =>
-            Clipboard.SetTextAsync(text).ContinueWith( _ => { });
+            Clipboard.SetTextAsync(text).ContinueWith(_ => { });
 
         public void OpenUrl(string url) =>
-            Browser.OpenAsync(url).ContinueWith( _ => { });
+            Browser.OpenAsync(url).ContinueWith(_ => { });
 
         public Task DisplayAlert(string title, string message)
         {
@@ -33,9 +35,11 @@ namespace MyStreamTimer.UWP.Services
 
         public void StoreReview() => StoreRequestHelper.SendRequestAsync(StoreContext.GetDefault(), 16, string.Empty).WatchForError();
 
-        public void InvokeOnMainThread(Action action)
+        public void InvokeOnMainThread(Action action) => Device.BeginInvokeOnMainThread(action);
+
+        public void SetScreenSaver(bool s)
         {
-            Device.BeginInvokeOnMainThread(action);
+
         }
     }
 

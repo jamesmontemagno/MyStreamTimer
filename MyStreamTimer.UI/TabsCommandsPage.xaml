@@ -7,57 +7,56 @@
     <ContentPage.BindingContext>
         <viewmodels:CommandsViewModel />
     </ContentPage.BindingContext>
-    <StackLayout Margin="10" Spacing="5">
-        <Label Text="You can launch My Stream Timer in popular stream tools or by command line with the following commands:" />
+    <ScrollView>
+        <StackLayout Padding="15" Spacing="5">
+            <Label Text="You can launch My Stream Timer in popular stream tools or by command line with the following commands:" />
 
-        <Label
-            Margin="0,10,0,0"
-            FontAttributes="Bold"
-            Text="Countdown from X minutes:" />
-        <StackLayout Orientation="Horizontal">
-            <Label
-                x:Name="LabelCommandsMins"
-                Text="mystreamtimer://countdown/?mins=15"
-                VerticalOptions="Center" />
-            <Button
-                Command="{Binding CopyTextCommand}"
-                CommandParameter="{Binding Path=Text, Source={x:Reference LabelCommandsMins}}"
-                Text="Copy" />
+            <Label Margin="0,5,0,0" FontAttributes="Bold" Text="Countdown from X minutes:" />
+            <StackLayout Orientation="Horizontal">
+                <Label x:Name="LabelCommandsMins" Text="mystreamtimer://countdown/?mins=15" VerticalOptions="Center" />
+                <Button
+                    Padding="2"
+                    Command="{Binding CopyTextCommand}"
+                    CommandParameter="{Binding Path=Text, Source={x:Reference LabelCommandsMins}}"
+                    Text="Copy" />
+            </StackLayout>
+
+            <Label Margin="0,5,0,0" FontAttributes="Bold" Text="Countdown from X seconds:" />
+            <StackLayout Orientation="Horizontal">
+                <Label x:Name="LabelCommandsSecs" Text="mystreamtimer://countdown/?secs=90" VerticalOptions="Center" />
+                <Button
+                    Padding="2"
+                    Command="{Binding CopyTextCommand}"
+                    CommandParameter="{Binding Path=Text, Source={x:Reference LabelCommandsSecs}}"
+                    Text="Copy" />
+            </StackLayout>
+
+            <Label Margin="0,5,0,0" FontAttributes="Bold" Text="Countdown to specific time (24 hour clock):" />
+
+            <StackLayout Orientation="Horizontal">
+                <Label x:Name="LabelCommandsTo" Text="mystreamtimer://countdown/?to=15:30" VerticalOptions="Center" />
+                <Button
+                    Padding="2"
+                    Command="{Binding CopyTextCommand}"
+                    CommandParameter="{Binding Path=Text, Source={x:Reference LabelCommandsTo}}"
+                    Text="Copy" />
+            </StackLayout>
+
+            <Label Margin="0,5,0,0" FontAttributes="Bold" Text="Countdown to top of the hour:" />
+
+            <StackLayout Orientation="Horizontal">
+                <Label x:Name="LabelCommandsTopOfHour" Text="mystreamtimer://countdown/?topofhour" VerticalOptions="Center" />
+
+                <Button
+                    Padding="2"
+                    Command="{Binding CopyTextCommand}"
+                    CommandParameter="{Binding Path=Text, Source={x:Reference LabelCommandsTopOfHour}}"
+                    Text="Copy" />
+            </StackLayout>
+
+            <Label Margin="0,10,0,0" HorizontalOptions="Center" Text="You can also use countdown2 and countdown3." />
+
+
         </StackLayout>
-
-        <Label
-            Margin="0,10,0,0"
-            FontAttributes="Bold"
-            Text="Countdown to specific time (24 hour clock):" />
-
-        <StackLayout Orientation="Horizontal">
-            <Label
-                x:Name="LabelCommandsTo"
-                Text="mystreamtimer://countdown/?to=15:30"
-                VerticalOptions="Center" />
-            <Button
-                Command="{Binding CopyTextCommand}"
-                CommandParameter="{Binding Path=Text, Source={x:Reference LabelCommandsTo}}"
-                Text="Copy" />
-        </StackLayout>
-
-        <Label
-            Margin="0,10,0,0"
-            FontAttributes="Bold"
-            Text="Countdown to top of the hour." />
-
-        <StackLayout Orientation="Horizontal">
-            <Label
-                x:Name="LabelCommandsTopOfHour"
-                Text="mystreamtimer://countdown/?topofhour"
-                VerticalOptions="Center" />
-
-            <Button
-                Command="{Binding CopyTextCommand}"
-                CommandParameter="{Binding Path=Text, Source={x:Reference LabelCommandsTopOfHour}}"
-                Text="Copy" />
-        </StackLayout>
-
-
-    </StackLayout>
+    </ScrollView>
 </ContentPage>

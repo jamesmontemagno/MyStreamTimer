@@ -3,7 +3,7 @@
     x:Class="MyStreamTimer.UI.TabUpPage"
     xmlns="http://xamarin.com/schemas/2014/forms"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
-    <Grid Margin="25"
+    <Grid Margin="15"
           ColumnDefinitions="Auto,*,75"
           RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto">
         <Label
@@ -33,7 +33,6 @@
             Grid.Column="2"
             Command="{Binding CopyFilePathCommand}"
             HorizontalOptions="FillAndExpand"
-            Style="{StaticResource ButtonMainStyle}"
             Text=" Copy " />
         <!--  Auto Start  -->
         <Label
@@ -50,19 +49,20 @@
               ColumnDefinitions="*,*,*">
             <Button
                 Grid.Column="0"
+                Padding="2"
                 Command="{Binding StartStopTimerCommand}"
-                Style="{StaticResource ButtonMainStyle}"
                 Text="{Binding StartStop}" />
             <Button
                 Grid.Column="1"
+                Padding="2"
                 Command="{Binding PauseResumeTimerCommand}"
                 IsEnabled="{Binding CanPauseResume}"
                 Text="{Binding PauseResume}" />
             <Button
                 Grid.Column="2"
+                Padding="2"
                 Command="{Binding ResetCommand}"
                 IsEnabled="{Binding IsBusy}"
-                Style="{StaticResource ButtonMainStyle}"
                 Text="Reset" />
         </Grid>
         <!--  Current Output  -->

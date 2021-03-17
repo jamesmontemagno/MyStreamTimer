@@ -16,5 +16,8 @@ namespace MyStreamTimer.Shared.Interfaces
         void InvokeOnMainThread(Action action);
 
         void StoreReview();
+
+        bool HasInternet { get; }
+        void SetScreenSaver(bool s);
     }
 }

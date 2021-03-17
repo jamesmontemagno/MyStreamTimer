@@ -228,7 +228,7 @@ namespace MyStreamTimer.Shared.ViewModel
             platformHelpers.CopyToClipboard(directory);
             if(platformHelpers.IsMac)
             {
-                return platformHelpers.DisplayAlert("Path Copied", $"Path to file is located at {directory}, use Command + Shift + G to bring up directory selection in Finder.");
+                return platformHelpers.DisplayAlert("Path Copied", $"Path to file is located at {directory}. \n\n Use Command + Shift + G to bring up directory selection in Finder. \n\n The main folder may be named MyStreamTimer and not com.refractored.mystreamtimer in Finder. \n\n M1 Processors may link deeper into the Documents folder, browse manually in Finder if this is the case.");
             }
 
             return platformHelpers.DisplayAlert("Path Copied", $"Path to file is located at {directory}");
@@ -346,13 +346,16 @@ namespace MyStreamTimer.Shared.ViewModel
                 }
                 else
                 {
-                    if (FinishAtTime <= DateTime.Now.TimeOfDay)
+
+                    if (FinishAtTime > DateTime.Now.TimeOfDay)
+                        currentMinutes = (float)(FinishAtTime.TotalMinutes - DateTime.Now.TimeOfDay.TotalMinutes);
+                    else
                     {
-                        CountdownOutput = "Select time in future";
-                        return;
+                        //time until midnight
+                        currentMinutes = (float)(1440.0 - DateTime.Now.TimeOfDay.TotalMinutes);
+                        currentMinutes += (float)FinishAtTime.TotalMinutes;
                     }
 
-                    currentMinutes = (float)(FinishAtTime.TotalMinutes - DateTime.Now.TimeOfDay.TotalMinutes);
                 }
             }
             currentOutput = Output;

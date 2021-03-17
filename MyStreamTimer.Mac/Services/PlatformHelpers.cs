@@ -23,6 +23,8 @@ namespace MyStreamTimer.Mac.Services
             }
         }
 
+        public bool HasInternet => Connectivity.NetworkAccess == NetworkAccess.Internet;
+
         public void CopyToClipboard(string text) =>
             Clipboard.SetTextAsync(text).ContinueWith( _ => { });
 
@@ -50,6 +52,11 @@ namespace MyStreamTimer.Mac.Services
         public void InvokeOnMainThread(Action action)
         {
             Xamarin.Forms.Device.BeginInvokeOnMainThread(action);
+        }
+
+        public void SetScreenSaver(bool s)
+        {
+            ((AppDelegate)NSApplication.SharedApplication.Delegate).MainWindow.Level = s ? NSWindowLevel.ScreenSaver : NSWindowLevel.Normal;
         }
     }
 }

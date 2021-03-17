@@ -1,0 +1,56 @@
+﻿<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage
+    xmlns="http://xamarin.com/schemas/2014/forms"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="MyStreamTimer.UI.ProPage">
+    <ContentPage.Content>
+
+        <StackLayout Padding="15">
+
+            <Label Text="{Binding ProPrice}"/>
+            <Label Text="Upgrade to Patron modes to support My Stream Timer, unlock thanks badge, and support independent development."/>
+            
+            <Label HorizontalOptions="Center" IsVisible="{Binding IsBronze}"  TextColor="#CD7F32" Text="Bronze Unlocked!"/>
+            <Label HorizontalOptions="Center" IsVisible="{Binding IsSilver}"  TextColor="{AppThemeBinding Dark=Silver, Light=Gray, Default=Gray}" Text="Silver Unlocked!"/>
+            <Label HorizontalOptions="Center" IsVisible="{Binding IsGold}" TextColor="Gold" Text="Gold Unlocked!"/>
+
+            <Button IsVisible="{Binding IsNotBronze}"
+                    IsEnabled="{Binding IsNotBusy}"
+                    HorizontalOptions="Center"
+                    Padding="5"
+                    Text="Purchase Bronze"
+                    Command="{Binding BuyCommand}"
+                    CommandParameter="mstbronze"/>
+
+            <Button IsVisible="{Binding IsNotSilver}"
+                    IsEnabled="{Binding IsNotBusy}"
+                    HorizontalOptions="Center"
+                    Padding="5"
+                    Text="Purchase Silver"
+                    Command="{Binding BuyCommand}"
+                    CommandParameter="mstsilver"/>
+
+            
+            <Button IsVisible="{Binding IsNotGold}"
+                    IsEnabled="{Binding IsNotBusy}"
+                    HorizontalOptions="Center"
+                    Padding="5"
+                    Text="Purchase Gold"
+                    Command="{Binding BuyCommand}"
+                    CommandParameter="mstgold"/>
+
+            <Button 
+                    IsEnabled="{Binding IsNotBusy}"
+                    HorizontalOptions="Center"
+                    Padding="5"
+                    Text="Restore Purchases"
+                    Command="{Binding RestoreCommand}"/>
+
+            <ActivityIndicator IsVisible="{Binding IsBusy}"
+                               HorizontalOptions="Center"
+                               IsRunning="{Binding IsBusy}"/>
+
+        </StackLayout>
+        
+    </ContentPage.Content>
+</ContentPage>
