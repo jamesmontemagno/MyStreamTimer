@@ -36,7 +36,13 @@ If you do not own a Stream Deck but use other apps to control your stream, [Dara
 
 View the walkthrough on [YouTube](https://youtu.be/j_GdGIdDRxI)
 
-## Development 
-Currently consists of a WPF app written with [.NET Core 3-preview](https://devblogs.microsoft.com/dotnet/announcing-net-core-3-preview-3/?WT.mc_id=friends-0000-jamont) and VS 2019 & a macOS app powered by [Xamarin.Forms](http://xamarin.com/forms) with a shared .NET Standard Library.
+## Troubleshooting
+
+My Stream Timer should work out of the box, but if it doesn't here are some tips and tricks.
+
+### macOS: Files can't be saved
+In some instances My Stream Timer may need full file accessed based on your setup (This is rare). Head to **Preferences > Security & Privacy > Full Disk Access** Unlock to add My Stream Timer from your application folder.
+
+![Adding my stream timer to full disk access](macossettings.png)
 
 
