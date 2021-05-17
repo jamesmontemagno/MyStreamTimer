@@ -8,6 +8,7 @@ Download today on Windows or macOS:
 
 ![](Art/demo.png)
 
+Unable to download from the Microsoft Store on Windows? Download from [App Center](https://install.appcenter.ms/orgs/refractored-llc/apps/my-stream-timer/distribution_groups/public%20mystreamtimer)
 
 ## Integrating into OBS/SLOBS
 
