@@ -3,7 +3,8 @@
     x:Class="MyStreamTimer.UI.TabAboutPage"
     xmlns="http://xamarin.com/schemas/2014/forms"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:viewmodels="clr-namespace:MyStreamTimer.Shared.ViewModel;assembly=MyStreamTimer.Shared">
+    xmlns:viewmodels="clr-namespace:MyStreamTimer.Shared.ViewModel;assembly=MyStreamTimer.Shared"
+    x:DataType="viewmodels:AboutViewModel">
     <ContentPage.BindingContext>
         <viewmodels:AboutViewModel />
     </ContentPage.BindingContext>

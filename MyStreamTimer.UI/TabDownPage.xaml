@@ -5,10 +5,12 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" 
     xmlns:converters="clr-namespace:MyStreamTimer.UI.Converters"
     xmlns:d="http://xamarin.com/schemas/2014/forms/design"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:viewmodel="clr-namespace:MyStreamTimer.Shared.ViewModel;assembly=MyStreamTimer.Shared"
-    mc:Ignorable="d">
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:viewmodels="clr-namespace:MyStreamTimer.Shared.ViewModel;assembly=MyStreamTimer.Shared"
+    mc:Ignorable="d"
+    x:DataType="viewmodels:TimerViewModel">
     <d:ContentPage.BindingContext>
-        <viewmodel:TimerViewModel/>
+        <viewmodels:TimerViewModel/>
     </d:ContentPage.BindingContext>
     <ContentPage.Resources>
         <ResourceDictionary>
@@ -18,7 +20,7 @@
     
     <Grid Padding="15"
           ColumnDefinitions="Auto,*,100"
-          RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+          RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
         <!--  How Much Time for Countdown  -->
         <Label
             Grid.Row="0"
@@ -68,60 +70,94 @@
                 <TimePicker IsEnabled="{Binding IsNotBusy}" Time="{Binding FinishAtTime}" />
             </StackLayout>
         </StackLayout>
-        <!--  Live Output text  -->
+        
         <Label
             Grid.Row="1"
             HorizontalOptions="End"
             VerticalOptions="Center"
-            Text="Live output:" />
+            Text="Output format:" />
+        <Picker Grid.Row="1"
+                Grid.Column="1"
+                HorizontalOptions="FillAndExpand"
+                VerticalOptions="Center"
+                IsEnabled="{Binding IsNotBusy}"
+                SelectedIndex="{Binding OutputStyle, Mode=TwoWay}">
+            <Picker.ItemsSource>
+                 <x:Array Type="{x:Type x:String}">
+                    <x:String>Custom</x:String>
+                    <x:String>Auto</x:String>
+                    <x:String>Total Seconds (120)</x:String>
+                    <x:String>Total Minutes:Seconds (90:00)</x:String>
+                </x:Array>
+            </Picker.ItemsSource>
+        </Picker>
+        <!--  Live Output text  -->
+        <Label
+            Grid.Row="2"
+            HorizontalOptions="End"
+            VerticalOptions="Center"
+            Text="Custom output:" />
         <Entry
-            Grid.Row="1"
+            Grid.Row="2"
             Grid.Column="1"
             IsEnabled="{Binding IsNotBusy}"
             Text="{Binding Output}" />
         <!--  Finish output text  -->
         <Label
-            Grid.Row="2"
+            Grid.Row="3"
             HorizontalOptions="End"
             VerticalOptions="Center"
             Text="Finish output:" />
         <Entry
-            Grid.Row="2"
+            Grid.Row="3"
             Grid.Column="1"
             IsEnabled="{Binding IsNotBusy}"
             Text="{Binding Finish}" />
         <!--  File Name Settings  -->
         <Label
-            Grid.Row="3"
+            Grid.Row="4"
             HorizontalOptions="End"
             VerticalOptions="Center"
             Text="File Name:" />
         <Entry
-            Grid.Row="3"
+            Grid.Row="4"
             Grid.Column="1"
             IsEnabled="{Binding IsNotBusy}"
             Text="{Binding FileName}" />
         <Button
-            Grid.Row="3"
+            Grid.Row="4"
             Grid.Column="2"
             Padding="10,0"
             Command="{Binding CopyFilePathCommand}"
             HorizontalOptions="FillAndExpand"
             MinimumWidthRequest="75"
             Text="Copy" />
+
         <!--  Auto Start  -->
         <Label
-            Grid.Row="4"
+            Grid.Row="5"
             HorizontalOptions="End"
             VerticalOptions="Center"
             Text="Auto Start:" />
-        <CheckBox
-            Grid.Row="4"
+        <StackLayout
+            Grid.Row="5"
             Grid.Column="1"
-            IsChecked="{Binding AutoStart}" />
+            Orientation="Horizontal">
+            <CheckBox
+                IsChecked="{Binding AutoStart}" />
+            <Label
+                Margin="24,0,0,0"
+                HorizontalOptions="End"
+                VerticalOptions="Center"
+                Text="Beep at 0:" />
+            <CheckBox
+                IsEnabled="{Binding IsNotBusy}"
+                IsChecked="{Binding BeepAtZero}" />
+
+        </StackLayout>
         <!--  Start Stop Button  -->
         <Grid
-            Grid.Row="5"
+            Grid.Row="6"
             Grid.ColumnSpan="3"
             Padding="10"
             ColumnSpacing="10"
@@ -148,7 +184,7 @@
         </Grid>
         <!--  Current Output  -->
         <Label
-            Grid.Row="6"
+            Grid.Row="7"
             Grid.ColumnSpan="3"
             HorizontalOptions="Center"
             LineBreakMode="WordWrap"
@@ -156,7 +192,7 @@
 
 
         <Label
-            Grid.Row="7"
+            Grid.Row="8"
             Grid.ColumnSpan="3"
             FontSize="Small"
             HorizontalOptions="Center"

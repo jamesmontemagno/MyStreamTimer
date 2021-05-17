@@ -2,7 +2,9 @@
 <ContentPage
     xmlns="http://xamarin.com/schemas/2014/forms"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    x:Class="MyStreamTimer.UI.ProPage">
+    x:Class="MyStreamTimer.UI.ProPage"
+    xmlns:viewmodels="clr-namespace:MyStreamTimer.Shared.ViewModel;assembly=MyStreamTimer.Shared"
+    x:DataType="viewmodels:ProViewModel">
     <ContentPage.Content>
 
         <StackLayout Padding="15">

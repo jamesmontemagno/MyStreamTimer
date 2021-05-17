@@ -92,6 +92,7 @@ namespace MyStreamTimer.Shared.Helpers
                     break;
                 case Constants.Countup:
                     outputDefault = @"{0:hh\:mm\:ss}";
+                    minutesDefault = 0;
                     break;
                 case Constants.Giveaway:
                     minutesDefault = 60;
@@ -121,6 +122,12 @@ namespace MyStreamTimer.Shared.Helpers
 
         const string autoStartKey = "key_auto_start";
         readonly bool autoStartDefault = false;
+        const string makeSoundKey = "make_sound";
+        readonly bool makeSoundDefault = false;
+
+
+        const string outputStyleKey = "key_output_style";
+        const int outputStyleDefault = 0;
 
         #endregion
 
@@ -152,10 +159,22 @@ namespace MyStreamTimer.Shared.Helpers
             set => AppSettings.AddOrUpdateValue($"{nameof(UseMinutes)}_{id}", value);
         }
 
+        public bool MakeSound
+        {
+            get => AppSettings.GetValueOrDefault($"{makeSoundKey}_{id}", makeSoundDefault);
+            set => AppSettings.AddOrUpdateValue($"{makeSoundKey}_{id}", value);
+        }
+
         public bool AutoStart
         {
             get => AppSettings.GetValueOrDefault($"{autoStartKey}_{id}", autoStartDefault);
             set => AppSettings.AddOrUpdateValue($"{autoStartKey}_{id}", value);
+        }
+
+        public int OutputStyle
+        {
+            get => AppSettings.GetValueOrDefault($"{outputStyleKey}_{id}", outputStyleDefault);
+            set => AppSettings.AddOrUpdateValue($"{outputStyleKey}_{id}", value);
         }
 
         public int Seconds

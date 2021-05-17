@@ -26,6 +26,8 @@ namespace MyStreamTimer.Shared.ViewModel
         bool currentIsDown;
         float currentMinutes;
         string currentFinished, currentOutput, currentFileName;
+        int currentOutputStyle;
+        bool currentBeepAtZero;
         readonly Timer timer;
         string identifier;
 
@@ -165,6 +167,26 @@ namespace MyStreamTimer.Shared.ViewModel
             }
         }
 
+        public bool BeepAtZero
+        {
+            get => settings.MakeSound;
+            set
+            {
+                settings.MakeSound = value;
+                OnPropertyChanged(nameof(BeepAtZero));
+            }
+        }
+
+        public int OutputStyle
+        {
+            get => settings.OutputStyle;
+            set
+            {
+                settings.OutputStyle = value;
+                OnPropertyChanged(nameof(OutputStyle));
+            }
+        }
+
         public string Finish
         {
             get => settings.Finish;
@@ -282,7 +304,8 @@ namespace MyStreamTimer.Shared.ViewModel
 
             try
             {
-                string.Format(Output, TimeSpan.FromSeconds(5));
+                if(OutputStyle == 0)
+                    string.Format(Output, TimeSpan.FromSeconds(5));
             }
             catch
             {
@@ -359,8 +382,15 @@ namespace MyStreamTimer.Shared.ViewModel
                 }
             }
             currentOutput = Output;
+            currentBeepAtZero = BeepAtZero;
+            currentOutputStyle = OutputStyle;
 
-            startTime = DateTime.Now;
+
+            if (currentIsDown)
+                startTime = DateTime.Now;
+            else
+                startTime = DateTime.Now.AddMinutes(-currentMinutes).AddSeconds(-currentSeconds);
+
             endTime = DateTime.Now.AddMinutes(currentMinutes).AddSeconds(currentSeconds);
             //TimerElapsed(null, null);
 
@@ -394,7 +424,7 @@ namespace MyStreamTimer.Shared.ViewModel
             while(!timerCTS.IsCancellationRequested)
             {
                 var now = DateTime.Now;
-                string text;
+                var text = string.Empty;
                 if (currentIsDown)
                 {
                     if (now >= endTime)
@@ -409,13 +439,112 @@ namespace MyStreamTimer.Shared.ViewModel
                     else
                     {
                         var elapsedTime = endTime - DateTime.Now;
-                        text = string.Format(currentOutput, elapsedTime);
+                        switch (currentOutputStyle)
+                        {
+                            case 0:
+                                text = string.Format(currentOutput, elapsedTime);
+                                break;
+                            case 1:
+                                //Auto
+                                if(Math.Floor(elapsedTime.TotalDays) > 0)
+                                {
+                                    if (elapsedTime.TotalDays >= 1000)
+                                        text = string.Format("{0:dddd\\:hh\\:mm\\:ss}", elapsedTime);
+                                    else if (elapsedTime.TotalDays >= 100)
+                                        text = string.Format("{0:ddd\\:hh\\:mm\\:ss}", elapsedTime);
+                                    else if (elapsedTime.TotalDays >= 10)
+                                        text = string.Format("{0:dd\\:hh\\:mm\\:ss}", elapsedTime);
+                                    else
+                                        text = string.Format("{0:d\\:hh\\:mm\\:ss}", elapsedTime);
+                                }
+                                else if(Math.Floor(elapsedTime.TotalHours) > 0)
+                                {
+                                    if(elapsedTime.TotalHours >= 10)
+                                        text = string.Format("{0:hh\\:mm\\:ss}", elapsedTime);
+                                    else
+                                        text = string.Format("{0:h\\:mm\\:ss}", elapsedTime);
+                                }
+                                else if(Math.Floor(elapsedTime.TotalMinutes) > 0)
+                                {
+                                    if (elapsedTime.TotalMinutes >= 10)
+                                        text = string.Format("{0:mm\\:ss}", elapsedTime);
+                                    else
+                                        text = string.Format("{0:m\\:ss}", elapsedTime);
+                                }
+                                else
+                                {
+                                    if (elapsedTime.TotalSeconds >= 10)
+                                        text = string.Format("{0:ss}", elapsedTime);
+                                    else
+                                        text = Math.Floor(elapsedTime.TotalSeconds).ToString("N0");
+                                }
+                                break;
+                            case 2:
+                                //Total seconds
+                                text = Math.Floor(elapsedTime.TotalSeconds).ToString("N0");
+                                break;
+                            case 3:
+                                // Total Mins:Seconds
+                                text = $"{Math.Floor(elapsedTime.TotalMinutes).ToString("N0")}:{string.Format("{0:ss}", elapsedTime)}";
+                                break;
+                        }
                     }
                 }
                 else
                 {
                     var elapsedTime = DateTime.Now.AddTicks(extraTicksForUp) - startTime;
-                    text = string.Format(currentOutput, elapsedTime);
+                    
+                    switch (currentOutputStyle)
+                    {
+                        case 0:
+                            text = string.Format(currentOutput, elapsedTime);
+                            break;
+                        case 1:
+                            //Auto
+                            if (Math.Floor(elapsedTime.TotalDays) > 0)
+                            {
+                                if (elapsedTime.TotalDays >= 1000)
+                                    text = string.Format("{0:ddddd\\:hh\\:mm\\:ss}", elapsedTime);
+                                else if (elapsedTime.TotalDays >= 1000)
+                                    text = string.Format("{0:dddd\\:hh\\:mm\\:ss}", elapsedTime);
+                                else if (elapsedTime.TotalDays >= 100)
+                                    text = string.Format("{0:ddd\\:hh\\:mm\\:ss}", elapsedTime);
+                                else if (elapsedTime.TotalDays >= 10)
+                                    text = string.Format("{0:dd\\:hh\\:mm\\:ss}", elapsedTime);
+                                else
+                                    text = string.Format("{0:d\\:hh\\:mm\\:ss}", elapsedTime);
+                            }
+                            else if (Math.Floor(elapsedTime.TotalHours) > 0)
+                            {
+                                if (elapsedTime.TotalHours >= 10)
+                                    text = string.Format("{0:hh\\:mm\\:ss}", elapsedTime);
+                                else
+                                    text = string.Format("{0:h\\:mm\\:ss}", elapsedTime);
+                            }
+                            else if (Math.Floor(elapsedTime.TotalMinutes) > 0)
+                            {
+                                if (elapsedTime.TotalMinutes >= 10)
+                                    text = string.Format("{0:mm\\:ss}", elapsedTime);
+                                else
+                                    text = string.Format("{0:m\\:ss}", elapsedTime);
+                            }
+                            else
+                            {
+                                if (elapsedTime.TotalSeconds >= 10)
+                                    text = string.Format("{0:ss}", elapsedTime);
+                                else
+                                    text = Math.Floor(elapsedTime.TotalSeconds).ToString("N0");
+                            }
+                            break;
+                        case 2:
+                            //Total seconds
+                            text = Math.Floor(elapsedTime.TotalSeconds).ToString("N0");
+                            break;
+                        case 3:
+                            // Total Mins:Seconds
+                            text = $"{Math.Floor(elapsedTime.TotalMinutes).ToString("N0")}:{string.Format("{0:ss}", elapsedTime)}";
+                            break;
+                    }
                 }
                 if (text != CountdownOutput)
                 {
