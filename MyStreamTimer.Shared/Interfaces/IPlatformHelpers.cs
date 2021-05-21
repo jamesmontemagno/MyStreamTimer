@@ -17,7 +17,7 @@ namespace MyStreamTimer.Shared.Interfaces
 
         void StoreReview();
 
-        void Beep();
+        Task Beep();
 
         bool HasInternet { get; }
         void SetScreenSaver(bool s);

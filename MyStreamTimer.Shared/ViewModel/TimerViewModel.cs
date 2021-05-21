@@ -431,9 +431,13 @@ namespace MyStreamTimer.Shared.ViewModel
                     {
                         text = currentFinished;
                         //WriteTimeToDisk(false, text);
+
+
                         ExecuteStartStopTimerCommand();
                         CountdownOutput = text;
                         WriteTimeToDisk(false, text);
+                        if (currentBeepAtZero)
+                            await platformHelpers.Beep();
                         return;
                     }
                     else

@@ -59,12 +59,15 @@ namespace MyStreamTimer.Mac.Services
             ((AppDelegate)NSApplication.SharedApplication.Delegate).MainWindow.Level = s ? NSWindowLevel.ScreenSaver : NSWindowLevel.Normal;
         }
 
-        public void Beep()
+        public async Task Beep()
         {
             try
             {
-                
-
+                AppKitFramework.NSBeep();
+                await Task.Delay(200);
+                AppKitFramework.NSBeep();
+                await Task.Delay(200);
+                AppKitFramework.NSBeep();
             }
             catch (Exception ex)
             {
