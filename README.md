@@ -8,6 +8,7 @@ Download today on Windows or macOS:
 
 ![](Art/demo.png)
 
+Unable to download from the Microsoft Store on Windows? Download from [App Center](https://install.appcenter.ms/orgs/refractored-llc/apps/my-stream-timer/distribution_groups/public%20mystreamtimer)
 
 ## Integrating into OBS/SLOBS
 
@@ -28,6 +29,14 @@ You can integrate a **Website** command under **System** to launch My Stream Tim
 * Count down from X minutes: mystreamtimer://countdown/?mins=6
 * Count down to specific time (24 hour clock): mystreamtimer://countdown/?to=15:30
 * Count down to top of the hour: mystreamtimer://countdown/?topofhour
+
+## Integrating into Command Line
+
+My Stream Timer uses standard protocals to work via the command line. For example you can call the following on the Windows command line:
+
+```
+start mystreamtimer://countdown/?mins=6
+```
 
 ## Integrating into Deckboard (using an Extension App for Windows)
 If you do not own a Stream Deck but use other apps to control your stream, [Dara Oladapo](https://twitter.com/daraoladapo) created an extension app for Windows that he uses for Deckboard. You can check out the project [here](https://github.com/DaraOladapo/stream-deckboard) and web link [here](https://daraoladapo.github.io/stream-deckboard/).
