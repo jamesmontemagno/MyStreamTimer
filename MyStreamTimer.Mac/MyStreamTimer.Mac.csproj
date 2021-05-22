@@ -45,7 +45,7 @@
     <WarningLevel>4</WarningLevel>
     <EnableCodeSigning>true</EnableCodeSigning>
     <CreatePackage>false</CreatePackage>
-    <EnablePackageSigning>false</EnablePackageSigning>
+    <EnablePackageSigning>true</EnablePackageSigning>
     <IncludeMonoRuntime>true</IncludeMonoRuntime>
     <UseSGen>true</UseSGen>
     <UseRefCounting>true</UseRefCounting>
@@ -56,8 +56,8 @@
     </XamMacArch>
     <AOTMode>None</AOTMode>
     <CodeSigningKey>3rd Party Mac Developer Application</CodeSigningKey>
-    <CodeSignProvision>My Stream Timer Prod</CodeSignProvision>
-    <PackageSigningKey>3rd Party Mac Developer Installer</PackageSigningKey>
+    <CodeSignProvision>Automatic</CodeSignProvision>
+    <PackageSigningKey>3rd Party Mac Developer Installer: Refractored LLC (8P95D2238B)</PackageSigningKey>
     <CodeSignEntitlements>Entitlements.plist</CodeSignEntitlements>
   </PropertyGroup>
   <ItemGroup>
