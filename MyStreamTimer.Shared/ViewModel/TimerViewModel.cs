@@ -603,7 +603,7 @@ namespace MyStreamTimer.Shared.ViewModel
             }
             catch (Exception ex)
             {
-                CountdownOutput = ex.Message;
+                CountdownOutput = $"{ex.Message} | Ensure app has full disk write access.";
                 return false;
             }
         }
