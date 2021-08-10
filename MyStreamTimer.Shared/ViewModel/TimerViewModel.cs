@@ -552,8 +552,8 @@ namespace MyStreamTimer.Shared.ViewModel
                 }
                 if (text != CountdownOutput)
                 {
-                    WriteTimeToDisk(false, text);
-                    CountdownOutput = text;
+                    if(WriteTimeToDisk(false, text))
+                        CountdownOutput = text;
                 }
                 await Task.Delay(500); 
             }
@@ -587,7 +587,7 @@ namespace MyStreamTimer.Shared.ViewModel
             //WriteTimeToDisk(e == null);
         }
 
-        void WriteTimeToDisk(bool create, string text)
+        bool WriteTimeToDisk(bool create, string text)
         {
             try
             {
@@ -598,10 +598,13 @@ namespace MyStreamTimer.Shared.ViewModel
                     using var streamWriter = new StreamWriter(currentFileName, false);
                     streamWriter.WriteLine(text);
                 }
+
+                return true;
             }
             catch (Exception ex)
             {
                 CountdownOutput = ex.Message;
+                return false;
             }
         }
     }
