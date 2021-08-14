@@ -14,8 +14,7 @@ namespace MyStreamTimer.Mac.Services
     public class PlatformHelpers : IPlatformHelpers
     {
 
-        Dictionary<string, NSObject> Activities { get; } = new Dictionary<string, NSObject>();
-
+        
         public bool IsMac => true;
         public string BaseDirectory
         {
@@ -80,6 +79,8 @@ namespace MyStreamTimer.Mac.Services
             }
         }
 
+        Dictionary<string, NSObject> Activities { get; } = new Dictionary<string, NSObject>();
+
         public void StartActivity(string id)
         {
             if (Activities.ContainsKey(id))
@@ -106,6 +107,7 @@ namespace MyStreamTimer.Mac.Services
             {
                 var activity = Activities[id];
                 NSProcessInfo.ProcessInfo.EndActivity(activity);
+                Activities.Remove(id);
             }
             catch (Exception ex)
             {
