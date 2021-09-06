@@ -28,6 +28,7 @@ namespace MyStreamTimer.UI
                     var first = vm == "countdown" || vm == "countdown1";
                     var second = vm == "countdown2";
                     var third = vm == "countdown3";
+                    var fourth = vm == "countdown4" && GlobalSettings.IsPro;
                     if (first)
                     {
                         MyStreamTimer.UI.MainPage.DownVM?.Init(mins);
@@ -42,6 +43,11 @@ namespace MyStreamTimer.UI
                     {
                         MyStreamTimer.UI.MainPage.DownVM3?.Init(mins);
                         ((TabbedPage)MainPage).CurrentPage = ((TabbedPage)MainPage).Children[2];
+                    }
+                    else if (fourth)
+                    {
+                        MyStreamTimer.UI.MainPage.DownVM4?.Init(mins);
+                        ((TabbedPage)MainPage).CurrentPage = ((TabbedPage)MainPage).Children[3];
                     }
                 }
             }

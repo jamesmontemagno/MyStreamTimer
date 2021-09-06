@@ -16,7 +16,7 @@ namespace MyStreamTimer.Shared.Helpers
                     host = uri.Host.ToLower();
                     var query = uri.Query.ToLower();
 
-                    if (host != "countdown" && host != "countdown1" && host != "countdown2" && host != "countdown3")
+                    if (host != "countdown" && host != "countdown1" && host != "countdown2" && host != "countdown3" && host != "countdown4")
                         return (start, mins, string.Empty);
 
                     if (query.Contains("?mins=") &&

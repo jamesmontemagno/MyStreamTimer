@@ -32,9 +32,9 @@ namespace MyStreamTimer.Shared.ViewModel
             get
             {
                 if (string.IsNullOrWhiteSpace(GlobalSettings.ProPrice))
-                    return "PATRON MODES";
+                    return "PRO MODES";
 
-                return $"PATRON MODES - {GlobalSettings.ProPrice}";
+                return $"PRO MODES - {GlobalSettings.ProPrice}";
             }
         }
 

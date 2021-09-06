@@ -55,7 +55,7 @@
                     Text="Copy" />
             </StackLayout>
 
-            <Label Margin="0,10,0,0" HorizontalOptions="Center" Text="You can also use countdown2 and countdown3." />
+            <Label Margin="0,10,0,0" HorizontalOptions="Center" Text="You can also use countdown2, countdown3, and countdown4." />
 
 
         </StackLayout>

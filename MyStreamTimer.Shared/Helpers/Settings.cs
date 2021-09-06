@@ -52,6 +52,12 @@ namespace MyStreamTimer.Shared.Helpers
             set => AppSettings.AddOrUpdateValue(nameof(IsGold), value);
         }
 
+//#if DEBUG
+//        public static bool IsPro => false;
+//#else
+        public static bool IsPro => IsBronze || IsSilver || IsGold;
+//#endif
+
         public static string ProPrice
         {
             get => AppSettings.GetValueOrDefault(nameof(ProPrice), string.Empty);
@@ -87,10 +93,12 @@ namespace MyStreamTimer.Shared.Helpers
             {
                 case Constants.Countdown2:
                 case Constants.Countdown3:
+                case Constants.Countdown4:
                 case Constants.Countdown:
                     minutesDefault = 5;
                     break;
                 case Constants.Countup:
+                case Constants.Countup2:
                     outputDefault = @"{0:hh\:mm\:ss}";
                     minutesDefault = 0;
                     break;

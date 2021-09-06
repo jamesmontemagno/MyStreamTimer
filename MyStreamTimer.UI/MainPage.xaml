@@ -7,8 +7,10 @@
     <local:TabDownPage x:Name="TabItemDown" Title="Down"/>
     <local:TabDownPage x:Name="TabItemDown2" Title="Down 2"/>
     <local:TabDownPage x:Name="TabItemDown3" Title="Down 3"/>
+    <local:TabDownPage x:Name="TabItemDown4" Title="Down 4"/>
     <local:TabUpPage x:Name="TabItemUp" Title="Up"/>
+    <local:TabUpPage x:Name="TabItemUp2" Title="Up 2"/>
     <local:TabsCommandsPage Title="Commands"/>
     <local:TabAboutPage Title="About"/>
-    <local:ProPage Title="Patron"/>
+    <local:ProPage Title="Pro"/>
 </TabbedPage>

@@ -31,6 +31,8 @@ namespace MyStreamTimer.Shared.ViewModel
         readonly Timer timer;
         string identifier;
 
+        public bool RequiresPro => identifier == Constants.Countdown4 || identifier == Constants.Countup2;
+
         Settings settings;
         public ICommand StartStopTimerCommand { get; }
         public AsyncCommand CopyFilePathCommand { get; }
@@ -62,10 +64,12 @@ namespace MyStreamTimer.Shared.ViewModel
                 case Constants.Giveaway:
                 case Constants.Countdown2:
                 case Constants.Countdown3:
+                case Constants.Countdown4:
                 case Constants.Countdown:
                     IsDown = true;
                     break;
                 case Constants.Countup:
+                case Constants.Countup2:
                     IsDown = false;
                     break;
             }
@@ -179,9 +183,21 @@ namespace MyStreamTimer.Shared.ViewModel
 
         public int OutputStyle
         {
-            get => settings.OutputStyle;
+            get
+            {
+                if (!GlobalSettings.IsPro)
+                    return 0;
+                
+                return settings.OutputStyle;
+            }
             set
             {
+                if (value == settings.OutputStyle)
+                    return;
+
+                if (!GlobalSettings.IsPro)
+                    return;
+
                 settings.OutputStyle = value;
                 OnPropertyChanged(nameof(OutputStyle));
             }
