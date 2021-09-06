@@ -360,6 +360,12 @@ namespace MyStreamTimer.Shared.ViewModel
                 PauseResume = "Resume";
             }
 
+            if (IsBusy)
+                platformHelpers.StartActivity(identifier);
+            else
+                platformHelpers.StopActivity(identifier);
+
+
             if (!IsBusy)
                 return;
 

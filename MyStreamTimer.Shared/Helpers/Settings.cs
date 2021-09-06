@@ -15,11 +15,15 @@ namespace MyStreamTimer.Shared.Helpers
     {
         static string defaultDirectoryPath;
         const string directoryPathKey = "global_directory_path";
+        static bool defaultStayOn = true;
 
         static GlobalSettings()
         {
             var platform = ServiceContainer.Resolve<IPlatformHelpers>();
             defaultDirectoryPath = Path.Combine(platform.BaseDirectory, "MyStreamTimer");
+
+            if (platform.IsMac)
+                defaultStayOn = false;
         }
         static ISettings AppSettings => CrossSettings.Current;
         public static string DirectoryPath
@@ -72,7 +76,7 @@ namespace MyStreamTimer.Shared.Helpers
 
         public static bool StayOnTop
         {
-            get => AppSettings.GetValueOrDefault(nameof(StayOnTop), true);
+            get => AppSettings.GetValueOrDefault(nameof(StayOnTop), defaultStayOn);
             set => AppSettings.AddOrUpdateValue(nameof(StayOnTop), value);
         }
 

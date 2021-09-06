@@ -21,5 +21,8 @@ namespace MyStreamTimer.Shared.Interfaces
 
         bool HasInternet { get; }
         void SetScreenSaver(bool s);
+
+        void StartActivity(string id);
+        void StopActivity(string id);
     }
 }

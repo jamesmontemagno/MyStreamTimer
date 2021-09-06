@@ -6,11 +6,15 @@ using MyStreamTimer.Shared.Interfaces;
 using Xamarin.Forms;
 using Xamarin.Essentials;
 using StoreKit;
+using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace MyStreamTimer.Mac.Services
 {
     public class PlatformHelpers : IPlatformHelpers
     {
+
+        
         public bool IsMac => true;
         public string BaseDirectory
         {
@@ -72,6 +76,42 @@ namespace MyStreamTimer.Mac.Services
             catch (Exception ex)
             {
 
+            }
+        }
+
+        Dictionary<string, NSObject> Activities { get; } = new Dictionary<string, NSObject>();
+
+        public void StartActivity(string id)
+        {
+            if (Activities.ContainsKey(id))
+                return;
+
+            try
+            {
+                var options = NSActivityOptions.UserInitiated | NSActivityOptions.IdleDisplaySleepDisabled;
+                var activity = NSProcessInfo.ProcessInfo.BeginActivity(options, "User has inititiated a timer that is a long running process.");
+
+                Activities.Add(id, activity);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Unable to start activity: {ex}");
+            }
+        }
+
+        public void StopActivity(string id)
+        {
+            if (!Activities.ContainsKey(id))
+                return;
+            try
+            {
+                var activity = Activities[id];
+                NSProcessInfo.ProcessInfo.EndActivity(activity);
+                Activities.Remove(id);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Unable to start activity: {ex}");
             }
         }
     }
