@@ -13,7 +13,7 @@ public partial class TabDownPage : ContentPage
             InitializeComponent();
         }
 
-        protected async override void OnAppearing()
+        protected override void OnAppearing()
         {
             var vm = BindingContext as TimerViewModel;
 
