@@ -10,7 +10,7 @@
         <StackLayout Padding="15">
 
             <Label Text="{Binding ProPrice}"/>
-            <Label Text="Upgrade to any Pro mode to support My Stream Timer, unlock thanks badge, more countdown modes, a forth countdown, and second count up, and support independent development."/>
+            <Label Text="Upgrade to ANY Pro mode to support My Stream Timer, unlock thanks badge, more countdown modes, a forth countdown, and second count up, and support independent development."/>
             
             <Label HorizontalOptions="Center" IsVisible="{Binding IsBronze}"  TextColor="#CD7F32" Text="Bronze Unlocked!"/>
             <Label HorizontalOptions="Center" IsVisible="{Binding IsSilver}"  TextColor="{AppThemeBinding Dark=Silver, Light=Gray, Default=Gray}" Text="Silver Unlocked!"/>

@@ -9,7 +9,7 @@
   <Identity
     Name="23875RefractoredLLC.MyStreamTimer"
     Publisher="CN=Refractored LLC"
-    Version="2.2.0.0" />
+    Version="2.3.1.0" />
 
   <mp:PhoneIdentity PhoneProductId="fc2690a8-0f80-44cd-a516-0e3d2d7b7d7e" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
