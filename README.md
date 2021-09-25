@@ -54,4 +54,7 @@ In some instances My Stream Timer may need full file accessed based on your setu
 
 ![Adding my stream timer to full disk access](macossettings.png)
 
+### macOS: I dont' hear any "beeps"
+My Stream Timer uses the native device sound effects. This means you can make the beeps whatever you would like, but you have to turn them on. Head to **Preferences > Sound > Sound Effects**. Ensure that **Play user interface sound effects** is turned on and that it is set to playback through the speaker you would like to use.
+
 
