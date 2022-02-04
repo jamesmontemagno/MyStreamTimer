@@ -38,6 +38,14 @@ My Stream Timer uses standard protocals to work via the command line. For exampl
 start mystreamtimer://countdown/?mins=6
 ```
 
+Here are the list of commands:
+* mystreamtimer://countdown/?mins=6
+* mystreamtimer://countdown/?secs=90
+* mystreamtimer://countdown/?topofhour
+* mystreamtimer://countdown/?to=15:30
+
+**countdown** can be replaced with: **countdown2**, **countdown3**, **countdown4** depending on which one you would like to start
+
 ## Integrating into Deckboard (using an Extension App for Windows)
 If you do not own a Stream Deck but use other apps to control your stream, [Dara Oladapo](https://twitter.com/daraoladapo) created an extension app for Windows that he uses for Deckboard. You can check out the project [here](https://github.com/DaraOladapo/stream-deckboard) and web link [here](https://daraoladapo.github.io/stream-deckboard/).
 
