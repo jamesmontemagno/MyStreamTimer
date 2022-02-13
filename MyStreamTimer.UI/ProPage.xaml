@@ -10,47 +10,69 @@
         <StackLayout Padding="15">
 
             <Label Text="{Binding ProPrice}"/>
-            <Label Text="Upgrade to ANY Pro mode to support My Stream Timer, unlock thanks badge, more countdown modes, a forth countdown, and second count up, and support independent development."/>
+
+            <Label IsVisible="{OnPlatform macOS=true, UWP=false}"  Text="Get Pro mode with a 1 time lifetime upgrade or subscribe monthly to support My Stream Timer, more countdown modes, a forth countdown, and second count up, and support independent development."/>
+
+            <Label IsVisible="{OnPlatform macOS=false, UWP=true}"  Text="Get Pro mode with a 1 time lifetime to ANY of the tiers to support My Stream Timer, unlock more countdown modes, a forth countdown, and second count up, and support independent development."/>
+
+            <StackLayout Orientation="Horizontal">
+                <Label HorizontalOptions="Center" IsVisible="{Binding IsBronze}"  TextColor="#CD7F32" Text="Bronze Unlocked!"/>
+                <Label HorizontalOptions="Center" IsVisible="{Binding IsSilver}"  TextColor="{AppThemeBinding Dark=Silver, Light=Gray, Default=Gray}" Text="Silver Unlocked!"/>
+                <Label HorizontalOptions="Center" IsVisible="{Binding IsGold}" TextColor="Gold" Text="Gold Unlocked!"/>
+
+            </StackLayout>
+            <StackLayout Orientation="Horizontal">
+                <Button HorizontalOptions="Center" IsVisible="{Binding IsNotBronze}"
+                        IsEnabled="{Binding IsNotBusy}"
+                        Padding="5"
+                        Text="Purchase Pro Bronze"
+                        Command="{Binding BuyCommand}"
+                        CommandParameter="mstbronze"/>
+
+                <Button IsVisible="{Binding IsNotSilver}"
+                        IsEnabled="{Binding IsNotBusy}"
+                        Padding="5"
+                        Text="Purchase Pro Silver"
+                        Command="{Binding BuyCommand}"
+                        CommandParameter="mstsilver"/>
+
             
-            <Label HorizontalOptions="Center" IsVisible="{Binding IsBronze}"  TextColor="#CD7F32" Text="Bronze Unlocked!"/>
-            <Label HorizontalOptions="Center" IsVisible="{Binding IsSilver}"  TextColor="{AppThemeBinding Dark=Silver, Light=Gray, Default=Gray}" Text="Silver Unlocked!"/>
-            <Label HorizontalOptions="Center" IsVisible="{Binding IsGold}" TextColor="Gold" Text="Gold Unlocked!"/>
+                <Button IsVisible="{Binding IsNotGold}"
+                        IsEnabled="{Binding IsNotBusy}"
+                        Padding="5"
+                        Text="Purchase Pro Gold"
+                        Command="{Binding BuyCommand}"
+                        CommandParameter="mstgold"/>
+            </StackLayout>
 
-            <Button IsVisible="{Binding IsNotBronze}"
-                    IsEnabled="{Binding IsNotBusy}"
-                    HorizontalOptions="Center"
-                    Padding="5"
-                    Text="Purchase Bronze"
-                    Command="{Binding BuyCommand}"
-                    CommandParameter="mstbronze"/>
+            <Label Margin="0,8,0,0" Text="{Binding SubPrice}"
+                   IsVisible="{OnPlatform macOS=true, UWP=false}"/>
+            <Label IsVisible="{OnPlatform macOS=true, UWP=false}" Text="Subscribe to Pro for a low monthly subscription to continuously support the app development and get all Pro features:"/>
 
-            <Button IsVisible="{Binding IsNotSilver}"
-                    IsEnabled="{Binding IsNotBusy}"
-                    HorizontalOptions="Center"
-                    Padding="5"
-                    Text="Purchase Silver"
-                    Command="{Binding BuyCommand}"
-                    CommandParameter="mstsilver"/>
+            <Button IsVisible="{Binding IsNotSubscribed}"
+                        IsEnabled="{Binding IsNotBusy}"
+                        HorizontalOptions="Center"
+                        Padding="5"
+                        Text="Purchase Pro Subscription"
+                        Command="{Binding BuyCommand}"
+                        CommandParameter="mstsub"/>
 
-            
-            <Button IsVisible="{Binding IsNotGold}"
-                    IsEnabled="{Binding IsNotBusy}"
-                    HorizontalOptions="Center"
-                    Padding="5"
-                    Text="Purchase Gold"
-                    Command="{Binding BuyCommand}"
-                    CommandParameter="mstgold"/>
+            <Label HorizontalOptions="Center"
+                   IsVisible="{OnPlatform macOS=true, UWP=false}"
+                   TextColor="Gold"
+                   Text="{Binding SubStatus}"/>
 
-            <Button 
+            <StackLayout HorizontalOptions="Center" Orientation="Horizontal">
+
+            <Button Margin="0,15,0,0"
                     IsEnabled="{Binding IsNotBusy}"
-                    HorizontalOptions="Center"
                     Padding="5"
                     Text="Restore Purchases"
                     Command="{Binding RestoreCommand}"/>
 
             <ActivityIndicator IsVisible="{Binding IsBusy}"
-                               HorizontalOptions="Center"
                                IsRunning="{Binding IsBusy}"/>
+            </StackLayout>
 
         </StackLayout>
         

@@ -10,7 +10,7 @@
     </ContentPage.BindingContext>
     <ScrollView>
         <StackLayout Padding="15" Spacing="5">
-            <Label Text="You can launch My Stream Timer in popular stream tools or by command line with the following commands:" />
+            <Label Text="You can launch My Stream Timer and interact with it while open from popular stream tools (use open browser command) or by command line with the following commands:" />
 
             <Label Margin="0,5,0,0" FontAttributes="Bold" Text="Countdown from X minutes:" />
             <StackLayout Orientation="Horizontal">
@@ -55,7 +55,7 @@
                     Text="Copy" />
             </StackLayout>
 
-            <Label Margin="0,10,0,0" HorizontalOptions="Center" Text="You can also use countdown2, countdown3, and countdown4." />
+            <Label Margin="0,10,0,0" HorizontalOptions="Center" Text="Some additional commands that are useful are: ?addmins=1, ?addsecs=90, ?pause, ?resume, ?stop, and ?reset. You can control other timers by using countdown2, countdown3, countdown4, countup1, and countup2!" />
 
 
         </StackLayout>

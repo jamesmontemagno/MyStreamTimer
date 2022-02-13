@@ -12,7 +12,7 @@ namespace MyStreamTimer.Shared.ViewModel
 {
     public class ProViewModel : BaseViewModel
     {
-
+        public const string SubId = "mstsub";
         public AsyncCommand<string> BuyCommand { get; }
         public AsyncCommand RestoreCommand { get; }
         IPlatformHelpers platformHelpers;
@@ -38,14 +38,46 @@ namespace MyStreamTimer.Shared.ViewModel
             }
         }
 
+        public string SubPrice
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(GlobalSettings.SubPrice))
+                    return "PRO SUBSCRIPTION";
+
+                return $"PRO SUBSCRIPTION - {GlobalSettings.SubPrice} a month";
+            }
+        }
+
+        public string SubStatus
+        {
+            get
+            {
+                if (GlobalSettings.HasTippedSub)
+                {
+                    if (GlobalSettings.IsSubValid)
+                        return $"Valid Pro Subscription - {GlobalSettings.SubExpirationDate.ToLocalTime().ToShortDateString()}";
+                    else
+                        return "Subscription expired";
+                }
+                else
+                {
+                    return string.Empty;
+                }
+            }
+        }
+
         public bool IsBronze => GlobalSettings.IsBronze;
-        public bool IsNotBronze => !IsBronze;
+        public bool IsNotBronze => !IsBronze && !platformHelpers.IsMac;
 
         public bool IsSilver => GlobalSettings.IsSilver;
         public bool IsNotSilver => !IsSilver;
 
         public bool IsGold => GlobalSettings.IsGold;
         public bool IsNotGold => !IsGold;
+
+        public bool IsSubscribed => GlobalSettings.HasTippedSub && GlobalSettings.IsSubValid;
+        public bool IsNotSubscribed => !IsSubscribed && platformHelpers.IsMac;
 
         async Task PurchasePro(string productId)
         {
@@ -77,7 +109,7 @@ namespace MyStreamTimer.Shared.ViewModel
                 //CellPro.IsEnabled = false;
                 //CellRestore.IsEnabled = false;
                 //check purchases
-                var purchase = await CrossInAppBilling.Current.PurchaseAsync(productId, ItemType.InAppPurchase);
+                var purchase = await CrossInAppBilling.Current.PurchaseAsync(productId, productId == SubId ? ItemType.Subscription : ItemType.InAppPurchase);
 
                 if (purchase == null)
                 {
@@ -102,6 +134,15 @@ namespace MyStreamTimer.Shared.ViewModel
                         GlobalSettings.IsGold = true;
                         OnPropertyChanged(nameof(IsGold));
                         OnPropertyChanged(nameof(IsNotGold));
+                    }
+                    else if (productId == SubId)
+                    {
+                        GlobalSettings.SubExpirationDate = DateTime.UtcNow.AddSubTime();
+                        GlobalSettings.HasTippedSub = true;
+                        GlobalSettings.CheckSubStatus = true;
+                        OnPropertyChanged(nameof(IsSubscribed));
+                        OnPropertyChanged(nameof(IsNotSubscribed));
+                        OnPropertyChanged(nameof(SubStatus));
                     }
                     return;
                 }
@@ -163,8 +204,6 @@ namespace MyStreamTimer.Shared.ViewModel
         {
             if (IsBusy)
                 return;
-
-
 
             IsBusy = true;
 
@@ -232,9 +271,31 @@ namespace MyStreamTimer.Shared.ViewModel
 
                 }
 
+               
+                if (purchases?.Any(p => p.ProductId == SubId) ?? false)
+                {
+                    var sorted = purchases.Where(p => p.ProductId == SubId).OrderByDescending(i => i.TransactionDateUtc).ToList();
+                    var recentSub = sorted[0];
+                    if (recentSub != null)
+                    {
+
+                        if (recentSub.TransactionDateUtc.AddSubTime() > DateTime.UtcNow)
+                        {
+                            found = true;
+                            GlobalSettings.HasTippedSub = true;
+                            GlobalSettings.CheckSubStatus = true;
+                            GlobalSettings.SubExpirationDate = recentSub.TransactionDateUtc.AddSubTime();
+
+                            OnPropertyChanged(nameof(IsSubscribed));
+                            OnPropertyChanged(nameof(IsNotSubscribed));
+                            OnPropertyChanged(nameof(SubStatus));
+                        }
+                    }
+                }
+
                 if (!found)
                 {
-                    await platformHelpers.DisplayAlert("Hmmmm!", $"Looks like we couldn't find your previous purchase. Tap on the purchase button to attempt to purchase or restore My Cadence Pro.");
+                    await platformHelpers.DisplayAlert("Hmmmm!", $"Looks like we couldn't find your previous purchases or active subscriptions. Tap on the purchase button to attempt to purchase or restore My Cadence Pro.");
                 }
 
             }
@@ -301,13 +362,15 @@ namespace MyStreamTimer.Shared.ViewModel
                 return;
 
 
-            if (string.IsNullOrWhiteSpace(GlobalSettings.ProPrice) || GlobalSettings.ProPriceDate.AddDays(7) < DateTime.UtcNow)
+            if (string.IsNullOrWhiteSpace(GlobalSettings.ProPrice) || string.IsNullOrWhiteSpace(GlobalSettings.SubPrice) || GlobalSettings.ProPriceDate.AddDays(7) < DateTime.UtcNow)
             {
 
             }
             else
             {
+#if !DEBUG
                 return;
+#endif
             }
 
             // don't do if we dont' have internet
@@ -322,11 +385,12 @@ namespace MyStreamTimer.Shared.ViewModel
             try
             {
 
-#if DEBUG
+/*#if DEBUG
                 GlobalSettings.ProPrice = "$2.99";
                 OnPropertyChanged(nameof(ProPrice));
+                OnPropertyChanged(nameof(SubPrice));
                 return;
-#endif
+#endif*/
 
                 //Check Offline
 
@@ -337,22 +401,36 @@ namespace MyStreamTimer.Shared.ViewModel
                     return;
                 }
 
-                var items = await CrossInAppBilling.Current.GetProductInfoAsync(ItemType.InAppPurchase, "mstbronze", "mstsilver", "mstgold");
+                var includeBronze = !platformHelpers.IsMac;
+                var ids = platformHelpers.IsMac ? new[] { "mstsilver", "mstgold", SubId } : new[] { "mstbronze", "mstsilver", "mstgold" };
+                var items = await CrossInAppBilling.Current.GetProductInfoAsync(ItemType.InAppPurchase, ids);
                 if (items == null || items.Count() == 0)
                     return;
 
                 var all = string.Empty;
                 foreach(var item in items.OrderBy(s => s.MicrosPrice))
                 {
+                    if (item.ProductId == "mstbronze" && !includeBronze)
+                        continue;
+
+                    if(item.ProductId == SubId)
+                    {
+                        GlobalSettings.SubPrice = $"{item.LocalizedPrice}";
+                        continue;
+                    }
+
                     all += $"{item.Name} - {item.LocalizedPrice} | ";
                 }
 
                 
 
                 GlobalSettings.ProPrice = all.Replace("My Stream Timer", string.Empty);
+
+
                 platformHelpers.InvokeOnMainThread(() =>
                 {
                     OnPropertyChanged(nameof(ProPrice));
+                    OnPropertyChanged(nameof(SubPrice));
                 });
 
                 GlobalSettings.ProPriceDate = DateTime.UtcNow;

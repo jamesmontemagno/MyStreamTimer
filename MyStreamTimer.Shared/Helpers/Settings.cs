@@ -13,6 +13,9 @@ namespace MyStreamTimer.Shared.Helpers
 
     public static class GlobalSettings
     {
+        public static DateTime AddSubTime(this DateTime dateTime)
+            => dateTime.AddMonths(1).AddDays(5);
+
         static string defaultDirectoryPath;
         const string directoryPathKey = "global_directory_path";
         static bool defaultStayOn = true;
@@ -56,10 +59,45 @@ namespace MyStreamTimer.Shared.Helpers
             set => AppSettings.AddOrUpdateValue(nameof(IsGold), value);
         }
 
-//#if DEBUG
-//        public static bool IsPro => false;
-//#else
-        public static bool IsPro => IsBronze || IsSilver || IsGold;
+        const bool checkSubStatus = true;
+        public static bool CheckSubStatus
+        {
+            get => AppSettings.GetValueOrDefault(nameof(CheckSubStatus), checkSubStatus);
+            set => AppSettings.AddOrUpdateValue(nameof(CheckSubStatus), value);
+        }
+
+        public static string SubPrice
+        {
+            get => AppSettings.GetValueOrDefault(nameof(SubPrice), string.Empty);
+            set => AppSettings.AddOrUpdateValue(nameof(SubPrice), value);
+        }
+
+        const bool hasTippedSub = false;
+        public static bool HasTippedSub
+        {
+            get => AppSettings.GetValueOrDefault(nameof(HasTippedSub), hasTippedSub);
+            set => AppSettings.AddOrUpdateValue(nameof(HasTippedSub), value);
+        }
+
+        const bool showSupportPopUp = true;
+        public static bool ShowSupportPopUp
+        {
+            get => AppSettings.GetValueOrDefault(nameof(ShowSupportPopUp), showSupportPopUp);
+            set => AppSettings.AddOrUpdateValue(nameof(ShowSupportPopUp), value);
+        }
+
+        public static DateTime SubExpirationDate
+        {
+            get => AppSettings.GetValueOrDefault(nameof(SubExpirationDate), DateTime.UtcNow.AddDays(-1));
+            set => AppSettings.AddOrUpdateValue(nameof(SubExpirationDate), value);
+        }
+
+        public static bool IsSubValid => SubExpirationDate > DateTime.UtcNow;
+
+        //#if DEBUG
+        //        public static bool IsPro => false;
+        //#else
+        public static bool IsPro => IsBronze || IsSilver || IsGold || (HasTippedSub && IsSubValid);
 //#endif
 
         public static string ProPrice

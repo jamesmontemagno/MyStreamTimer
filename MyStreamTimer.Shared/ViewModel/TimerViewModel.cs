@@ -11,6 +11,7 @@ using System.Windows.Input;
 using Command = MvvmHelpers.Commands.Command;
 using Timer = System.Timers.Timer;
 using ElapsedEventArgs = System.Timers.ElapsedEventArgs;
+using static MyStreamTimer.Shared.Helpers.Utils;
 
 // kymphillpotts cheered 150 March 9th 2019
 // lubdubw subscribed view twitch prime! May 15th 2020
@@ -20,7 +21,7 @@ namespace MyStreamTimer.Shared.ViewModel
     public class TimerViewModel : BaseViewModel
     {
 
-
+        object locker = new object();
         DateTime startTime;
         DateTime endTime;
         bool currentIsDown;
@@ -87,14 +88,82 @@ namespace MyStreamTimer.Shared.ViewModel
                 ExecuteStartStopTimerCommand();
         }
 
-        public void Init(float mins)
+        public void Init(float mins, CommandAction action)
         {
-            if (IsBusy)
-                ExecuteStartStopTimerCommand();
+            // if it is running then we need to pause it
 
-            bootMins = mins;
+            switch (action)
+            {
+                case CommandAction.Start:
+                    {
+                        if (IsBusy)
+                            ExecuteStartStopTimerCommand();
 
-            ExecuteStartStopTimerCommand();
+                        bootMins = mins;
+                        ExecuteStartStopTimerCommand();
+                    }
+                    break;
+                case CommandAction.Pause:
+                    {
+                        if (IsBusy)
+                            ExecutePauseResumeTimerCommand();
+                    }
+                    break;
+                case CommandAction.Resume:
+                    {
+                        if (!IsBusy)
+                            ExecutePauseResumeTimerCommand();
+                    }
+                    break;
+                case CommandAction.Reset:
+                    {
+                        ExecuteResetCommand();
+                    }
+                    break;
+                case CommandAction.Add:
+                    {
+                        if(IsDown && mins > 0)
+                        {
+                            lock (locker)
+                            {
+                                endTime = endTime.AddMinutes(mins);
+                            }
+                        }
+                        else if(mins > 0)
+                        {
+                            lock (locker)
+                            {
+                                extraTicksForUp += TimeSpan.FromMinutes(mins).Ticks;
+                            }
+                        }
+                    }
+                    break;
+                case CommandAction.Subtract:
+                    {
+                        if (IsDown && mins > 0)
+                        {
+                            lock (locker)
+                            {
+                                endTime = endTime.AddMinutes(-mins);
+                            }
+                        }
+                        else if (mins > 0)
+                        {
+                            lock (locker)
+                            {
+                                extraTicksForUp -= TimeSpan.FromMinutes(mins).Ticks;
+                            }
+                        }
+                    }
+                    break;
+                case CommandAction.Stop:
+                    {
+                        if(IsBusy)
+                            ExecuteStartStopTimerCommand(true);
+                    }
+                    break;
+            }
+            
         }
 
         bool isDown = true;
@@ -277,7 +346,20 @@ namespace MyStreamTimer.Shared.ViewModel
         {
             if (!IsBusy)
                 return;
-            endTime = endTime.AddMinutes(1);
+            if (IsDown)
+            {
+                lock (locker)
+                {
+                    endTime = endTime.AddMinutes(1);
+                }
+            }
+            else
+            {
+                lock (locker)
+                {
+                    extraTicksForUp += TimeSpan.FromMinutes(1).Ticks;
+                }
+            }
         }
 
         void ExecuteResetCommand()
@@ -285,9 +367,9 @@ namespace MyStreamTimer.Shared.ViewModel
             if (!IsBusy)
                 return;
             //Stop
-            ExecuteStartStopTimerCommand();
+            ExecuteStartStopTimerCommand(true);
             //Start
-            ExecuteStartStopTimerCommand();
+            ExecuteStartStopTimerCommand(true);
         }
 
         void InitializeFile()
@@ -316,6 +398,7 @@ namespace MyStreamTimer.Shared.ViewModel
             {
                 bootMins = -1;
                 extraTicksForUp = 0;
+                currentMinutes = 0;
             }
 
             try
@@ -378,16 +461,22 @@ namespace MyStreamTimer.Shared.ViewModel
             if (bootMins > 0)
             {
                 currentMinutes = bootMins;
+                currentSeconds = 0;
+                extraTicksForUp = 0;
                 bootMins = -1;
+            }
+            else if(extraTicksForUp > 0)
+            {
+                currentMinutes = 0;
+                currentSeconds = 0;
+                //we are resuming so don't do anything
             }
             else
             {
                 if (UseMinutes)
                 {
-
                     currentMinutes = Minutes;
                     currentSeconds = Seconds;
-                    
                 }
                 else
                 {
