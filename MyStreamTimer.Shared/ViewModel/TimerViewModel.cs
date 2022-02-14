@@ -423,7 +423,7 @@ namespace MyStreamTimer.Shared.ViewModel
             }
             catch (Exception ex)
             {
-                CountdownOutput = ex.Message;
+                CountdownOutput = $"{ex.Message} | Ensure app has full disk write access in security & privacy.";
                 return;
             }
 
@@ -714,7 +714,7 @@ namespace MyStreamTimer.Shared.ViewModel
             }
             catch (Exception ex)
             {
-                CountdownOutput = $"{ex.Message} | Ensure app has full disk write access.";
+                CountdownOutput = $"{ex.Message} | Ensure app has full disk write access in security & privacy.";
                 return false;
             }
         }

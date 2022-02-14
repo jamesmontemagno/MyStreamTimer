@@ -10,7 +10,7 @@
     </ContentPage.BindingContext>
     <ScrollView>
         <StackLayout Padding="15" Spacing="5">
-            <Label Text="My Stream Timer (v2.3.0) is an open source project by James Montemagno and Refractored LLC.">
+            <Label Text="My Stream Timer (v2.4.0) is an open source project by James Montemagno and Refractored LLC.">
                 <Label.GestureRecognizers>
                     <TapGestureRecognizer Command="{Binding OpenUrlCommand}" CommandParameter="https://github.com/jamesmontemagno/mystreamtimer" />
                 </Label.GestureRecognizers>
@@ -45,6 +45,7 @@
             <Grid Margin="0,0,40,0">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
@@ -55,13 +56,21 @@
                 <Button
                     Grid.Row="1"
                     Padding="2"
+                    Clicked="ButtonTest_Clicked"
+                    IsVisible="{OnPlatform macOS=true,
+                                           Default=false}"
+                    Text="Test and Save"
+                    VerticalOptions="Center" />
+                <Button
+                    Grid.Row="2"
+                    Padding="2"
                     Clicked="Button_Clicked"
                     IsVisible="{OnPlatform macOS=true,
                                            Default=false}"
                     Text="Reset"
                     VerticalOptions="Center" />
                 <Editor
-                    Grid.RowSpan="2"
+                    Grid.RowSpan="3"
                     Grid.Column="1"
                     HeightRequest="100"
                     HorizontalOptions="FillAndExpand"

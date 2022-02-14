@@ -28,15 +28,11 @@ namespace MyStreamTimer.Shared.ViewModel
         public string Directory
         {
             get => directory;
-            set
-            {
-                if (SetProperty(ref directory, value))
-                    GlobalSettings.DirectoryPath = value;
-            }
+            set => SetProperty(ref directory, value);
 
         }
 
-        
+
         public bool StayOnTop
         {
             get => GlobalSettings.StayOnTop;
