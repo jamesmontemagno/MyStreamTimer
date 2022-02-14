@@ -120,6 +120,24 @@ namespace MyStreamTimer.UI
                     }
                 }
 
+
+                if (subs?.Any(p => p.ProductId == ProViewModel.SubId6Months) ?? false)
+                {
+                    var sorted = subs.Where(p => p.ProductId == ProViewModel.SubId6Months).OrderByDescending(i => i.TransactionDateUtc).ToList();
+                    var recentSub = sorted[0];
+                    if (recentSub != null)
+                    {
+
+                        if (recentSub.TransactionDateUtc.AddSubTime(6) > DateTime.UtcNow)
+                        {
+                            foundStuff = true;
+                            GlobalSettings.HasTippedSub = true;
+                            GlobalSettings.CheckSubStatus = true;
+                            GlobalSettings.SubExpirationDate = recentSub.TransactionDateUtc.AddSubTime(6);
+                        }
+                    }
+                }
+
                 if (!foundStuff)
                 {
                     await DisplayAlert("Hmmmm!", $"Looks like we couldn't find any subscription renewals, check your purchases and restore them in settings. Don't worry, all of your ride data will be saved.", "OK");

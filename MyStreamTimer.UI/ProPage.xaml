@@ -46,19 +46,26 @@
                    IsVisible="{OnPlatform macOS=true, UWP=false}"/>
             <Label IsVisible="{OnPlatform macOS=true, UWP=false}" Text="Subscribe to Pro for a low monthly subscription to continuously support the app development and get all Pro features:"/>
 
+            <StackLayout Orientation="Horizontal" HorizontalOptions="Center">
             <Button IsVisible="{Binding IsNotSubscribed}"
                         IsEnabled="{Binding IsNotBusy}"
-                        HorizontalOptions="Center"
                         Padding="5"
-                        Text="Purchase Pro Subscription"
+                        Text="Purchase 1 month subscription"
                         Command="{Binding BuyCommand}"
                         CommandParameter="mstsub"/>
 
-            <Label HorizontalOptions="Center"
+            <Button IsVisible="{Binding IsNotSubscribed}"
+                        IsEnabled="{Binding IsNotBusy}"
+                        Padding="5"
+                        Text="Purchase 6 month subscription"
+                        Command="{Binding BuyCommand}"
+                        CommandParameter="mstsub6months"/>
+
+            <Label
                    IsVisible="{OnPlatform macOS=true, UWP=false}"
                    TextColor="Gold"
                    Text="{Binding SubStatus}"/>
-
+            </StackLayout>
             <StackLayout HorizontalOptions="Center" Margin="0,10,0,0" Orientation="Horizontal">
 
                 <Button Text="Terms of Use"

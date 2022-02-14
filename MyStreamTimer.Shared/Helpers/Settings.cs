@@ -13,8 +13,8 @@ namespace MyStreamTimer.Shared.Helpers
 
     public static class GlobalSettings
     {
-        public static DateTime AddSubTime(this DateTime dateTime)
-            => dateTime.AddMonths(1).AddDays(5);
+        public static DateTime AddSubTime(this DateTime dateTime, int months = 1)
+            => dateTime.AddMonths(months).AddDays(5);
 
         static string defaultDirectoryPath;
         const string directoryPathKey = "global_directory_path";
@@ -70,6 +70,12 @@ namespace MyStreamTimer.Shared.Helpers
         {
             get => AppSettings.GetValueOrDefault(nameof(SubPrice), string.Empty);
             set => AppSettings.AddOrUpdateValue(nameof(SubPrice), value);
+        }
+
+        public static string SubPrice6Months
+        {
+            get => AppSettings.GetValueOrDefault(nameof(SubPrice6Months), string.Empty);
+            set => AppSettings.AddOrUpdateValue(nameof(SubPrice6Months), value);
         }
 
         const bool hasTippedSub = false;
