@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Input;
 using MvvmHelpers;
 using MvvmHelpers.Commands;
 using MyStreamTimer.Shared.Helpers;
@@ -18,6 +19,7 @@ namespace MyStreamTimer.Shared.ViewModel
         IPlatformHelpers platformHelpers;
         public ProViewModel()
         {
+            OpenUrlCommand = new Command<string>(ExecuteOpenUrlCommand);
             platformHelpers = ServiceContainer.Resolve<IPlatformHelpers>();
             BuyCommand = new AsyncCommand<string>(PurchasePro);
             RestoreCommand = new AsyncCommand(RestorePurchases);
@@ -25,6 +27,15 @@ namespace MyStreamTimer.Shared.ViewModel
 #if DEBUG
             CrossInAppBilling.Current.InTestingMode = true;
 #endif
+        }
+        public ICommand OpenUrlCommand { get; }
+        void ExecuteOpenUrlCommand(string url)
+        {
+            var platform = ServiceContainer.Resolve<IPlatformHelpers>();
+            if (platform == null)
+                throw new Exception("Platform Helpers must be implemented");
+
+            platform.OpenUrl(url);
         }
 
         public string ProPrice

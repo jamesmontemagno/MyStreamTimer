@@ -62,16 +62,21 @@
                    TextColor="Gold"
                    Text="{Binding SubStatus}"/>
 
-            <StackLayout HorizontalOptions="Center" Orientation="Horizontal">
+            <StackLayout HorizontalOptions="Center" Margin="0,10,0,0" Orientation="Horizontal">
 
-            <Button Margin="0,15,0,0"
-                    IsEnabled="{Binding IsNotBusy}"
-                    Padding="5"
-                    Text="Restore Purchases"
-                    Command="{Binding RestoreCommand}"/>
+                <Button Text="Terms of Use"
+                        CommandParameter="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/"
+                        Command="{Binding OpenUrlCommand}"
+                        Padding="5"/>
 
-            <ActivityIndicator IsVisible="{Binding IsBusy}"
-                               IsRunning="{Binding IsBusy}"/>
+                <Button Margin="5,0,5,0"
+                        IsEnabled="{Binding IsNotBusy}"
+                        Padding="5"
+                        Text="Restore Purchases"
+                        Command="{Binding RestoreCommand}"/>
+
+                <ActivityIndicator IsVisible="{Binding IsBusy}"
+                                   IsRunning="{Binding IsBusy}"/>
             </StackLayout>
 
         </StackLayout>

@@ -57,7 +57,7 @@
     <AOTMode>None</AOTMode>
     <CodeSigningKey>3rd Party Mac Developer Application</CodeSigningKey>
     <CodeSignProvision>Automatic</CodeSignProvision>
-    <PackageSigningKey>3rd Party Mac Developer Installer: Refractored LLC (8P95D2238B)</PackageSigningKey>
+    <PackageSigningKey>3rd Party Mac Developer Installer</PackageSigningKey>
     <CodeSignEntitlements>Entitlements.plist</CodeSignEntitlements>
   </PropertyGroup>
   <ItemGroup>
