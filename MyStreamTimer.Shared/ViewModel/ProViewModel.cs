@@ -209,8 +209,8 @@ namespace MyStreamTimer.Shared.ViewModel
             }
         }
 
-       
 
+        int trycount = 0;
         async Task RestorePurchases()
         {
             if (IsBusy)
@@ -242,7 +242,7 @@ namespace MyStreamTimer.Shared.ViewModel
                 //CellRestore.IsEnabled = false;
 
                 //check purchases
-
+                trycount++;
                 var purchases = await CrossInAppBilling.Current.GetPurchasesAsync(ItemType.InAppPurchase);
 
                 var found = false;
@@ -304,9 +304,22 @@ namespace MyStreamTimer.Shared.ViewModel
                     }
                 }
 
-                if (!found)
+                if (!found && trycount > 1)
                 {
+                    trycount = 0;
                     await platformHelpers.DisplayAlert("Hmmmm!", $"Looks like we couldn't find your previous purchases or active subscriptions. Tap on the purchase button to attempt to purchase or restore My Cadence Pro.");
+                }
+                else if(!found && trycount == 1)
+                {
+                    IsBusy = false;
+                    await CrossInAppBilling.Current.DisconnectAsync();
+                    //try again
+                    await RestorePurchases();
+                    trycount = 0;
+                }
+                else
+                {
+                    trycount = 0;
                 }
 
             }
