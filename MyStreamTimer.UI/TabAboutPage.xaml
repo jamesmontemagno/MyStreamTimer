@@ -29,9 +29,9 @@
                     </Label.GestureRecognizers>
                 </Label>
                 <Label Text="|" />
-                <Label Style="{StaticResource LabelHyperlink}" Text="Twitch">
+                <Label Style="{StaticResource LabelHyperlink}" Text="YouTube">
                     <Label.GestureRecognizers>
-                        <TapGestureRecognizer Command="{Binding OpenUrlCommand}" CommandParameter="http://www.twitch.tv/jamesmontemagno" />
+                        <TapGestureRecognizer Command="{Binding OpenUrlCommand}" CommandParameter="http://www.youtube.com/jamesmontemagno" />
                     </Label.GestureRecognizers>
                 </Label>
                 <Label Text="|" />
