@@ -44,6 +44,6 @@
 	<key>CFBundleSupportedPlatforms</key>
 	<string>MacOSX</string>
 	<key>CFBundleVersion</key>
-	<string>23</string>
+	<string>24</string>
 </dict>
 </plist>
