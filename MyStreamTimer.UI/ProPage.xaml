@@ -21,7 +21,7 @@
                         Text="Purchase Pro Bronze"
                         Command="{Binding BuyCommand}"
                         CommandParameter="mstbronze"/>
-                <Label HorizontalOptions="Center" IsVisible="{Binding IsBronze}"  TextColor="#CD7F32" Text="Bronze Unlocked!"/>
+                <Label HorizontalOptions="Center" IsVisible="{Binding IsBronze}"  TextColor="#CD7F32" Text="Pro Lifetime  Unlocked!"/>
                 
                 <Button IsVisible="{Binding IsNotSilver}"
                         IsEnabled="{Binding IsNotBusy}"
@@ -29,16 +29,16 @@
                         Text="Purchase Pro Silver"
                         Command="{Binding BuyCommand}"
                         CommandParameter="mstsilver"/>
-                <Label HorizontalOptions="Center" IsVisible="{Binding IsSilver}"  TextColor="{AppThemeBinding Dark=Silver, Light=Gray, Default=Gray}" Text="Silver Unlocked!"/>
+                <Label HorizontalOptions="Center" IsVisible="{Binding IsSilver}"  TextColor="{AppThemeBinding Dark=Silver, Light=Gray, Default=Gray}" Text="Pro Lifetime Unlocked!"/>
                 
             
                 <Button IsVisible="{Binding IsNotGold}"
                         IsEnabled="{Binding IsNotBusy}"
                         Padding="5"
-                        Text="Purchase Pro Gold"
+                        Text="Purchase Pro Lifetime"
                         Command="{Binding BuyCommand}"
                         CommandParameter="mstgold"/>
-                <Label HorizontalOptions="Center" IsVisible="{Binding IsGold}" TextColor="Gold" Text="Gold Unlocked!"/>
+                <Label HorizontalOptions="Center" IsVisible="{Binding IsGold}" TextColor="Gold" Text="Pro Lifetime Unlocked!"/>
             </StackLayout>
 
             <Label Margin="0,8,0,0" Text="{Binding SubPrice}"

@@ -44,9 +44,9 @@ namespace MyStreamTimer.Shared.ViewModel
             get
             {
                 if (string.IsNullOrWhiteSpace(GlobalSettings.ProPrice) || GlobalSettings.IsPro)
-                    return "PRO MODES";
+                    return "PRO";
 
-                return $"PRO MODES - {GlobalSettings.ProPrice}";
+                return $"PRO - {GlobalSettings.ProPrice}";
             }
         }
 
@@ -84,7 +84,7 @@ namespace MyStreamTimer.Shared.ViewModel
         public bool IsNotBronze => !IsBronze && !platformHelpers.IsMac;
 
         public bool IsSilver => GlobalSettings.IsSilver;
-        public bool IsNotSilver => !IsSilver;
+        public bool IsNotSilver => !IsSilver && !platformHelpers.IsMac;
 
         public bool IsGold => GlobalSettings.IsGold;
         public bool IsNotGold => !IsGold;
@@ -458,7 +458,7 @@ namespace MyStreamTimer.Shared.ViewModel
                 }
 
                 var includeBronze = !platformHelpers.IsMac;
-                var ids = platformHelpers.IsMac ? new[] { "mstsilver", "mstgold", SubId, SubId6Months } : new[] { "mstbronze", "mstsilver", "mstgold" };
+                var ids = platformHelpers.IsMac ? new[] { "mstgold", SubId, SubId6Months } : new[] { "mstbronze", "mstsilver", "mstgold" };
                 var items = await CrossInAppBilling.Current.GetProductInfoAsync(ItemType.InAppPurchase, ids);
                 if (items == null || items.Count() == 0)
                     return;
