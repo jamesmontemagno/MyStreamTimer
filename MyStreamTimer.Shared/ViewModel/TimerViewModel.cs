@@ -34,7 +34,7 @@ namespace MyStreamTimer.Shared.ViewModel
         readonly Timer timer;
         string identifier;
 
-        public bool RequiresPro => identifier == Constants.Countdown4 || identifier == Constants.Countup2;
+        public bool RequiresPro => identifier == Constants.Countdown4 || identifier == Constants.Countup2 || identifier == Constants.Time;
 
         Settings settings;
         public ICommand StartStopTimerCommand { get; }
