@@ -26,7 +26,7 @@ namespace MyStreamTimer.Shared.ViewModel
         DateTime endTime;
         bool currentIsDown;
         float currentMinutes;
-        string currentFinished, currentOutput, currentFileName;
+        string currentFinished, currentOutput, currentFileName, currentPath;
         int currentOutputStyle;
         bool currentBeepAtZero;
         readonly Timer timer;
@@ -414,7 +414,7 @@ namespace MyStreamTimer.Shared.ViewModel
 
             try
             {
-                currentFileName = GetDirectory();
+                currentFileName = currentPath = GetDirectory();
 
                 if (!Directory.Exists(currentFileName))
                     Directory.CreateDirectory(currentFileName);
@@ -439,8 +439,10 @@ namespace MyStreamTimer.Shared.ViewModel
 
             if(forceReset && !IsBusy)
             {
+                WriteTimeToDisk(false, "");
                 CanPauseResume = false;
                 PauseResume = "Resume";
+                CountdownOutput = "";
             }
 
             if (IsBusy)
@@ -450,7 +452,9 @@ namespace MyStreamTimer.Shared.ViewModel
 
 
             if (!IsBusy)
+            {
                 return;
+            }
 
             CanPauseResume = true;
             PauseResume = "Pause";
@@ -666,7 +670,7 @@ namespace MyStreamTimer.Shared.ViewModel
                     if(WriteTimeToDisk(false, text))
                         CountdownOutput = text;
                 }
-                await Task.Delay(500); 
+                await Task.Delay(400); 
             }
         }
         void TimerElapsed(object sender, ElapsedEventArgs e)
@@ -702,21 +706,29 @@ namespace MyStreamTimer.Shared.ViewModel
         {
             try
             {
-                if(create)
-                    File.WriteAllText(currentFileName, text);
-                else
-                {
-                    using var streamWriter = new StreamWriter(currentFileName, false);
-                    streamWriter.WriteLine(text);
-                }
+                if (previousText == text)
+                    return true;
 
+                previousText = text;
+                File.WriteAllText(currentFileName, text);
+
+
+                //using var streamWriter = new StreamWriter(currentFileName, false);
+                //streamWriter.WriteLine(text);
+                errors = 0;
                 return true;
             }
             catch (Exception ex)
             {
-                CountdownOutput = $"{ex.Message} | Ensure app has access to this directory. Go to the About tab to set a valid directory. Else you may need to set full disk write if you wish to write to this directory.";
+                errors++;
+                if (errors == 1)
+                    WriteTimeToDisk(create, text);
+                else if(errors > 5 )
+                    CountdownOutput = $"{ex.Message} | Ensure app has access to this directory. Go to the About tab to set a valid directory. Else you may need to set full disk write if you wish to write to this directory.";
                 return false;
             }
         }
+        string previousText;
+        int errors;
     }
 }

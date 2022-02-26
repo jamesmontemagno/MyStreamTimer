@@ -35,7 +35,7 @@
                 <Button IsVisible="{Binding IsNotGold}"
                         IsEnabled="{Binding IsNotBusy}"
                         Padding="5"
-                        Text="Purchase Pro Lifetime"
+                        Text="{OnPlatform macOS='Purchase Pro Lifetime', UWP='Purchase Pro Gold'}"
                         Command="{Binding BuyCommand}"
                         CommandParameter="mstgold"/>
                 <Label HorizontalOptions="Center" IsVisible="{Binding IsGold}" TextColor="Gold" Text="Pro Lifetime Unlocked!"/>
