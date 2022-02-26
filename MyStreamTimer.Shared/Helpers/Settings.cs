@@ -100,11 +100,11 @@ namespace MyStreamTimer.Shared.Helpers
 
         public static bool IsSubValid => SubExpirationDate > DateTime.UtcNow;
 
-        //#if DEBUG
-        //        public static bool IsPro => false;
-        //#else
+#if DEBUG
+        public static bool IsPro => true;
+#else
         public static bool IsPro => IsBronze || IsSilver || IsGold || (HasTippedSub && IsSubValid);
-//#endif
+#endif
 
         public static string ProPrice
         {
@@ -182,6 +182,10 @@ namespace MyStreamTimer.Shared.Helpers
         readonly bool makeSoundDefault = false;
 
 
+        const string showAMPMKey = "key_show_ampm";
+        readonly bool showAMPMDefault = false;
+
+
         const string outputStyleKey = "key_output_style";
         const int outputStyleDefault = 0;
 
@@ -219,6 +223,13 @@ namespace MyStreamTimer.Shared.Helpers
         {
             get => AppSettings.GetValueOrDefault($"{makeSoundKey}_{id}", makeSoundDefault);
             set => AppSettings.AddOrUpdateValue($"{makeSoundKey}_{id}", value);
+        }
+
+
+        public bool ShowAMPM
+        {
+            get => AppSettings.GetValueOrDefault($"{showAMPMKey}_{id}", showAMPMDefault);
+            set => AppSettings.AddOrUpdateValue($"{showAMPMKey}_{id}", value);
         }
 
         public bool AutoStart

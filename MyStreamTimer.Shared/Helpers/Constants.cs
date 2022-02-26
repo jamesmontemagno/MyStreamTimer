@@ -13,5 +13,6 @@ namespace MyStreamTimer.Shared.Helpers
         public const string Countdown2 = "countdown2";
         public const string Countdown3 = "countdown3";
         public const string Countdown4 = "countdown4";
+        public const string Time = "time";
     }
 }

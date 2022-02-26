@@ -24,6 +24,7 @@ namespace MyStreamTimer.UI
         public static TimerViewModel DownVM4 { get; set; }
         public static TimerViewModel UpVM { get; set; }
         public static TimerViewModel UpVM2 { get; set; }
+        public static TimerViewModel TimeVM { get; set; }
         public MainPage()
         {
             InitializeComponent();
@@ -41,6 +42,7 @@ namespace MyStreamTimer.UI
             TabItemDown4.BindingContext = DownVM4 = new TimerViewModel(Constants.Countdown4, fourth && OpeningArgs.action == CommandAction.Start && GlobalSettings.IsPro, fourth ? OpeningArgs.mins : -1);
             TabItemUp.BindingContext = UpVM = new TimerViewModel(Constants.Countup, up && OpeningArgs.action == CommandAction.Start, up ? OpeningArgs.mins : -1);
             TabItemUp2.BindingContext = UpVM2 = new TimerViewModel(Constants.Countup2, up2 && OpeningArgs.action == CommandAction.Start && GlobalSettings.IsPro, up2 ? OpeningArgs.mins : -1);
+            TabTimePage.BindingContext = TimeVM = new TimerViewModel(Constants.Time, false, -1);
         }
 
         protected override async void OnAppearing()

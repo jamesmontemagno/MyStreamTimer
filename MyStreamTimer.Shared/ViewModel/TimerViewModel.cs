@@ -25,6 +25,8 @@ namespace MyStreamTimer.Shared.ViewModel
         DateTime startTime;
         DateTime endTime;
         bool currentIsDown;
+        bool currentShowAMPM;
+        bool isTime;
         float currentMinutes;
         string currentFinished, currentOutput, currentFileName, currentPath;
         int currentOutputStyle;
@@ -71,6 +73,10 @@ namespace MyStreamTimer.Shared.ViewModel
                     break;
                 case Constants.Countup:
                 case Constants.Countup2:
+                    IsDown = false;
+                    break;
+                case Constants.Time:
+                    isTime = true;
                     IsDown = false;
                     break;
             }
@@ -240,6 +246,16 @@ namespace MyStreamTimer.Shared.ViewModel
             }
         }
 
+        public bool ShowAMPM
+        {
+            get => settings.ShowAMPM;
+            set
+            {
+                settings.ShowAMPM = value;
+                OnPropertyChanged(nameof(ShowAMPM));
+            }
+        }
+
         public bool BeepAtZero
         {
             get => settings.MakeSound;
@@ -399,6 +415,7 @@ namespace MyStreamTimer.Shared.ViewModel
                 bootMins = -1;
                 extraTicksForUp = 0;
                 currentMinutes = 0;
+                firstTime = true;
             }
 
             try
@@ -461,6 +478,7 @@ namespace MyStreamTimer.Shared.ViewModel
 
             currentFinished = Finish;
             currentIsDown = IsDown;
+            currentShowAMPM = ShowAMPM;
             var currentSeconds = 0;
             if (bootMins > 0)
             {
@@ -502,9 +520,16 @@ namespace MyStreamTimer.Shared.ViewModel
 
 
             if (currentIsDown)
+            {
                 startTime = DateTime.Now;
+            }
+            else if (isTime)
+            {
+            }
             else
+            {
                 startTime = DateTime.Now.AddMinutes(-currentMinutes).AddSeconds(-currentSeconds);
+            }
 
             endTime = DateTime.Now.AddMinutes(currentMinutes).AddSeconds(currentSeconds);
             //TimerElapsed(null, null);
@@ -521,6 +546,10 @@ namespace MyStreamTimer.Shared.ViewModel
                 {
                     bootMins = (float)(endTime - DateTime.Now).TotalMinutes;
                 }
+                else if(isTime)
+                {
+
+                }
                 else
                 {
                     var elapsedTime = DateTime.Now.AddTicks(extraTicksForUp) - startTime;
@@ -536,7 +565,11 @@ namespace MyStreamTimer.Shared.ViewModel
 
         async void UpdateTimer(object thing)
         {
-            while(!timerCTS.IsCancellationRequested)
+            var wait = 300;
+            if (isTime && currentOutputStyle == 1)
+                wait = 1000;
+
+            while (!timerCTS.IsCancellationRequested)
             {
                 var now = DateTime.Now;
                 var text = string.Empty;
@@ -557,15 +590,16 @@ namespace MyStreamTimer.Shared.ViewModel
                     }
                     else
                     {
-                        var elapsedTime = endTime - DateTime.Now;
+                        var elapsedTime = endTime - now;
 
-                        if (prevTime.Seconds == elapsedTime.Seconds && prevTime.Minutes == elapsedTime.Minutes &&
-                            prevTime.Hours == elapsedTime.Hours && prevTime.Days == elapsedTime.Days)
+                        if (PrevTime.Seconds == elapsedTime.Seconds && PrevTime.Minutes == elapsedTime.Minutes &&
+                            PrevTime.Hours == elapsedTime.Hours && PrevTime.Days == elapsedTime.Days)
                         {
-                            continue;
+                            if(!firstTime)
+                                continue;
                         }
-
-                        prevTime = elapsedTime;
+                        firstTime = false;
+                        PrevTime = elapsedTime;
 
                         switch (currentOutputStyle)
                         {
@@ -613,22 +647,60 @@ namespace MyStreamTimer.Shared.ViewModel
                                 break;
                             case 3:
                                 // Total Mins:Seconds
-                                text = $"{Math.Floor(elapsedTime.TotalMinutes).ToString("N0")}:{string.Format("{0:ss}", elapsedTime)}";
+                                text = $"{Math.Floor(elapsedTime.TotalMinutes):N0}:{string.Format("{0:ss}", elapsedTime)}";
                                 break;
                         }
                     }
                 }
-                else
+                else if(isTime)
                 {
-                    var elapsedTime = DateTime.Now.AddTicks(extraTicksForUp) - startTime;
-
-                    if (prevTime.Seconds == elapsedTime.Seconds && prevTime.Minutes == elapsedTime.Minutes &&
-                            prevTime.Hours == elapsedTime.Hours && prevTime.Days == elapsedTime.Days)
+                    if (currentOutputStyle == 0 || currentOutputStyle == 2)
                     {
-                        continue;
+                        if (PrevDateTime.Minute == now.Minute &&
+                                PrevDateTime.Hour == now.Hour)
+                        {
+                            if (!firstTime)
+                                continue;
+                        }
+
+                        firstTime = false;
+                        if(currentOutputStyle == 0)
+                            text = currentShowAMPM ? now.ToString("h:mm tt") : now.ToString("h:mm");
+                        else
+                            text = currentShowAMPM ? now.ToString("H:mm tt") : now.ToString("H:mm");
+                    }
+                    else
+                    {
+                        if (PrevDateTime.Second == now.Second && PrevDateTime.Minute == now.Minute &&
+                                PrevDateTime.Hour == now.Hour)
+                        {
+                            if (!firstTime)
+                                continue;
+                        }
+
+                        firstTime = false;
+                        if(currentOutputStyle == 1)
+                            text = currentShowAMPM ? now.ToString("h:mm:ss tt") : now.ToString("h:mm:ss");
+                        else
+                            text = currentShowAMPM ? now.ToString("H:mm:ss tt") : now.ToString("H:mm:ss");
                     }
 
-                    prevTime = elapsedTime;
+                    PrevDateTime = now;
+                }
+                else
+                {
+                    var elapsedTime = now.AddTicks(extraTicksForUp) - startTime;
+
+                    if (PrevTime.Seconds == elapsedTime.Seconds && PrevTime.Minutes == elapsedTime.Minutes &&
+                            PrevTime.Hours == elapsedTime.Hours && PrevTime.Days == elapsedTime.Days)
+                    {
+                        if (!firstTime)
+                            continue;
+                    }
+
+                    firstTime = false;
+
+                    PrevTime = elapsedTime;
 
                     switch (currentOutputStyle)
                     {
@@ -678,7 +750,7 @@ namespace MyStreamTimer.Shared.ViewModel
                             break;
                         case 3:
                             // Total Mins:Seconds
-                            text = $"{Math.Floor(elapsedTime.TotalMinutes).ToString("N0")}:{string.Format("{0:ss}", elapsedTime)}";
+                            text = $"{Math.Floor(elapsedTime.TotalMinutes):N0}:{string.Format("{0:ss}", elapsedTime)}";
                             break;
                     }
                 }
@@ -687,7 +759,7 @@ namespace MyStreamTimer.Shared.ViewModel
                     if(WriteTimeToDisk(false, text))
                         CountdownOutput = text;
                 }
-                await Task.Delay(300); 
+                await Task.Delay(wait); 
             }
         }
         void TimerElapsed(object sender, ElapsedEventArgs e)
@@ -742,6 +814,8 @@ namespace MyStreamTimer.Shared.ViewModel
             }
         }
         int errors;
-        TimeSpan prevTime = TimeSpan.FromDays(1);
+        TimeSpan PrevTime { get; set; } = TimeSpan.FromDays(1);
+        DateTime PrevDateTime { get; set; } =  DateTime.Now;
+        bool firstTime = true;
     }
 }

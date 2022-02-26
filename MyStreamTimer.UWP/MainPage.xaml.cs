@@ -25,7 +25,7 @@ namespace MyStreamTimer.UWP
             ServiceContainer.Register<IPlatformHelpers>(() => new PlatformHelpers());
             LoadApplication(new UI.App());
 
-            var size = new Size(600, 480);
+            var size = new Size(640, 480);
             ApplicationView.PreferredLaunchViewSize = size;
 
             ApplicationView.PreferredLaunchWindowingMode = ApplicationViewWindowingMode.PreferredLaunchViewSize;
