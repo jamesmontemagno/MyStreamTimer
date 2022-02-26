@@ -558,6 +558,15 @@ namespace MyStreamTimer.Shared.ViewModel
                     else
                     {
                         var elapsedTime = endTime - DateTime.Now;
+
+                        if (prevTime.Seconds == elapsedTime.Seconds && prevTime.Minutes == elapsedTime.Minutes &&
+                            prevTime.Hours == elapsedTime.Hours && prevTime.Days == elapsedTime.Days)
+                        {
+                            continue;
+                        }
+
+                        prevTime = elapsedTime;
+
                         switch (currentOutputStyle)
                         {
                             case 0:
@@ -612,7 +621,15 @@ namespace MyStreamTimer.Shared.ViewModel
                 else
                 {
                     var elapsedTime = DateTime.Now.AddTicks(extraTicksForUp) - startTime;
-                    
+
+                    if (prevTime.Seconds == elapsedTime.Seconds && prevTime.Minutes == elapsedTime.Minutes &&
+                            prevTime.Hours == elapsedTime.Hours && prevTime.Days == elapsedTime.Days)
+                    {
+                        continue;
+                    }
+
+                    prevTime = elapsedTime;
+
                     switch (currentOutputStyle)
                     {
                         case 0:
@@ -670,7 +687,7 @@ namespace MyStreamTimer.Shared.ViewModel
                     if(WriteTimeToDisk(false, text))
                         CountdownOutput = text;
                 }
-                await Task.Delay(400); 
+                await Task.Delay(300); 
             }
         }
         void TimerElapsed(object sender, ElapsedEventArgs e)
@@ -706,10 +723,6 @@ namespace MyStreamTimer.Shared.ViewModel
         {
             try
             {
-                if (previousText == text)
-                    return true;
-
-                previousText = text;
                 File.WriteAllText(currentFileName, text);
 
 
@@ -728,7 +741,7 @@ namespace MyStreamTimer.Shared.ViewModel
                 return false;
             }
         }
-        string previousText;
         int errors;
+        TimeSpan prevTime = TimeSpan.FromDays(1);
     }
 }
