@@ -23,9 +23,35 @@ namespace MyStreamTimer.UI
             vm.Directory = defaultDirectoryPath;
         }
 
+        async void ButtonPickFolder_Clicked(System.Object sender, System.EventArgs e)
+        {
+            var vm = (AboutViewModel)BindingContext;
+            try
+            {
+                var platform = ServiceContainer.Resolve<IPlatformHelpers>();
+                var location = await platform.PickFolder();
+                if (!string.IsNullOrWhiteSpace(location))
+                    vm.Directory = location;
+            }
+            catch (Exception ex)
+            {
+
+            }
+        }
+
         async void ButtonTest_Clicked(System.Object sender, System.EventArgs e)
         {
             var vm = (AboutViewModel)BindingContext;
+            if (GlobalSettings.DirectoryPath == vm.Directory)
+                return;
+
+            var platform = ServiceContainer.Resolve<IPlatformHelpers>();
+
+            if(platform.HasRunningTimers)
+            {
+                await DisplayAlert("Active timers", "Please stop all timbers before changing the save directory", "OK");
+                return;
+            }
             try
             {
                 try
@@ -33,7 +59,7 @@ namespace MyStreamTimer.UI
 
                     if(Device.RuntimePlatform == Device.macOS)
                     {
-                        var platform = ServiceContainer.Resolve<IPlatformHelpers>();
+                        
                         platform.WriteFileNative(vm.Directory);
                     }
                 }

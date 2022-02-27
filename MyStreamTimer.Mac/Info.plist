@@ -44,7 +44,7 @@
 	<key>CFBundleSupportedPlatforms</key>
 	<string>MacOSX</string>
 	<key>CFBundleVersion</key>
-	<string>30</string>
+	<string>34</string>
 	<key>NSDesktopFolderUsageDescription</key>
 	<string>If you would like to store files on the desktop, will need permission.</string>
 	<key>NSDocumentsFolderUsageDescription</key>

@@ -59,7 +59,7 @@ namespace MyStreamTimer.Mac
         {
             var style = NSWindowStyle.Closable | NSWindowStyle.Miniaturizable | NSWindowStyle.Titled;
 
-            var rect = new CoreGraphics.CGRect(500, 300, 600, 360);
+            var rect = new CoreGraphics.CGRect(500, 300, 600, 400);
             window = new MyWindow(rect, style, NSBackingStore.Buffered, false);
             window.Title = "My Stream Timer"; // choose your own Title here
             window.TitleVisibility = NSWindowTitleVisibility.Visible;

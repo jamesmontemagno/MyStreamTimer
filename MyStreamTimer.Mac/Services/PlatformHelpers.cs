@@ -8,11 +8,14 @@ using Xamarin.Essentials;
 using StoreKit;
 using System.Collections.Generic;
 using System.Diagnostics;
+using MyStreamTimer.Shared.Helpers;
 
 namespace MyStreamTimer.Mac.Services
 {
     public class PlatformHelpers : IPlatformHelpers
     {
+
+        public bool HasRunningTimers => Activities.Count > 0;
 
         
         public bool IsMac => true;
@@ -92,6 +95,8 @@ namespace MyStreamTimer.Mac.Services
                 var activity = NSProcessInfo.ProcessInfo.BeginActivity(options, "User has inititiated a timer that is a long running process.");
 
                 Activities.Add(id, activity);
+                if (Activities.Count == 1)
+                    StartBookmark();
             }
             catch (Exception ex)
             {
@@ -108,6 +113,9 @@ namespace MyStreamTimer.Mac.Services
                 var activity = Activities[id];
                 NSProcessInfo.ProcessInfo.EndActivity(activity);
                 Activities.Remove(id);
+
+                if (Activities.Count == 0)
+                    StopBookmark();
             }
             catch (Exception ex)
             {
@@ -115,13 +123,70 @@ namespace MyStreamTimer.Mac.Services
             }
         }
 
+        void StartBookmark()
+        {
+            try
+            {
+                if (GlobalSettings.DirectoryPath == BaseDirectory)
+                    return;
+
+                var bookmark = NSUserDefaults.StandardUserDefaults.DataForKey("bookmark");
+                if (bookmark != null)
+                {
+                    var url2 = NSUrl.FromBookmarkData(bookmark, NSUrlBookmarkResolutionOptions.WithSecurityScope, null, out var isStale, out var error3);
+                    if (isStale)
+                    {
+                        var data = url2.CreateBookmarkData(NSUrlBookmarkCreationOptions.WithSecurityScope, null, null, out var error2);
+                        NSUserDefaults.StandardUserDefaults["bookmark"] = data;
+                        NSUserDefaults.StandardUserDefaults.Synchronize();
+                        url2 = NSUrl.FromBookmarkData(data, NSUrlBookmarkResolutionOptions.WithSecurityScope, null, out var isStale2, out var error4);
+                    }
+                    url2.StartAccessingSecurityScopedResource();
+                }
+            }
+            catch (Exception ex)
+            {
+
+            }
+        }
+
+        void StopBookmark()
+        {
+            try
+            {
+                if (GlobalSettings.DirectoryPath == BaseDirectory)
+                    return;
+
+                var bookmark = NSUserDefaults.StandardUserDefaults.DataForKey("bookmark");
+                if (bookmark != null)
+                {
+                    var url2 = NSUrl.FromBookmarkData(bookmark, NSUrlBookmarkResolutionOptions.WithSecurityScope, null, out var isStale, out var error3);
+                    url2.StopAccessingSecurityScopedResource();
+                    if (isStale)
+                    {
+                        var data = url2.CreateBookmarkData(NSUrlBookmarkCreationOptions.WithSecurityScope, null, null, out var error2);
+                        NSUserDefaults.StandardUserDefaults["bookmark"] = data;
+                        NSUserDefaults.StandardUserDefaults.Synchronize();
+                        url2 = NSUrl.FromBookmarkData(data, NSUrlBookmarkResolutionOptions.WithSecurityScope, null, out var isStale2, out var error4);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+
+            }
+        }
+
         public bool WriteFileNative(string directory)
         {
             try
             {
+                if (GlobalSettings.DirectoryPath != directory)
+                    StartBookmark();
+
                 var random = System.IO.Path.GetRandomFileName();
                 var url = NSUrl.FromString(directory).Append(random, false).ToString();
-                var fm = new NSFileManager();
+                var fm = NSFileManager.DefaultManager;
                 NSDictionary dict = null;
                 fm.CreateFile(url, NSData.FromString("test"), dict);
 
@@ -129,6 +194,9 @@ namespace MyStreamTimer.Mac.Services
 
                 if (System.IO.File.Exists(url))
                     System.IO.File.Delete(url);
+
+                if (GlobalSettings.DirectoryPath != directory)
+                    StopBookmark();
             }
             catch (Exception ex)
             {
@@ -136,6 +204,68 @@ namespace MyStreamTimer.Mac.Services
             }
 
             return true;
+        }
+
+        public async Task<string> PickFolder()
+        {
+            try
+            {
+
+                var panel = NSOpenPanel.OpenPanel;
+
+                panel.CanChooseDirectories = true;
+                panel.CanChooseFiles = false;
+                panel.CanCreateDirectories = false;
+                panel.CanSelectHiddenExtension = false;
+                panel.Title = "Select folder";
+                panel.AllowsMultipleSelection = false;
+                
+                var tcs = new TaskCompletionSource<string>();
+
+                panel.BeginSheet(NSApplication.SharedApplication.MainWindow, (result) =>
+                {
+                    if(result == (int)NSModalResponse.OK)
+                    {
+                        if (panel.Url != null)
+                        {
+                            var dir = panel.Url.RelativePath;
+
+                            //only get bookmark if not in the container
+                            if (GlobalSettings.DirectoryPath != dir)
+                            {
+                                var data = panel.Url.CreateBookmarkData(NSUrlBookmarkCreationOptions.WithSecurityScope, null, null, out var error);
+
+                                if (data != null)
+                                {
+                                    NSUserDefaults.StandardUserDefaults["bookmark"] = data;
+                                    NSUserDefaults.StandardUserDefaults.Synchronize();
+                                }
+                            }
+
+                            tcs.SetResult(dir);
+                        }
+                        else
+                        {
+                            tcs.SetResult(string.Empty);
+                        }
+                    }
+                    else
+                    {
+                        tcs.SetResult(string.Empty);
+                    }
+
+                    panel.Close();
+
+                });
+
+                return await tcs.Task;
+            }
+            catch (Exception ex)
+            {
+                return string.Empty;
+            }
+
+            
         }
     }
 }

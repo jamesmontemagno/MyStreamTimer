@@ -440,7 +440,7 @@ namespace MyStreamTimer.Shared.ViewModel
             }
             catch (Exception ex)
             {
-                CountdownOutput = $"{ex.Message} | Ensure app has access to this directory. Go to the About tab to set a valid directory. Else you may need to set full disk write if you wish to write to this directory.";
+                CountdownOutput = $"{ex.Message} | Ensure app has access to this directory. Go to the About tab to set a valid directory.";
                 return;
             }
 
@@ -809,7 +809,7 @@ namespace MyStreamTimer.Shared.ViewModel
                 if (errors == 1)
                     WriteTimeToDisk(create, text);
                 else if(errors > 5 )
-                    CountdownOutput = $"{ex.Message} | Ensure app has access to this directory. Go to the About tab to set a valid directory. Else you may need to set full disk write if you wish to write to this directory.";
+                    CountdownOutput = $"{ex.Message} | Ensure app has access to this directory. Go to the About tab to set a valid directory. ";
                 return false;
             }
         }

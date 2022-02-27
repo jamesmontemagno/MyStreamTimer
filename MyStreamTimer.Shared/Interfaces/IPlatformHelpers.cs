@@ -25,5 +25,7 @@ namespace MyStreamTimer.Shared.Interfaces
         void StartActivity(string id);
         void StopActivity(string id);
         bool WriteFileNative(string directory);
+        Task<string> PickFolder();
+        bool HasRunningTimers { get; }
     }
 }
