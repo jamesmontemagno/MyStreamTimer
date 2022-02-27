@@ -24,5 +24,6 @@ namespace MyStreamTimer.Shared.Interfaces
 
         void StartActivity(string id);
         void StopActivity(string id);
+        bool WriteFileNative(string directory);
     }
 }

@@ -114,5 +114,28 @@ namespace MyStreamTimer.Mac.Services
                 Debug.WriteLine($"Unable to start activity: {ex}");
             }
         }
+
+        public bool WriteFileNative(string directory)
+        {
+            try
+            {
+                var random = System.IO.Path.GetRandomFileName();
+                var url = NSUrl.FromString(directory).Append(random, false).ToString();
+                var fm = new NSFileManager();
+                NSDictionary dict = null;
+                fm.CreateFile(url, NSData.FromString("test"), dict);
+
+                fm.Remove(url, out var error);
+
+                if (System.IO.File.Exists(url))
+                    System.IO.File.Delete(url);
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+
+            return true;
+        }
     }
 }

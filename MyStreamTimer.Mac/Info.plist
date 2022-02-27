@@ -44,6 +44,18 @@
 	<key>CFBundleSupportedPlatforms</key>
 	<string>MacOSX</string>
 	<key>CFBundleVersion</key>
-	<string>28</string>
+	<string>30</string>
+	<key>NSDesktopFolderUsageDescription</key>
+	<string>If you would like to store files on the desktop, will need permission.</string>
+	<key>NSDocumentsFolderUsageDescription</key>
+	<string>If you would like to store files in the documents folder, will need permission.</string>
+	<key>NSDownloadsFolderUsageDescription</key>
+	<string>If you would like to store files in the downloaded folder, will need permission.</string>
+	<key>NSNetworkVolumesUsageDescription</key>
+	<string>If you would like to store files on network volumes, will need permission.</string>
+	<key>NSRemovableVolumesUsageDescription</key>
+	<string>If you would like to store files on removeable storage, will need permission.</string>
+	<key>NSFileProviderDomainUsageDescription</key>
+	<string>If you would like to store files via file provider domain, will need permission.</string>
 </dict>
 </plist>

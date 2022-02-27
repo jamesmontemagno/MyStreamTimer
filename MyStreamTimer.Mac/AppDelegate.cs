@@ -41,7 +41,7 @@ namespace MyStreamTimer.Mac
         private void HandleShowHelp(NSObject sender)
         {
             var clipboard = ServiceContainer.Resolve<IPlatformHelpers>();
-            clipboard.OpenUrl("https://jamesmontemagno.github.io/MyStreamTimer/");
+            clipboard.OpenUrl("https://www.mystreamtimer.com");
         }
 
         public override void PerformClose(NSObject sender)

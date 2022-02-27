@@ -28,17 +28,33 @@ namespace MyStreamTimer.UI
             var vm = (AboutViewModel)BindingContext;
             try
             {
+                try
+                {
+
+                    if(Device.RuntimePlatform == Device.macOS)
+                    {
+                        var platform = ServiceContainer.Resolve<IPlatformHelpers>();
+                        platform.WriteFileNative(vm.Directory);
+                    }
+                }
+                catch (Exception ex)
+                {
+
+                }
+
 
                 var dir = vm.Directory;
 
                 if (!Directory.Exists(dir))
                     Directory.CreateDirectory(dir);
 
-                dir = Path.Combine(dir, "thisisatest.txt");
+                dir = Path.Combine(dir, Path.GetRandomFileName());
                 if (File.Exists(dir))
                     File.Delete(dir);
 
                 File.WriteAllText(dir, string.Empty);
+                if (File.Exists(dir))
+                    File.Delete(dir);
                 await DisplayAlert("Success", "This directory is valid and can be accessed! New files will be saved here.", "OK");
                 GlobalSettings.DirectoryPath = vm.Directory;
             }
