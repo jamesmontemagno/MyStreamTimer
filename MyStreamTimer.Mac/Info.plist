@@ -44,7 +44,7 @@
 	<key>CFBundleSupportedPlatforms</key>
 	<string>MacOSX</string>
 	<key>CFBundleVersion</key>
-	<string>34</string>
+	<string>36</string>
 	<key>NSDesktopFolderUsageDescription</key>
 	<string>If you would like to store files on the desktop, will need permission.</string>
 	<key>NSDocumentsFolderUsageDescription</key>
@@ -57,5 +57,17 @@
 	<string>If you would like to store files on removeable storage, will need permission.</string>
 	<key>NSFileProviderDomainUsageDescription</key>
 	<string>If you would like to store files via file provider domain, will need permission.</string>
+	<key>DTPlatformBuild</key>
+	<string>13C100</string>
+	<key>DTPlatformVersion</key>
+	<string>12.1</string>
+	<key>DTSDKBuild</key>
+	<string>21C46</string>
+	<key>DTSDKName</key>
+	<string>macosx12.1</string>
+	<key>DTXcode</key>
+	<string>1321</string>
+	<key>DTXcodeBuild</key>
+	<string>13C100</string>
 </dict>
 </plist>

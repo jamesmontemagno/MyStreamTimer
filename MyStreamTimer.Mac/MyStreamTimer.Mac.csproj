@@ -120,5 +120,6 @@
       <Name>MyStreamTimer.UI</Name>
     </ProjectReference>
   </ItemGroup>
+
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\Mac\Xamarin.Mac.CSharp.targets" />
 </Project>
