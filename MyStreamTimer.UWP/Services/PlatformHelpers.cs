@@ -7,6 +7,7 @@ using Windows.Services.Store;
 using System.Threading;
 using Windows.Foundation;
 using Windows.Storage.Streams;
+using System.Collections.Generic;
 
 namespace MyStreamTimer.UWP.Services
 {
@@ -17,6 +18,8 @@ namespace MyStreamTimer.UWP.Services
             Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
 
         public bool HasInternet => Connectivity.NetworkAccess == NetworkAccess.Internet;
+
+        public bool HasRunningTimers => Activities.Count > 0;
 
         public void CopyToClipboard(string text) =>
             Clipboard.SetTextAsync(text).ContinueWith(_ => { });
@@ -96,8 +99,24 @@ namespace MyStreamTimer.UWP.Services
             return ims;
         }
 
-        public void StartActivity(string id) { }
-        public void StopActivity(string id) { }
+        List<string> Activities { get; } = new List<string>();
+        public void StartActivity(string id) 
+        {
+            if (Activities.Contains(id))
+                return;
+
+            Activities.Add(id);
+        }
+        public void StopActivity(string id) 
+        {
+            if (!Activities.Contains(id))
+                return;
+
+            Activities.Remove(id);
+        }
+
+        public bool WriteFileNative(string directory) => false;
+        public Task<string> PickFolder() => Task.FromResult(string.Empty);
     }
 
     static partial class PlatformExtensions
