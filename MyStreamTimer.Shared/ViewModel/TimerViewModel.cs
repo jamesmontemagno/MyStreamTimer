@@ -431,16 +431,22 @@ namespace MyStreamTimer.Shared.ViewModel
 
             try
             {
+                if (!platformHelpers.HasRunningTimers)
+                    platformHelpers.StartBookmark();
+
                 currentFileName = currentPath = GetDirectory();
 
                 if (!Directory.Exists(currentFileName))
                     Directory.CreateDirectory(currentFileName);
 
                 currentFileName = Path.Combine(currentFileName, FileName);
+
+                if (!platformHelpers.HasRunningTimers)
+                    platformHelpers.StopBookmark();
             }
             catch (Exception ex)
             {
-                CountdownOutput = $"{ex.Message} | Ensure app has access to this directory. Go to the About tab to set a valid directory.";
+                CountdownOutput = $"INIT: {ex.Message} | Ensure app has access to this directory. Go to the About tab to set a valid directory.";
                 return;
             }
 

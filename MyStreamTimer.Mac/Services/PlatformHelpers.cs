@@ -123,7 +123,7 @@ namespace MyStreamTimer.Mac.Services
             }
         }
 
-        void StartBookmark()
+        public void StartBookmark()
         {
             try
             {
@@ -134,23 +134,31 @@ namespace MyStreamTimer.Mac.Services
                 if (bookmark != null)
                 {
                     var url2 = NSUrl.FromBookmarkData(bookmark, NSUrlBookmarkResolutionOptions.WithSecurityScope, null, out var isStale, out var error3);
+
+                    if (error3 != null)
+                        throw new Exception(error3.LocalizedDescription);
                     if (isStale)
                     {
                         var data = url2.CreateBookmarkData(NSUrlBookmarkCreationOptions.WithSecurityScope, null, null, out var error2);
+                        if(error2 != null)
+                            throw new Exception(error2.LocalizedDescription);
+
                         NSUserDefaults.StandardUserDefaults["bookmark"] = data;
                         NSUserDefaults.StandardUserDefaults.Synchronize();
-                        url2 = NSUrl.FromBookmarkData(data, NSUrlBookmarkResolutionOptions.WithSecurityScope, null, out var isStale2, out var error4);
                     }
                     url2.StartAccessingSecurityScopedResource();
                 }
             }
             catch (Exception ex)
             {
-
+                InvokeOnMainThread(async () =>
+                {
+                    await Application.Current.MainPage.DisplayAlert("Access error", $"Unable to access save folder, please re-pick the save location on the about tab. Error Code: {ex.Message}", "OK");
+                });
             }
         }
 
-        void StopBookmark()
+        public void StopBookmark()
         {
             try
             {
@@ -167,7 +175,6 @@ namespace MyStreamTimer.Mac.Services
                         var data = url2.CreateBookmarkData(NSUrlBookmarkCreationOptions.WithSecurityScope, null, null, out var error2);
                         NSUserDefaults.StandardUserDefaults["bookmark"] = data;
                         NSUserDefaults.StandardUserDefaults.Synchronize();
-                        url2 = NSUrl.FromBookmarkData(data, NSUrlBookmarkResolutionOptions.WithSecurityScope, null, out var isStale2, out var error4);
                     }
                 }
             }

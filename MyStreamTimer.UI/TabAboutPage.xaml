@@ -75,8 +75,7 @@
                     <Editor
                         HeightRequest="100"
                         HorizontalOptions="FillAndExpand"
-                        IsEnabled="{OnPlatform macOS=true,
-                                               Default=false}"
+                        IsEnabled="false"
                         Text="{Binding Directory}"
                         TextColor="{AppThemeBinding Dark=White,
                                                     Default=Black,
