@@ -123,7 +123,7 @@ namespace MyStreamTimer.Mac.Services
             }
         }
 
-        public void StartBookmark()
+        public void StartBookmark(bool showException = true)
         {
             try
             {
@@ -151,6 +151,9 @@ namespace MyStreamTimer.Mac.Services
             }
             catch (Exception ex)
             {
+                if (!showException)
+                    return;
+
                 InvokeOnMainThread(async () =>
                 {
                     await Application.Current.MainPage.DisplayAlert("Access error", $"Unable to access save folder, please re-pick the save location on the about tab. Error Code: {ex.Message}", "OK");
@@ -158,7 +161,7 @@ namespace MyStreamTimer.Mac.Services
             }
         }
 
-        public void StopBookmark()
+        public void StopBookmark(bool showException = true)
         {
             try
             {

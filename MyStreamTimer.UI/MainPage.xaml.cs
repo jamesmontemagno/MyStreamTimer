@@ -62,6 +62,8 @@ namespace MyStreamTimer.UI
             if (helper == null)
                 return;
 
+            helper.SetScreenSaver(GlobalSettings.StayOnTop);
+
             if (helper.IsMac && GlobalSettings.CheckSubStatus && GlobalSettings.HasTippedSub && !GlobalSettings.IsSubValid)
             {
                 GlobalSettings.CheckSubStatus = false;
@@ -87,7 +89,6 @@ namespace MyStreamTimer.UI
 
            
 
-            helper.SetScreenSaver(GlobalSettings.StayOnTop);
         }
 
         async Task RestorePurchases()

@@ -392,7 +392,7 @@ namespace MyStreamTimer.Shared.ViewModel
         {
             try
             {
-
+                platformHelpers.StartBookmark(false);
                 var dir = GetDirectory();
 
                 if (!Directory.Exists(dir))
@@ -405,6 +405,10 @@ namespace MyStreamTimer.Shared.ViewModel
             catch
             {
 
+            }
+            finally
+            {
+                platformHelpers.StopBookmark(false);
             }
         }
 
@@ -432,7 +436,7 @@ namespace MyStreamTimer.Shared.ViewModel
             try
             {
                 if (!platformHelpers.HasRunningTimers)
-                    platformHelpers.StartBookmark();
+                    platformHelpers.StartBookmark(false);
 
                 currentFileName = currentPath = GetDirectory();
 
@@ -442,7 +446,7 @@ namespace MyStreamTimer.Shared.ViewModel
                 currentFileName = Path.Combine(currentFileName, FileName);
 
                 if (!platformHelpers.HasRunningTimers)
-                    platformHelpers.StopBookmark();
+                    platformHelpers.StopBookmark(false);
             }
             catch (Exception ex)
             {

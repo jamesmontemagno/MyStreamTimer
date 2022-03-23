@@ -69,7 +69,7 @@
                         VerticalOptions="Center" />
                 </StackLayout>
                 <StackLayout Grid.Column="1">
-                    <Label Text="We recommend leaving the default path. If you must change click Pick Folder to change directory and then click Test and Save to validate access."
+                    <Label Text="We recommend leaving the default path. If you must change click Pick Folder to change directory and then click Test and Save to validate access. Do not store files on a root directory, please create a sub-folder."
                            Grid.Row="0"
                            FontSize="Micro"/>
                     <Editor
