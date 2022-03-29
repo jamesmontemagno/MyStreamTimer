@@ -134,6 +134,7 @@ namespace MyStreamTimer.Mac
             if(urls != null && urls.Length > 0)
             {
                 var openinArgs = urls[0].AbsoluteString;
+                MainPage.OpeningUri = openinArgs;
                 ParseOpeningString(openinArgs);
             }
         }

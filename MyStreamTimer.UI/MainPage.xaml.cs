@@ -18,6 +18,7 @@ namespace MyStreamTimer.UI
     public partial class MainPage : TabbedPage
     {
         public static (CommandAction action, float mins, string vm) OpeningArgs { get; set;  }
+        public static string OpeningUri { get; set; }
         public static TimerViewModel DownVM { get; set; }
         public static TimerViewModel DownVM2 { get; set; }
         public static TimerViewModel DownVM3 { get; set; }
@@ -48,6 +49,29 @@ namespace MyStreamTimer.UI
         protected override async void OnAppearing()
         {
             base.OnAppearing();
+
+            if(!string.IsNullOrWhiteSpace(OpeningUri))
+            {
+                if (OpeningArgs.action != CommandAction.None && !string.IsNullOrWhiteSpace(OpeningArgs.vm))
+                {
+
+                }
+                else
+                {
+                    try
+                    {
+
+                        Xamarin.Forms.Application.Current.SendOnAppLinkRequestReceived(new Uri(OpeningUri));
+                        OpeningUri = null;
+
+                    }
+                    catch (Exception)
+                    {
+
+                    }
+                }
+            }
+
             var helper = ServiceContainer.Resolve<IPlatformHelpers>();
             if (GlobalSettings.TimesUsed < 10)
             {
