@@ -550,13 +550,18 @@ namespace MyStreamTimer.Shared.ViewModel
         long extraTicksForUp;
         void ExecutePauseResumeTimerCommand()
         {
-            if(IsBusy)
+            var prevBusy = IsBusy;
+            
+
+            ExecuteStartStopTimerCommand();
+
+            if (prevBusy)
             {
                 if (currentIsDown)
                 {
                     bootMins = (float)(endTime - DateTime.Now).TotalMinutes;
                 }
-                else if(isTime)
+                else if (isTime)
                 {
 
                 }
@@ -567,8 +572,6 @@ namespace MyStreamTimer.Shared.ViewModel
                 }
                 PauseResume = "Resume";
             }
-
-            ExecuteStartStopTimerCommand();
 
             CanPauseResume = true;
         }
