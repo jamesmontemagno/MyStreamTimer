@@ -52,7 +52,7 @@ namespace MyStreamTimer.UWP.Services
             {
                 try
                 {
-                
+
 
                     var mediaElement1 = new Windows.UI.Xaml.Controls.MediaElement();
                     var beepStream = await BeepBeep(200, 2000, 75);
@@ -100,14 +100,14 @@ namespace MyStreamTimer.UWP.Services
         }
 
         List<string> Activities { get; } = new List<string>();
-        public void StartActivity(string id) 
+        public void StartActivity(string id)
         {
             if (Activities.Contains(id))
                 return;
 
             Activities.Add(id);
         }
-        public void StopActivity(string id) 
+        public void StopActivity(string id)
         {
             if (!Activities.Contains(id))
                 return;
@@ -117,6 +117,14 @@ namespace MyStreamTimer.UWP.Services
 
         public bool WriteFileNative(string directory) => false;
         public Task<string> PickFolder() => Task.FromResult(string.Empty);
+        public void StartBookmark(bool showException = true)
+        {
+
+        }
+        public void StopBookmark(bool showException = true)
+        {
+
+        }
     }
 
     static partial class PlatformExtensions
