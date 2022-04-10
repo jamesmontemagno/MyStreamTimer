@@ -141,6 +141,7 @@
                 Grid.Row="7"
                 Grid.ColumnSpan="3"
                 HorizontalOptions="Center"
+                FontSize="Medium"
                 LineBreakMode="WordWrap"
                 Text="{Binding CountdownOutput}" />
 
@@ -149,6 +150,7 @@
                 Grid.Row="8"
                 Grid.ColumnSpan="3"
                 HorizontalOptions="Center"
+                FontSize="Micro"
                 IsVisible="{Binding IsBusy}"
                 Text="Do not minimize window."
                 TextColor="Red" />
