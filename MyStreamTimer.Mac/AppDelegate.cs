@@ -41,7 +41,7 @@ namespace MyStreamTimer.Mac
         private void HandleShowHelp(NSObject sender)
         {
             var clipboard = ServiceContainer.Resolve<IPlatformHelpers>();
-            clipboard.OpenUrl("https://jamesmontemagno.github.io/MyStreamTimer/");
+            clipboard.OpenUrl("https://www.mystreamtimer.com");
         }
 
         public override void PerformClose(NSObject sender)
@@ -59,7 +59,7 @@ namespace MyStreamTimer.Mac
         {
             var style = NSWindowStyle.Closable | NSWindowStyle.Miniaturizable | NSWindowStyle.Titled;
 
-            var rect = new CoreGraphics.CGRect(500, 300, 560, 350);
+            var rect = new CoreGraphics.CGRect(500, 300, 600, 400);
             window = new MyWindow(rect, style, NSBackingStore.Buffered, false);
             window.Title = "My Stream Timer"; // choose your own Title here
             window.TitleVisibility = NSWindowTitleVisibility.Visible;
@@ -134,6 +134,7 @@ namespace MyStreamTimer.Mac
             if(urls != null && urls.Length > 0)
             {
                 var openinArgs = urls[0].AbsoluteString;
+                MainPage.OpeningUri = openinArgs;
                 ParseOpeningString(openinArgs);
             }
         }

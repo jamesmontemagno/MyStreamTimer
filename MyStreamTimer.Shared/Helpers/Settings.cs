@@ -13,6 +13,9 @@ namespace MyStreamTimer.Shared.Helpers
 
     public static class GlobalSettings
     {
+        public static DateTime AddSubTime(this DateTime dateTime, int months = 1)
+            => dateTime.AddMonths(months).AddDays(5);
+
         static string defaultDirectoryPath;
         const string directoryPathKey = "global_directory_path";
         static bool defaultStayOn = true;
@@ -56,11 +59,52 @@ namespace MyStreamTimer.Shared.Helpers
             set => AppSettings.AddOrUpdateValue(nameof(IsGold), value);
         }
 
-//#if DEBUG
-//        public static bool IsPro => false;
-//#else
-        public static bool IsPro => IsBronze || IsSilver || IsGold;
-//#endif
+        const bool checkSubStatus = true;
+        public static bool CheckSubStatus
+        {
+            get => AppSettings.GetValueOrDefault(nameof(CheckSubStatus), checkSubStatus);
+            set => AppSettings.AddOrUpdateValue(nameof(CheckSubStatus), value);
+        }
+
+        public static string SubPrice
+        {
+            get => AppSettings.GetValueOrDefault(nameof(SubPrice), string.Empty);
+            set => AppSettings.AddOrUpdateValue(nameof(SubPrice), value);
+        }
+
+        public static string SubPrice6Months
+        {
+            get => AppSettings.GetValueOrDefault(nameof(SubPrice6Months), string.Empty);
+            set => AppSettings.AddOrUpdateValue(nameof(SubPrice6Months), value);
+        }
+
+        const bool hasTippedSub = false;
+        public static bool HasTippedSub
+        {
+            get => AppSettings.GetValueOrDefault(nameof(HasTippedSub), hasTippedSub);
+            set => AppSettings.AddOrUpdateValue(nameof(HasTippedSub), value);
+        }
+
+        const bool showSupportPopUp = true;
+        public static bool ShowSupportPopUp
+        {
+            get => AppSettings.GetValueOrDefault(nameof(ShowSupportPopUp), showSupportPopUp);
+            set => AppSettings.AddOrUpdateValue(nameof(ShowSupportPopUp), value);
+        }
+
+        public static DateTime SubExpirationDate
+        {
+            get => AppSettings.GetValueOrDefault(nameof(SubExpirationDate), DateTime.UtcNow.AddDays(-1));
+            set => AppSettings.AddOrUpdateValue(nameof(SubExpirationDate), value);
+        }
+
+        public static bool IsSubValid => SubExpirationDate > DateTime.UtcNow;
+
+#if DEBUG
+        public static bool IsPro => true;
+#else
+        public static bool IsPro => IsBronze || IsSilver || IsGold || (HasTippedSub && IsSubValid);
+#endif
 
         public static string ProPrice
         {
@@ -138,6 +182,10 @@ namespace MyStreamTimer.Shared.Helpers
         readonly bool makeSoundDefault = false;
 
 
+        const string showAMPMKey = "key_show_ampm";
+        readonly bool showAMPMDefault = false;
+
+
         const string outputStyleKey = "key_output_style";
         const int outputStyleDefault = 0;
 
@@ -175,6 +223,13 @@ namespace MyStreamTimer.Shared.Helpers
         {
             get => AppSettings.GetValueOrDefault($"{makeSoundKey}_{id}", makeSoundDefault);
             set => AppSettings.AddOrUpdateValue($"{makeSoundKey}_{id}", value);
+        }
+
+
+        public bool ShowAMPM
+        {
+            get => AppSettings.GetValueOrDefault($"{showAMPMKey}_{id}", showAMPMDefault);
+            set => AppSettings.AddOrUpdateValue($"{showAMPMKey}_{id}", value);
         }
 
         public bool AutoStart

@@ -10,6 +10,7 @@
     <local:TabDownPage x:Name="TabItemDown4" Title="Down 4"/>
     <local:TabUpPage x:Name="TabItemUp" Title="Up"/>
     <local:TabUpPage x:Name="TabItemUp2" Title="Up 2"/>
+    <local:TabTimePage x:Name="TabTimePage" Title="Time"/>
     <local:TabsCommandsPage Title="Commands"/>
     <local:TabAboutPage Title="About"/>
     <local:ProPage Title="Pro"/>

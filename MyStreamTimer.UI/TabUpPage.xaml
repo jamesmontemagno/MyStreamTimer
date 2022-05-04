@@ -112,7 +112,7 @@
                 VerticalOptions="Center" />
             <CheckBox Grid.Row="5" Grid.Column="1" IsChecked="{Binding AutoStart}" />
             <!--  Start Stop Button  -->
-            <Grid Grid.Row="6" Grid.ColumnSpan="2" ColumnDefinitions="*,*,*">
+            <Grid Grid.Row="6" Grid.ColumnSpan="2" ColumnDefinitions="*,*,*,*">
                 <Button
                     Grid.Column="0"
                     Padding="2"
@@ -126,6 +126,11 @@
                     Text="{Binding PauseResume}" />
                 <Button
                     Grid.Column="2"
+                    Command="{Binding AddMinuteCommand}"
+                    IsEnabled="{Binding IsBusy}"
+                    Text="Add Minute" />
+                <Button
+                    Grid.Column="3"
                     Padding="2"
                     Command="{Binding ResetCommand}"
                     IsEnabled="{Binding IsBusy}"
@@ -136,6 +141,7 @@
                 Grid.Row="7"
                 Grid.ColumnSpan="3"
                 HorizontalOptions="Center"
+                FontSize="Medium"
                 LineBreakMode="WordWrap"
                 Text="{Binding CountdownOutput}" />
 
@@ -144,6 +150,7 @@
                 Grid.Row="8"
                 Grid.ColumnSpan="3"
                 HorizontalOptions="Center"
+                FontSize="Micro"
                 IsVisible="{Binding IsBusy}"
                 Text="Do not minimize window."
                 TextColor="Red" />

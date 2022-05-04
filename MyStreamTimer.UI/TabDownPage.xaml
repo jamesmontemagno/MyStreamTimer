@@ -187,6 +187,7 @@
                 Grid.Row="7"
                 Grid.ColumnSpan="3"
                 HorizontalOptions="Center"
+                FontSize="Medium"
                 LineBreakMode="WordWrap"
                 Text="{Binding CountdownOutput}" />
 
@@ -194,7 +195,7 @@
             <Label
                 Grid.Row="8"
                 Grid.ColumnSpan="3"
-                FontSize="Small"
+                FontSize="Micro"
                 HorizontalOptions="Center"
                 IsVisible="{Binding IsBusy}"
                 Text="Do not minimize window."

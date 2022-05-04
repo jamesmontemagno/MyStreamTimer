@@ -52,12 +52,11 @@
     <LinkMode>SdkOnly</LinkMode>
     <HttpClientHandler>
     </HttpClientHandler>
-    <XamMacArch>
-    </XamMacArch>
-    <AOTMode>None</AOTMode>
+    <XamMacArch>x86_64</XamMacArch>
+    <AOTMode>Core</AOTMode>
     <CodeSigningKey>3rd Party Mac Developer Application</CodeSigningKey>
     <CodeSignProvision>Automatic</CodeSignProvision>
-    <PackageSigningKey>3rd Party Mac Developer Installer: Refractored LLC (8P95D2238B)</PackageSigningKey>
+    <PackageSigningKey>3rd Party Mac Developer Installer</PackageSigningKey>
     <CodeSignEntitlements>Entitlements.plist</CodeSignEntitlements>
   </PropertyGroup>
   <ItemGroup>
@@ -66,7 +65,7 @@
     <PackageReference Include="Xam.Plugins.Settings" Version="4.1.0-beta" />
     <PackageReference Include="Xamarin.Essentials" Version="1.6.1" />
     <PackageReference Include="Plugin.InAppBilling">
-      <Version>4.1.2-beta</Version>
+      <Version>5.3.0-beta</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
@@ -121,5 +120,6 @@
       <Name>MyStreamTimer.UI</Name>
     </ProjectReference>
   </ItemGroup>
+
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\Mac\Xamarin.Mac.CSharp.targets" />
 </Project>

@@ -1,0 +1,103 @@
+﻿<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage
+    x:Class="MyStreamTimer.UI.TabTimePage"
+    xmlns="http://xamarin.com/schemas/2014/forms"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:viewmodels="clr-namespace:MyStreamTimer.Shared.ViewModel;assembly=MyStreamTimer.Shared"
+    x:DataType="viewmodels:TimerViewModel">
+    <Grid>
+        <Label
+            x:Name="ProLabel"
+            HorizontalOptions="Center"
+            IsVisible="false"
+            Text="This is a Pro feature, head over to the Pro tab to upgrade today."
+            VerticalOptions="Center" />
+        <Grid
+            x:Name="MainGrid"
+            Padding="15"
+            ColumnDefinitions="Auto,*,75"
+            RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+            
+            <Label
+                Grid.Row="0"
+                HorizontalOptions="End"
+                Text="Output format:"
+                VerticalOptions="Center" />
+            <Picker
+                Grid.Row="0"
+                Grid.Column="1"
+                HorizontalOptions="FillAndExpand"
+                IsEnabled="{Binding IsNotBusy}"
+                SelectedIndex="{Binding OutputStyle, Mode=TwoWay}"
+                VerticalOptions="Center">
+                <Picker.ItemsSource>
+                    <x:Array Type="{x:Type x:String}">
+                        <x:String>Hour:Minute (9:10)</x:String>
+                        <x:String>Hour:Minute:Second (9:10:05)</x:String>
+                        <x:String>Hour:Minute (24-hour) (19:10)</x:String>
+                        <x:String>Hour:Minute:Second (24-hour) (19:10:05)</x:String>
+                    </x:Array>
+                </Picker.ItemsSource>
+            </Picker>
+
+            <Label
+                Grid.Row="1"
+                HorizontalOptions="End"
+                Text="Show AM/PM:"
+                VerticalOptions="Center" />
+            <CheckBox Grid.Row="1" Grid.Column="1" IsEnabled="{Binding IsNotBusy}" IsChecked="{Binding ShowAMPM}" />
+
+            <Label
+                Grid.Row="2"
+                HorizontalOptions="End"
+                Text="File Name:"
+                VerticalOptions="Center" />
+            <Entry
+                Grid.Row="2"
+                Grid.Column="1"
+                IsEnabled="{Binding IsNotBusy}"
+                Text="{Binding FileName}" />
+            <Button
+                Grid.Row="2"
+                Grid.Column="2"
+                Command="{Binding CopyFilePathCommand}"
+                HorizontalOptions="FillAndExpand"
+                Text=" Copy " />
+            <!--  Auto Start  -->
+
+            <Label
+                Grid.Row="3"
+                HorizontalOptions="End"
+                Text="Auto Start:"
+                VerticalOptions="Center" />
+            <CheckBox Grid.Row="3" Grid.Column="1" IsChecked="{Binding AutoStart}" />
+            <!--  Start Stop Button  -->
+            <Grid Grid.Row="4" Grid.ColumnSpan="2" ColumnDefinitions="*,*,*,*">
+                <Button
+                    Grid.Column="1"
+                    Padding="2"
+                    Command="{Binding StartStopTimerCommand}"
+                    Text="{Binding StartStop}" />
+              
+            </Grid>
+            <!--  Current Output  -->
+            <Label
+                Grid.Row="5"
+                Grid.ColumnSpan="3"
+                HorizontalOptions="Center"
+                FontSize="Medium"
+                LineBreakMode="WordWrap"
+                Text="{Binding CountdownOutput}" />
+
+
+            <Label
+                Grid.Row="6"
+                Grid.ColumnSpan="3"
+                HorizontalOptions="Center"
+                FontSize="Micro"
+                IsVisible="{Binding IsBusy}"
+                Text="Do not minimize window."
+                TextColor="Red" />
+        </Grid>
+    </Grid>
+</ContentPage>
