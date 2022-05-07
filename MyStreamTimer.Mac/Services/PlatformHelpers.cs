@@ -15,6 +15,7 @@ namespace MyStreamTimer.Mac.Services
     public class PlatformHelpers : IPlatformHelpers
     {
 
+        public string Version => AppInfo.VersionString;
         public bool HasRunningTimers => Activities.Count > 0;
 
         

@@ -27,19 +27,20 @@
                 Grid.Column="1"
                 Grid.ColumnSpan="2"
                 Orientation="Vertical">
-
                 <StackLayout Orientation="Horizontal">
                     <Stepper
                         HorizontalOptions="Start"
                         IsEnabled="{Binding IsNotBusy}"
-                        Maximum="1000"
+                        Maximum="100000"
                         Minimum="0"
                         Value="{Binding Minutes}" />
                     <Label
                         HorizontalTextAlignment="Start"
                         Text="{Binding Minutes, StringFormat='{0} mins'}"
                         VerticalTextAlignment="Center"
-                        WidthRequest="80" />
+                        WidthRequest="100" />
+                 </StackLayout>
+                <StackLayout Orientation="Horizontal">
                     <Stepper
                         HorizontalOptions="Start"
                         IsEnabled="{Binding IsNotBusy}"
@@ -51,7 +52,6 @@
                         Text="{Binding Seconds, StringFormat='{0} secs'}"
                         VerticalTextAlignment="Center"
                         WidthRequest="60" />
-
                 </StackLayout>
             </StackLayout>
             <Label

@@ -8,20 +8,23 @@ namespace MyStreamTimer.Shared.ViewModel
 {
     public class AboutViewModel: BaseViewModel
     {
+        IPlatformHelpers platformHelpers;
+        public string Version { get; }
         public ICommand OpenUrlCommand { get; }
         public AboutViewModel()
         {
             OpenUrlCommand = new Command<string>(ExecuteOpenUrlCommand);
             directory = GlobalSettings.DirectoryPath;
+            platformHelpers = ServiceContainer.Resolve<IPlatformHelpers>();
+            if (platformHelpers == null)
+                throw new Exception("Platform Helpers must be implemented");
+
+            Version = platformHelpers.Version;
         }
 
         void ExecuteOpenUrlCommand(string url)
         {
-            var platform = ServiceContainer.Resolve<IPlatformHelpers>();
-            if (platform == null)
-                throw new Exception("Platform Helpers must be implemented");
-
-            platform.OpenUrl(url);
+            platformHelpers.OpenUrl(url);
         }
 
         string directory;
@@ -39,9 +42,7 @@ namespace MyStreamTimer.Shared.ViewModel
             set
             {
                 GlobalSettings.StayOnTop = value;
-                var platform = ServiceContainer.Resolve<IPlatformHelpers>();
-                if (platform != null)
-                    platform.SetScreenSaver(value);
+                platformHelpers.SetScreenSaver(value);
 
                 OnPropertyChanged();
             }

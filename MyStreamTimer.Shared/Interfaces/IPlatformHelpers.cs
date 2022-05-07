@@ -7,6 +7,7 @@ namespace MyStreamTimer.Shared.Interfaces
 {
     public interface IPlatformHelpers
     {
+        string Version { get; }
         void CopyToClipboard(string text);
         string BaseDirectory { get; }
         bool IsMac { get; }
