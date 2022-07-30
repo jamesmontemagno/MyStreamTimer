@@ -783,7 +783,7 @@ namespace MyStreamTimer.Shared.ViewModel
                         if (wait < 0)
                             wait = 0;
 
-                        System.Diagnostics.Debug.WriteLine(wait);
+                        //System.Diagnostics.Debug.WriteLine(wait);
                     }
                 }
                 finally
