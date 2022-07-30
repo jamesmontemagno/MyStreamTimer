@@ -627,7 +627,9 @@ namespace MyStreamTimer.Shared.ViewModel
                                     //Auto
                                     if (Math.Floor(elapsedTime.TotalDays) > 0)
                                     {
-                                        if (elapsedTime.TotalDays >= 1000)
+                                        if (elapsedTime.TotalDays >= 10000)
+                                            text = string.Format("{0:ddddd\\:hh\\:mm\\:ss}", elapsedTime);
+                                        else if (elapsedTime.TotalDays >= 1000)
                                             text = string.Format("{0:dddd\\:hh\\:mm\\:ss}", elapsedTime);
                                         else if (elapsedTime.TotalDays >= 100)
                                             text = string.Format("{0:ddd\\:hh\\:mm\\:ss}", elapsedTime);
@@ -728,7 +730,7 @@ namespace MyStreamTimer.Shared.ViewModel
                                 //Auto
                                 if (Math.Floor(elapsedTime.TotalDays) > 0)
                                 {
-                                    if (elapsedTime.TotalDays >= 1000)
+                                    if (elapsedTime.TotalDays >= 10000)
                                         text = string.Format("{0:ddddd\\:hh\\:mm\\:ss}", elapsedTime);
                                     else if (elapsedTime.TotalDays >= 1000)
                                         text = string.Format("{0:dddd\\:hh\\:mm\\:ss}", elapsedTime);
@@ -776,21 +778,31 @@ namespace MyStreamTimer.Shared.ViewModel
                         if (WriteTimeToDisk(false, text))
                             CountdownOutput = text;
 
-                        ticks = DateTime.Now.Ticks;
+                        //ticks difference is now ticks - the old time which is less
+                        ticks = DateTime.Now.Ticks - ticks;
 
+
+                        System.Diagnostics.Debug.WriteLine($"ticks: {ticks}");
+
+                        // calculage now many milliseconds elapsed so we new our new wait time
+                        // this is because file time takes some time potentially.
                         var ms = TimeSpan.FromTicks(ticks).Milliseconds;
-                        wait = wait - ms;
+                        wait -= ms;
+                        //if it tool longer than 1 second (never) it will be negative
                         if (wait < 0)
                             wait = 0;
 
-                        //System.Diagnostics.Debug.WriteLine(wait);
+                        System.Diagnostics.Debug.WriteLine($"wait: {wait}");
                     }
                 }
                 finally
                 {
+
+                    System.Diagnostics.Debug.WriteLine($"Time: {DateTime.Now.ToLongTimeString()}");
                     if (wait != 0)
                         await Task.Delay(wait);
 
+                    //reset ticks to current time
                     ticks = DateTime.Now.Ticks;
                 }
             }
