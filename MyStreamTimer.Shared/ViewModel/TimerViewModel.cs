@@ -578,12 +578,14 @@ namespace MyStreamTimer.Shared.ViewModel
 
         async void UpdateTimer(object thing)
         {
-            var wait = 300;
-            if (isTime && currentOutputStyle == 1)
-                wait = 1000;
+            var wait = 1000;
+            var ticks = DateTime.Now.Ticks;
+            //if (isTime && currentOutputStyle == 1)
+            // wait = 1000;
 
             while (!timerCTS.IsCancellationRequested)
             {
+                wait = 1000;
                 try
                 {
                     var now = DateTime.Now;
@@ -773,11 +775,23 @@ namespace MyStreamTimer.Shared.ViewModel
                     {
                         if (WriteTimeToDisk(false, text))
                             CountdownOutput = text;
+
+                        ticks = DateTime.Now.Ticks;
+
+                        var ms = TimeSpan.FromTicks(ticks).Milliseconds;
+                        wait = wait - ms;
+                        if (wait < 0)
+                            wait = 0;
+
+                        System.Diagnostics.Debug.WriteLine(wait);
                     }
                 }
                 finally
                 {
-                    await Task.Delay(wait);
+                    if(wait != 0)
+                        await Task.Delay(wait);
+
+                    ticks = DateTime.Now.Ticks;
                 }
             }
         }
