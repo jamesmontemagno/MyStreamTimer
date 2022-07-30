@@ -86,7 +86,7 @@ namespace MyStreamTimer.Shared.ViewModel
             ResetCommand = new Command(ExecuteResetCommand);
             AddMinuteCommand = new Command(ExecuteAddMinuteCommand);
             PauseResumeTimerCommand = new Command(ExecutePauseResumeTimerCommand);
-            timer = new Timer(800);
+            timer = new Timer(1000);
             timer.Elapsed += TimerElapsed;
             timer.AutoReset = true;
 
@@ -454,15 +454,15 @@ namespace MyStreamTimer.Shared.ViewModel
                 return;
             }
 
-            if(IsBusy)
-            {
-                timerCTS?.Cancel();
-            }
+            //if(IsBusy)
+            //{
+            //    timerCTS?.Cancel();
+            //}
 
             IsBusy = !IsBusy;
             StartStop = IsBusy ? "Stop" : "Start";
 
-            //timer.Enabled = IsBusy;
+            timer.Enabled = IsBusy;
 
             if(forceReset && !IsBusy)
             {
@@ -542,10 +542,10 @@ namespace MyStreamTimer.Shared.ViewModel
             }
 
             endTime = DateTime.Now.AddMinutes(currentMinutes).AddSeconds(currentSeconds);
-            //TimerElapsed(null, null);
+            TimerElapsed(null, null);
 
-            timerCTS = new CancellationTokenSource();
-            Task.Factory.StartNew(UpdateTimer, TaskCreationOptions.LongRunning, timerCTS.Token);
+            //timerCTS = new CancellationTokenSource();
+            //Task.Factory.StartNew(UpdateTimer, TaskCreationOptions.LongRunning, timerCTS.Token);
         }
         long extraTicksForUp;
         void ExecutePauseResumeTimerCommand()
@@ -578,7 +578,7 @@ namespace MyStreamTimer.Shared.ViewModel
 
         async void UpdateTimer(object thing)
         {
-            var wait = 300;
+            var wait = 800;
             if (isTime && currentOutputStyle == 1)
                 wait = 1000;
 
@@ -777,39 +777,202 @@ namespace MyStreamTimer.Shared.ViewModel
         }
         void TimerElapsed(object sender, ElapsedEventArgs e)
         {
-            //var now = DateTime.Now;
-            //if (currentIsDown)
-            //{
-            //    if (now >= endTime)
-            //    {
-            //        CountdownOutput = currentFinished;
-            //        WriteTimeToDisk(e == null);
-            //        ExecuteStartStopTimerCommand();
-            //        CountdownOutput = currentFinished;
-            //        WriteTimeToDisk(e == null);
-            //        return;
-            //    }
-            //    else
-            //    {
-            //        var elapsedTime = endTime - DateTime.Now;
-            //        CountdownOutput = string.Format(currentOutput, elapsedTime);
-            //    }
-            //}
-            //else
-            //{
-            //    var elapsedTime = DateTime.Now - startTime;
-            //    CountdownOutput = string.Format(currentOutput, elapsedTime);
-            //}
+            var now = DateTime.Now;
+            var text = string.Empty;
+            if (currentIsDown)
+            {
+                if (now >= endTime)
+                {
+                    text = currentFinished;
+                    //WriteTimeToDisk(false, text);
 
-            //WriteTimeToDisk(e == null);
+
+                    ExecuteStartStopTimerCommand();
+                    CountdownOutput = text;
+                    WriteTimeToDisk(false, text);
+                    if (currentBeepAtZero)
+                        Task.Run(() => { platformHelpers.Beep(); });
+                    return;
+                }
+                else
+                {
+                    var elapsedTime = endTime - now;
+
+                    if (PrevTime.Seconds == elapsedTime.Seconds && PrevTime.Minutes == elapsedTime.Minutes &&
+                        PrevTime.Hours == elapsedTime.Hours && PrevTime.Days == elapsedTime.Days)
+                    {
+                        if (!firstTime)
+                            return;
+                    }
+                    firstTime = false;
+                    PrevTime = elapsedTime;
+
+                    switch (currentOutputStyle)
+                    {
+                        case 0:
+                            text = string.Format(currentOutput, elapsedTime);
+                            break;
+                        case 1:
+                            //Auto
+                            if (Math.Floor(elapsedTime.TotalDays) > 0)
+                            {
+                                if (elapsedTime.TotalDays >= 1000)
+                                    text = string.Format("{0:dddd\\:hh\\:mm\\:ss}", elapsedTime);
+                                else if (elapsedTime.TotalDays >= 100)
+                                    text = string.Format("{0:ddd\\:hh\\:mm\\:ss}", elapsedTime);
+                                else if (elapsedTime.TotalDays >= 10)
+                                    text = string.Format("{0:dd\\:hh\\:mm\\:ss}", elapsedTime);
+                                else
+                                    text = string.Format("{0:d\\:hh\\:mm\\:ss}", elapsedTime);
+                            }
+                            else if (Math.Floor(elapsedTime.TotalHours) > 0)
+                            {
+                                if (elapsedTime.TotalHours >= 10)
+                                    text = string.Format("{0:hh\\:mm\\:ss}", elapsedTime);
+                                else
+                                    text = string.Format("{0:h\\:mm\\:ss}", elapsedTime);
+                            }
+                            else if (Math.Floor(elapsedTime.TotalMinutes) > 0)
+                            {
+                                if (elapsedTime.TotalMinutes >= 10)
+                                    text = string.Format("{0:mm\\:ss}", elapsedTime);
+                                else
+                                    text = string.Format("{0:m\\:ss}", elapsedTime);
+                            }
+                            else
+                            {
+                                if (elapsedTime.TotalSeconds >= 10)
+                                    text = string.Format("{0:ss}", elapsedTime);
+                                else
+                                    text = Math.Floor(elapsedTime.TotalSeconds).ToString("N0");
+                            }
+                            break;
+                        case 2:
+                            //Total seconds
+                            text = Math.Floor(elapsedTime.TotalSeconds).ToString("N0");
+                            break;
+                        case 3:
+                            // Total Mins:Seconds
+                            text = $"{Math.Floor(elapsedTime.TotalMinutes):N0}:{string.Format("{0:ss}", elapsedTime)}";
+                            break;
+                    }
+                }
+            }
+            else if (isTime)
+            {
+                if (currentOutputStyle == 0 || currentOutputStyle == 2)
+                {
+                    if (PrevDateTime.Minute == now.Minute &&
+                            PrevDateTime.Hour == now.Hour)
+                    {
+                        if (!firstTime)
+                            return;
+                    }
+
+                    firstTime = false;
+                    if (currentOutputStyle == 0)
+                        text = currentShowAMPM ? now.ToString("h:mm tt") : now.ToString("h:mm");
+                    else
+                        text = currentShowAMPM ? now.ToString("H:mm tt") : now.ToString("H:mm");
+                }
+                else
+                {
+                    if (PrevDateTime.Second == now.Second && PrevDateTime.Minute == now.Minute &&
+                            PrevDateTime.Hour == now.Hour)
+                    {
+                        if (!firstTime)
+                            return;
+                    }
+
+                    firstTime = false;
+                    if (currentOutputStyle == 1)
+                        text = currentShowAMPM ? now.ToString("h:mm:ss tt") : now.ToString("h:mm:ss");
+                    else
+                        text = currentShowAMPM ? now.ToString("H:mm:ss tt") : now.ToString("H:mm:ss");
+                }
+
+                PrevDateTime = now;
+            }
+            else
+            {
+                var elapsedTime = now.AddTicks(extraTicksForUp) - startTime;
+
+                if (PrevTime.Seconds == elapsedTime.Seconds && PrevTime.Minutes == elapsedTime.Minutes &&
+                        PrevTime.Hours == elapsedTime.Hours && PrevTime.Days == elapsedTime.Days)
+                {
+                    if (!firstTime)
+                        return;
+                }
+
+                firstTime = false;
+
+                PrevTime = elapsedTime;
+
+                switch (currentOutputStyle)
+                {
+                    case 0:
+                        text = string.Format(currentOutput, elapsedTime);
+                        break;
+                    case 1:
+                        //Auto
+                        if (Math.Floor(elapsedTime.TotalDays) > 0)
+                        {
+                            if (elapsedTime.TotalDays >= 1000)
+                                text = string.Format("{0:ddddd\\:hh\\:mm\\:ss}", elapsedTime);
+                            else if (elapsedTime.TotalDays >= 1000)
+                                text = string.Format("{0:dddd\\:hh\\:mm\\:ss}", elapsedTime);
+                            else if (elapsedTime.TotalDays >= 100)
+                                text = string.Format("{0:ddd\\:hh\\:mm\\:ss}", elapsedTime);
+                            else if (elapsedTime.TotalDays >= 10)
+                                text = string.Format("{0:dd\\:hh\\:mm\\:ss}", elapsedTime);
+                            else
+                                text = string.Format("{0:d\\:hh\\:mm\\:ss}", elapsedTime);
+                        }
+                        else if (Math.Floor(elapsedTime.TotalHours) > 0)
+                        {
+                            if (elapsedTime.TotalHours >= 10)
+                                text = string.Format("{0:hh\\:mm\\:ss}", elapsedTime);
+                            else
+                                text = string.Format("{0:h\\:mm\\:ss}", elapsedTime);
+                        }
+                        else if (Math.Floor(elapsedTime.TotalMinutes) > 0)
+                        {
+                            if (elapsedTime.TotalMinutes >= 10)
+                                text = string.Format("{0:mm\\:ss}", elapsedTime);
+                            else
+                                text = string.Format("{0:m\\:ss}", elapsedTime);
+                        }
+                        else
+                        {
+                            if (elapsedTime.TotalSeconds >= 10)
+                                text = string.Format("{0:ss}", elapsedTime);
+                            else
+                                text = Math.Floor(elapsedTime.TotalSeconds).ToString("N0");
+                        }
+                        break;
+                    case 2:
+                        //Total seconds
+                        text = Math.Floor(elapsedTime.TotalSeconds).ToString("N0");
+                        break;
+                    case 3:
+                        // Total Mins:Seconds
+                        text = $"{Math.Floor(elapsedTime.TotalMinutes):N0}:{string.Format("{0:ss}", elapsedTime)}";
+                        break;
+                }
+            }
+            if (text != CountdownOutput)
+            {
+                if (WriteTimeToDisk(false, text))
+                    CountdownOutput = text;
+            }
         }
 
-        bool WriteTimeToDisk(bool create, string text)
+         bool WriteTimeToDisk(bool create, string text)
         {
             try
             {
                 File.WriteAllText(currentFileName, text);
-
+                
 
                 //using var streamWriter = new StreamWriter(currentFileName, false);
                 //streamWriter.WriteLine(text);
