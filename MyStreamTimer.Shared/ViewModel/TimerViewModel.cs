@@ -81,7 +81,7 @@ namespace MyStreamTimer.Shared.ViewModel
                     break;
             }
 
-            StartStopTimerCommand = new Command(()=>ExecuteStartStopTimerCommand(true));
+            StartStopTimerCommand = new Command(() => ExecuteStartStopTimerCommand(true));
             CopyFilePathCommand = new AsyncCommand(ExecuteCopyFilePathCommand);
             ResetCommand = new Command(ExecuteResetCommand);
             AddMinuteCommand = new Command(ExecuteAddMinuteCommand);
@@ -128,14 +128,14 @@ namespace MyStreamTimer.Shared.ViewModel
                     break;
                 case CommandAction.Add:
                     {
-                        if(IsDown && mins > 0)
+                        if (IsDown && mins > 0)
                         {
                             lock (locker)
                             {
                                 endTime = endTime.AddMinutes(mins);
                             }
                         }
-                        else if(mins > 0)
+                        else if (mins > 0)
                         {
                             lock (locker)
                             {
@@ -164,12 +164,12 @@ namespace MyStreamTimer.Shared.ViewModel
                     break;
                 case CommandAction.Stop:
                     {
-                        if(IsBusy)
+                        if (IsBusy)
                             ExecuteStartStopTimerCommand(true);
                     }
                     break;
             }
-            
+
         }
 
         bool isDown = true;
@@ -272,7 +272,7 @@ namespace MyStreamTimer.Shared.ViewModel
             {
                 if (!GlobalSettings.IsPro)
                     return 0;
-                
+
                 return settings.OutputStyle;
             }
             set
@@ -345,11 +345,11 @@ namespace MyStreamTimer.Shared.ViewModel
         Task ExecuteCopyFilePathCommand()
         {
             var directory = GetDirectory();
-            
+
             if (platformHelpers == null)
                 return Task.CompletedTask;
             platformHelpers.CopyToClipboard(directory);
-            if(platformHelpers.IsMac)
+            if (platformHelpers.IsMac)
             {
                 return platformHelpers.DisplayAlert("Path Copied", $"Path to file is located at {directory}. \n\n Use Command + Shift + G to bring up directory selection in Finder. \n\n The main folder may be named MyStreamTimer and not com.refractored.mystreamtimer in Finder. \n\n M1 Processors may link deeper into the Documents folder, browse manually in Finder if this is the case.");
             }
@@ -399,7 +399,7 @@ namespace MyStreamTimer.Shared.ViewModel
                     Directory.CreateDirectory(dir);
 
                 dir = Path.Combine(dir, FileName);
-                if(!File.Exists(dir))
+                if (!File.Exists(dir))
                     File.WriteAllText(dir, string.Empty);
             }
             catch
@@ -414,7 +414,7 @@ namespace MyStreamTimer.Shared.ViewModel
 
         void ExecuteStartStopTimerCommand(bool forceReset = false)
         {
-            if(forceReset)
+            if (forceReset)
             {
                 bootMins = -1;
                 extraTicksForUp = 0;
@@ -424,7 +424,7 @@ namespace MyStreamTimer.Shared.ViewModel
 
             try
             {
-                if(OutputStyle == 0)
+                if (OutputStyle == 0)
                     string.Format(Output, TimeSpan.FromSeconds(5));
             }
             catch
@@ -454,7 +454,7 @@ namespace MyStreamTimer.Shared.ViewModel
                 return;
             }
 
-            if(IsBusy)
+            if (IsBusy)
             {
                 timerCTS?.Cancel();
             }
@@ -464,7 +464,7 @@ namespace MyStreamTimer.Shared.ViewModel
 
             //timer.Enabled = IsBusy;
 
-            if(forceReset && !IsBusy)
+            if (forceReset && !IsBusy)
             {
                 WriteTimeToDisk(false, "");
                 CanPauseResume = false;
@@ -497,7 +497,7 @@ namespace MyStreamTimer.Shared.ViewModel
                 extraTicksForUp = 0;
                 bootMins = -1;
             }
-            else if(extraTicksForUp > 0)
+            else if (extraTicksForUp > 0)
             {
                 currentMinutes = 0;
                 currentSeconds = 0;
@@ -551,7 +551,7 @@ namespace MyStreamTimer.Shared.ViewModel
         void ExecutePauseResumeTimerCommand()
         {
             var prevBusy = IsBusy;
-            
+
 
             ExecuteStartStopTimerCommand();
 
@@ -788,7 +788,7 @@ namespace MyStreamTimer.Shared.ViewModel
                 }
                 finally
                 {
-                    if(wait != 0)
+                    if (wait != 0)
                         await Task.Delay(wait);
 
                     ticks = DateTime.Now.Ticks;
@@ -841,14 +841,14 @@ namespace MyStreamTimer.Shared.ViewModel
                 errors++;
                 if (errors == 1)
                     WriteTimeToDisk(create, text);
-                else if(errors > 5 )
+                else if (errors > 5)
                     CountdownOutput = $"{ex.Message} | Ensure app has access to this directory. Go to the About tab to set a valid directory. ";
                 return false;
             }
         }
         int errors;
         TimeSpan PrevTime { get; set; } = TimeSpan.FromDays(1);
-        DateTime PrevDateTime { get; set; } =  DateTime.Now;
+        DateTime PrevDateTime { get; set; } = DateTime.Now;
         bool firstTime = true;
     }
 }
