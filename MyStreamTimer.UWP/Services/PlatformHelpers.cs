@@ -100,6 +100,9 @@ namespace MyStreamTimer.UWP.Services
         }
 
         List<string> Activities { get; } = new List<string>();
+
+        public string Version => AppInfo.VersionString;
+
         public void StartActivity(string id)
         {
             if (Activities.Contains(id))
