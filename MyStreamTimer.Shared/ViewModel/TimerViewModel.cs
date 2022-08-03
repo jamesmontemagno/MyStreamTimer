@@ -578,14 +578,8 @@ namespace MyStreamTimer.Shared.ViewModel
 
         async void UpdateTimer(object thing)
         {
-            var wait = 1000;
-            var ticks = DateTime.Now.Ticks;
-            //if (isTime && currentOutputStyle == 1)
-            // wait = 1000;
-
             while (!timerCTS.IsCancellationRequested)
             {
-                wait = 1000;
                 try
                 {
                     var now = DateTime.Now;
@@ -775,35 +769,19 @@ namespace MyStreamTimer.Shared.ViewModel
                     }
                     if (text != CountdownOutput)
                     {
+                        System.Diagnostics.Debug.WriteLine($"Write: {DateTime.Now.ToLongTimeString()}");
                         if (WriteTimeToDisk(false, text))
                             CountdownOutput = text;
-
-                        //ticks difference is now ticks - the old time which is less
-                        ticks = DateTime.Now.Ticks - ticks;
-
-
-                        System.Diagnostics.Debug.WriteLine($"ticks: {ticks}");
-
-                        // calculage now many milliseconds elapsed so we new our new wait time
-                        // this is because file time takes some time potentially.
-                        var ms = TimeSpan.FromTicks(ticks).Milliseconds;
-                        wait -= ms;
-                        //if it tool longer than 1 second (never) it will be negative
-                        if (wait < 0)
-                            wait = 0;
-
-                        System.Diagnostics.Debug.WriteLine($"wait: {wait}");
                     }
+                }
+                catch(Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Ex: {ex}");
                 }
                 finally
                 {
-
                     System.Diagnostics.Debug.WriteLine($"Time: {DateTime.Now.ToLongTimeString()}");
-                    if (wait != 0)
-                        await Task.Delay(wait);
-
-                    //reset ticks to current time
-                    ticks = DateTime.Now.Ticks;
+                    await Task.Delay(100);
                 }
             }
         }
