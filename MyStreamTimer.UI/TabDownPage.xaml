@@ -55,7 +55,7 @@
                         HorizontalTextAlignment="Start"
                         Text="{Binding Minutes, StringFormat='{0} mins'}"
                         VerticalTextAlignment="Center"
-                        WidthRequest="80" />
+                        WidthRequest="120" />
                     <Stepper
                         HorizontalOptions="Start"
                         IsEnabled="{Binding IsNotBusy}"
@@ -66,7 +66,7 @@
                         HorizontalTextAlignment="Start"
                         Text="{Binding Seconds, StringFormat='{0} secs'}"
                         VerticalTextAlignment="Center"
-                        WidthRequest="60" />
+                        WidthRequest="120" />
 
                 </StackLayout>
                 <StackLayout Orientation="Horizontal">
