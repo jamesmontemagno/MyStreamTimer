@@ -195,6 +195,10 @@ final class AppModel: ObservableObject {
 
         selectedItem = .timer(command.kind)
         controllerLookup[command.kind]?.apply(command)
+
+        if settingsStore.hideOnAutomation {
+            NSApp.hide(nil)
+        }
     }
 
     func purchase(productID: String) async {

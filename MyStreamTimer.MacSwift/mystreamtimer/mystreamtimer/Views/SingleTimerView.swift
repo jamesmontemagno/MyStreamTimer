@@ -5,6 +5,7 @@ import SwiftUI
 struct SingleTimerView: View {
     @EnvironmentObject private var appModel: AppModel
     @ObservedObject var controller: TimerController
+    @Environment(\.openWindow) private var openWindow
 
     private var isLocked: Bool {
         controller.kind.requiresPro && !appModel.purchaseManager.isPro
@@ -35,6 +36,22 @@ struct SingleTimerView: View {
                     .font(.title2.weight(.semibold))
 
                 Spacer()
+
+                Button {
+                    if appModel.purchaseManager.isPro {
+                        openWindow(value: controller.kind)
+                    } else {
+                        appModel.showAlert(
+                            title: "Pro Feature",
+                            message: "Pop-out preview windows are a Pro feature. Upgrade to Pro to pop out timers, customize font size, text color, and background color."
+                        )
+                        appModel.selectedItem = .pro
+                    }
+                } label: {
+                    Image(systemName: "arrow.up.right.square")
+                }
+                .buttonStyle(.borderless)
+                .help("Pop out preview")
 
                 StatusChip(title: controller.statusLabel, tint: controller.statusTint)
 

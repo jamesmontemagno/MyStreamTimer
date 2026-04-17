@@ -13,10 +13,38 @@ final class LegacySettingsStore: ObservableObject {
         }
     }
 
+    @Published var hideOnAutomation: Bool {
+        didSet {
+            defaults.set(hideOnAutomation, forKey: "HideOnAutomation")
+        }
+    }
+
+    @Published var popOutFontSize: Double {
+        didSet {
+            defaults.set(popOutFontSize, forKey: "PopOutFontSize")
+        }
+    }
+
+    @Published var popOutTextColorHex: String {
+        didSet {
+            defaults.set(popOutTextColorHex, forKey: "PopOutTextColorHex")
+        }
+    }
+
+    @Published var popOutBackgroundColorHex: String {
+        didSet {
+            defaults.set(popOutBackgroundColorHex, forKey: "PopOutBackgroundColorHex")
+        }
+    }
+
     init() {
         let defaultDirectoryPath = Self.defaultDirectoryURL().path
         self.directoryPath = defaults.string(forKey: "global_directory_path") ?? defaultDirectoryPath
         self.stayOnTop = defaults.object(forKey: "StayOnTop") as? Bool ?? false
+        self.hideOnAutomation = defaults.object(forKey: "HideOnAutomation") as? Bool ?? true
+        self.popOutFontSize = defaults.object(forKey: "PopOutFontSize") as? Double ?? 48
+        self.popOutTextColorHex = defaults.string(forKey: "PopOutTextColorHex") ?? "#FFFFFF"
+        self.popOutBackgroundColorHex = defaults.string(forKey: "PopOutBackgroundColorHex") ?? "#000000"
     }
 
     static func defaultDirectoryURL() -> URL {

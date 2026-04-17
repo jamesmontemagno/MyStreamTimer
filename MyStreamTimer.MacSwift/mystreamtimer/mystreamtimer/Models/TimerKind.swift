@@ -9,7 +9,7 @@ enum CommandAction {
     case resume
     case reset
 }
-enum TimerKind: String, CaseIterable, Identifiable {
+enum TimerKind: String, CaseIterable, Identifiable, Codable {
     case countdown
     case countdown2
     case countdown3

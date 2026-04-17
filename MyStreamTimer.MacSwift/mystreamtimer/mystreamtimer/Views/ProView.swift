@@ -43,6 +43,7 @@ struct ProWorkspaceView: View {
             SectionCard(title: "What's included", subtitle: "Everything you get with Pro.") {
                 VStack(alignment: .leading, spacing: 8) {
                     BulletRow(text: "Countdown 4, Count Up 2, and Current Time output")
+                    BulletRow(text: "Pop-out timer preview windows with customizable font, text color, and background")
                     BulletRow(text: "All automation commands for every timer")
                     BulletRow(text: "Support ongoing development")
                 }
@@ -76,6 +77,12 @@ struct ProWorkspaceView: View {
                     Task { await appModel.restorePurchases() }
                 }
                 .buttonStyle(.borderedProminent)
+
+                if appModel.purchaseManager.isPro {
+                    Button("Manage Subscription") {
+                        appModel.openExternalURL("https://support.apple.com/HT202039")
+                    }
+                }
 
                 Spacer()
             }

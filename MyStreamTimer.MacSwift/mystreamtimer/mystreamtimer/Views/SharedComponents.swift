@@ -95,33 +95,45 @@ struct PurchaseOptionCard: View {
     let productID: String
     let accent: Color
 
+    private var isOwned: Bool {
+        appModel.purchaseManager.entitledProductIDs.contains(productID)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(title)
-                .font(.title3.weight(.semibold))
+            HStack {
+                Text(title)
+                    .font(.title3.weight(.semibold))
+
+                if isOwned {
+                    StatusChip(title: "Active", tint: .green)
+                }
+            }
 
             Text(appModel.purchaseManager.priceLabel(for: productID))
                 .font(.title2.weight(.bold))
-                .foregroundStyle(accent)
+                .foregroundStyle(isOwned ? .green : accent)
 
-            Text(subtitle)
+            Text(isOwned ? "You own this plan." : subtitle)
                 .foregroundStyle(.secondary)
 
-            Button("Purchase") {
-                Task { await appModel.purchase(productID: productID) }
+            if !isOwned {
+                Button("Purchase") {
+                    Task { await appModel.purchase(productID: productID) }
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(accent)
             }
-            .buttonStyle(.borderedProminent)
-            .tint(accent)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color(nsColor: .controlBackgroundColor))
+                .fill(isOwned ? accent.opacity(0.06) : Color(nsColor: .controlBackgroundColor))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .strokeBorder(.quaternary, lineWidth: 1)
+                .strokeBorder(isOwned ? AnyShapeStyle(accent.opacity(0.4)) : AnyShapeStyle(.quaternary), lineWidth: isOwned ? 2 : 1)
         )
     }
 }

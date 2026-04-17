@@ -30,6 +30,17 @@ struct mystreamtimerApp: App {
             CommandGroup(replacing: .newItem) { }
         }
 
+        WindowGroup("Timer Preview", for: TimerKind.self) { $kind in
+            if let kind {
+                TimerMiniView(kind: kind)
+                    .environmentObject(appModel)
+            }
+        }
+        .windowStyle(.hiddenTitleBar)
+        .windowResizability(.contentSize)
+        .defaultSize(width: 400, height: 160)
+        .defaultPosition(.topTrailing)
+
         Settings {
             SettingsWorkspaceView()
                 .environmentObject(appModel)
