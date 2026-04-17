@@ -63,6 +63,19 @@ struct SettingsWorkspaceView: View {
                 }
             }
 
+            SectionCard(title: "Appearance", subtitle: "Choose how the app looks.") {
+                Picker("Theme", selection: Binding(
+                    get: { appModel.settingsStore.theme },
+                    set: { appModel.settingsStore.theme = $0 }
+                )) {
+                    ForEach(AppTheme.allCases) { theme in
+                        Text(theme.displayName).tag(theme)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .fixedSize()
+            }
+
             SectionCard(title: "Window", subtitle: "Streaming quality-of-life options.") {
                 VStack(alignment: .leading, spacing: 10) {
                     Toggle("Stay on top of other windows", isOn: Binding(

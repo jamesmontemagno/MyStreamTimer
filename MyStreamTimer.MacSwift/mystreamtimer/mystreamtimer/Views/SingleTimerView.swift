@@ -375,7 +375,7 @@ struct SingleTimerView: View {
                                 .font(.caption.weight(.medium))
                                 .foregroundStyle(.secondary)
 
-                            TextField("{0:hh\\:mm\\:ss}", text: Binding(
+                            TextField("{0:hh:mm:ss}", text: Binding(
                                 get: { controller.output },
                                 set: {
                                     controller.output = $0
@@ -385,7 +385,7 @@ struct SingleTimerView: View {
                             .textFieldStyle(.roundedBorder)
                             .font(.system(.body, design: .monospaced))
 
-                            Text("Use .NET TimeSpan format strings. {0} is the elapsed/remaining time.")
+                            Text("Use {0:hh:mm:ss} format. Tokens: d, dd, h, hh, m, mm, s, ss.")
                                 .font(.caption)
                                 .foregroundStyle(.tertiary)
                         }

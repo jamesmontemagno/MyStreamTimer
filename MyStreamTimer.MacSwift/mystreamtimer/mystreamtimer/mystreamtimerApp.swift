@@ -16,6 +16,7 @@ struct mystreamtimerApp: App {
         Window("My Stream Timer", id: "main") {
             ContentView()
                 .environmentObject(appModel)
+                .preferredColorScheme(appModel.settingsStore.theme.colorScheme)
                 .frame(minWidth: 520, minHeight: 400)
                 .task {
                     await appModel.startup()
@@ -34,6 +35,7 @@ struct mystreamtimerApp: App {
             if let kind {
                 TimerMiniView(kind: kind)
                     .environmentObject(appModel)
+                    .preferredColorScheme(appModel.settingsStore.theme.colorScheme)
             }
         }
         .windowStyle(.hiddenTitleBar)
@@ -44,6 +46,7 @@ struct mystreamtimerApp: App {
         Settings {
             SettingsWorkspaceView()
                 .environmentObject(appModel)
+                .preferredColorScheme(appModel.settingsStore.theme.colorScheme)
                 .frame(minWidth: 680, minHeight: 420)
         }
     }

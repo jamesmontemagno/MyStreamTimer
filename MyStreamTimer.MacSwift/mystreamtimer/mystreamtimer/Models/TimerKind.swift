@@ -99,9 +99,9 @@ enum TimerKind: String, CaseIterable, Identifiable, Codable {
 
     var defaultOutput: String {
         if isCountUp {
-            return "{0:hh\\:mm\\:ss}"
+            return "{0:hh:mm:ss}"
         }
-        return "Starting in {0:hh\\:mm\\:ss}"
+        return "Starting in {0:hh:mm:ss}"
     }
 
     var defaultFinishText: String { "Let's do this!" }

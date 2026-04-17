@@ -133,7 +133,7 @@ final class TimerController: ObservableObject, Identifiable {
         if outputStyle == 0, kind != .time {
             let test = renderCustomOutput(for: 5)
             if test.isEmpty {
-                currentText = "Invalid time format. Use {0:hh\\:mm\\:ss}"
+                currentText = "Invalid time format. Use {0:hh:mm:ss}"
                 lastError = currentText
                 return
             }

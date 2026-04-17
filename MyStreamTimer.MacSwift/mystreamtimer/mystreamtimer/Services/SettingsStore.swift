@@ -37,6 +37,12 @@ final class LegacySettingsStore: ObservableObject {
         }
     }
 
+    @Published var theme: AppTheme {
+        didSet {
+            defaults.set(theme.rawValue, forKey: "AppTheme")
+        }
+    }
+
     init() {
         let defaultDirectoryPath = Self.defaultDirectoryURL().path
         self.directoryPath = defaults.string(forKey: "global_directory_path") ?? defaultDirectoryPath
@@ -45,6 +51,7 @@ final class LegacySettingsStore: ObservableObject {
         self.popOutFontSize = defaults.object(forKey: "PopOutFontSize") as? Double ?? 48
         self.popOutTextColorHex = defaults.string(forKey: "PopOutTextColorHex") ?? "#FFFFFF"
         self.popOutBackgroundColorHex = defaults.string(forKey: "PopOutBackgroundColorHex") ?? "#000000"
+        self.theme = AppTheme(rawValue: defaults.string(forKey: "AppTheme") ?? "") ?? .system
     }
 
     static func defaultDirectoryURL() -> URL {
@@ -106,7 +113,8 @@ final class LegacySettingsStore: ObservableObject {
             seconds: int(forKey: "key_seconds_\(keyPrefix)", default: kind.defaultSeconds),
             useMinutes: bool(forKey: "UseMinutes_\(keyPrefix)", default: true),
             finishAt: dateFromTicks(forKey: "FinishAtTime_\(keyPrefix)") ?? defaultFinishAt,
-            output: string(forKey: "key_output_\(keyPrefix)", default: kind.defaultOutput),
+            output: string(forKey: "key_output_\(keyPrefix)", default: kind.defaultOutput)
+                .replacingOccurrences(of: #"\:"#, with: ":"),
             finishText: string(forKey: "key_finish_\(keyPrefix)", default: kind.defaultFinishText),
             fileName: string(forKey: "key_file_name_\(keyPrefix)", default: kind.defaultFileName),
             autoStart: bool(forKey: "key_auto_start_\(keyPrefix)", default: false),
