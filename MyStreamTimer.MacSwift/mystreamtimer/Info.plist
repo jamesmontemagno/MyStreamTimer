@@ -11,7 +11,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>My Stream Timer</string>
+	<string>MyStreamTimer</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -37,6 +37,12 @@
 	<string>Allow My Stream Timer to save timer output files to a folder you choose.</string>
 	<key>NSDownloadsFolderUsageDescription</key>
 	<string>Allow My Stream Timer to save timer output files to a folder you choose.</string>
+	<key>NSNetworkVolumesUsageDescription</key>
+	<string>If you would like to store files on network volumes, will need permission.</string>
+	<key>NSRemovableVolumesUsageDescription</key>
+	<string>If you would like to store files on removeable storage, will need permission.</string>
+	<key>NSFileProviderDomainUsageDescription</key>
+	<string>If you would like to store files via file provider domain, will need permission.</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
