@@ -72,6 +72,15 @@ final class LegacySettingsStore: ObservableObject {
         }
     }
 
+    var hasSeenWelcomeBack: Bool {
+        get {
+            defaults.object(forKey: "HasSeenWelcomeBackV1") as? Bool ?? false
+        }
+        set {
+            defaults.set(newValue, forKey: "HasSeenWelcomeBackV1")
+        }
+    }
+
     var bookmarkData: Data? {
         get { defaults.data(forKey: "bookmark") }
         set { defaults.set(newValue, forKey: "bookmark") }

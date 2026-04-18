@@ -53,6 +53,10 @@ struct RootView: View {
             }
         }
         .navigationSplitViewStyle(.balanced)
+        .sheet(isPresented: $appModel.showWelcomeBack) {
+            WelcomeBackView()
+                .environmentObject(appModel)
+        }
         .alert(item: $appModel.alert) { alert in
             Alert(
                 title: Text(alert.title),

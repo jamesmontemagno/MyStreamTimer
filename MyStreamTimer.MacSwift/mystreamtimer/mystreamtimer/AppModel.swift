@@ -21,6 +21,7 @@ struct AppAlert: Identifiable {
 final class AppModel: ObservableObject {
     @Published var selectedItem: SidebarItem = .timer(.countdown)
     @Published var alert: AppAlert?
+    @Published var showWelcomeBack = false
 
     let settingsStore: LegacySettingsStore
     let fileAccess: BookmarkFileAccess
@@ -94,6 +95,11 @@ final class AppModel: ObservableObject {
 
         if settingsStore.timesUsed == 10 {
             SKStoreReviewController.requestReview()
+        }
+
+        if settingsStore.timesUsed > 1 && !settingsStore.hasSeenWelcomeBack {
+            settingsStore.hasSeenWelcomeBack = true
+            showWelcomeBack = true
         }
 
         await purchaseManager.start()
