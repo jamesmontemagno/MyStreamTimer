@@ -141,7 +141,16 @@ final class PurchaseManager: ObservableObject {
     private func observeTransactions() -> Task<Void, Never> {
         Task(priority: .background) {
             for await result in Transaction.updates {
-                guard case .verified(let transaction) = result else { continue }
+                // Accept unverified transactions to support upgrades from StoreKit 1 where
+                // existing receipts may not pass StoreKit 2 local verification.
+                let transaction: Transaction
+                switch result {
+                case .verified(let t):
+                    transaction = t
+                case .unverified(let t, let error):
+                    print("[PurchaseManager] Unverified transaction \(t.productID): \(error)")
+                    transaction = t
+                }
                 await self.refreshEntitlements()
                 await transaction.finish()
             }
@@ -153,7 +162,16 @@ final class PurchaseManager: ObservableObject {
         var latestSubscriptionExpiration: Date?
 
         for await result in Transaction.currentEntitlements {
-            guard case .verified(let transaction) = result else { continue }
+            // Accept unverified transactions to support upgrades from StoreKit 1 where
+            // existing receipts may not pass StoreKit 2 local verification.
+            let transaction: Transaction
+            switch result {
+            case .verified(let t):
+                transaction = t
+            case .unverified(let t, let error):
+                print("[PurchaseManager] Unverified entitlement \(t.productID): \(error)")
+                transaction = t
+            }
             if transaction.revocationDate != nil { continue }
 
             if let expiration = transaction.expirationDate {
