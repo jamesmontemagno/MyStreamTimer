@@ -104,7 +104,11 @@ final class LegacySettingsStore: ObservableObject {
         let hasGold = entitledProductIDs.contains(PurchaseManager.lifetimeID)
         let hasSubscription = !entitledProductIDs.intersection(PurchaseManager.subscriptionIDs).isEmpty
 
-        defaults.set(hasGold, forKey: "IsGold")
+        // Only ever set lifetime flags to true — never clear them. Legacy lifetime buyers
+        // (IsGold, IsBronze, IsSilver) are Pro for life and must not be overwritten to false.
+        if hasGold {
+            defaults.set(true, forKey: "IsGold")
+        }
         defaults.set(hasSubscription, forKey: "HasTippedSub")
         defaults.set(hasSubscription, forKey: "CheckSubStatus")
 
