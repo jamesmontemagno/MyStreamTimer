@@ -55,12 +55,71 @@ struct SectionCard<Content: View>: View {
         .padding(18)
         .background(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color(nsColor: .controlBackgroundColor))
+                .fill(Color(nsColor: .textBackgroundColor))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .strokeBorder(.quaternary, lineWidth: 1)
+                .strokeBorder(Color(nsColor: .separatorColor).opacity(0.7), lineWidth: 1)
         )
+        .shadow(color: .black.opacity(0.04), radius: 8, y: 2)
+    }
+}
+
+struct AppActionButtonStyle: ButtonStyle {
+    let prominent: Bool
+    let tint: Color
+
+    @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.colorScheme) private var colorScheme
+
+    init(prominent: Bool = false, tint: Color = .accentColor) {
+        self.prominent = prominent
+        self.tint = tint
+    }
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.body.weight(.semibold))
+            .padding(.horizontal, 14)
+            .frame(minHeight: 34)
+            .foregroundStyle(prominent ? Color.white : Color.primary)
+            .background(
+                Capsule()
+                    .fill(
+                        prominent
+                            ? tint
+                            : Color.primary.opacity(colorScheme == .dark ? 0.14 : 0.07)
+                    )
+            )
+            .overlay {
+                Capsule()
+                    .strokeBorder(
+                        prominent
+                            ? tint.opacity(0.9)
+                            : Color(nsColor: .separatorColor).opacity(0.8),
+                        lineWidth: 1
+                    )
+            }
+            .opacity(isEnabled ? 1 : 0.45)
+            .scaleEffect(configuration.isPressed ? 0.97 : 1)
+            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+    }
+}
+
+struct LeadingToggleRow<Label: View>: View {
+    @Binding var isOn: Bool
+    @ViewBuilder let label: Label
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Toggle("", isOn: $isOn)
+                .labelsHidden()
+                .toggleStyle(.switch)
+
+            label
+
+            Spacer(minLength: 0)
+        }
     }
 }
 
@@ -118,11 +177,12 @@ struct PurchaseOptionCard: View {
                 .foregroundStyle(.secondary)
 
             if !isOwned {
-                Button("Purchase") {
+                Button {
                     Task { await appModel.purchase(productID: productID) }
+                } label: {
+                    Label("Purchase", systemImage: "cart.fill")
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(accent)
+                .buttonStyle(AppActionButtonStyle(prominent: true, tint: accent))
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

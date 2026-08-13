@@ -66,12 +66,15 @@ struct CommandsWorkspaceView: View {
 
                                 Spacer()
 
-                                Button("Copy") {
+                                Button {
                                     appModel.copyToClipboard(
                                         example.command,
                                         message: "Command copied to clipboard."
                                     )
+                                } label: {
+                                    Label("Copy", systemImage: "doc.on.doc")
                                 }
+                                .buttonStyle(AppActionButtonStyle())
                             }
 
                             Text(example.note)
@@ -142,17 +145,22 @@ struct AutomationComposerView: View {
                 .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
 
             HStack {
-                Button("Copy Command") {
+                Button {
                     appModel.copyToClipboard(
                         generatedCommand,
                         message: "Command copied to clipboard."
                     )
+                } label: {
+                    Label("Copy Command", systemImage: "doc.on.doc")
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(AppActionButtonStyle(prominent: true))
 
-                Button("Run in App") {
+                Button {
                     appModel.runAutomationCommand(generatedCommand)
+                } label: {
+                    Label("Run in App", systemImage: "play.fill")
                 }
+                .buttonStyle(AppActionButtonStyle())
             }
         }
         .onChange(of: selectedAction) { _, newValue in

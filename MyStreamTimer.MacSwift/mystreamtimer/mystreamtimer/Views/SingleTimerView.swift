@@ -19,7 +19,9 @@ struct SingleTimerView: View {
                 proLockedCard
             } else {
                 transportBar
-                timeInputCard
+                if controller.kind != .time {
+                    timeInputCard
+                }
                 formatCard
                 behaviorCard
                 outputCard
@@ -82,7 +84,11 @@ struct SingleTimerView: View {
                     Text(controller.previewDisplayText)
                         .font(.system(size: 56, weight: .bold, design: .rounded))
                         .monospacedDigit()
-                        .foregroundStyle(controller.isRunning && !controller.isPaused ? .primary : .secondary)
+                        .foregroundStyle(
+                            controller.isRunning && !controller.isPaused
+                                ? Color.primary
+                                : Color.primary.opacity(0.72)
+                        )
                         .contentTransition(.numericText())
                         .animation(.easeInOut(duration: 0.15), value: controller.previewDisplayText)
 
@@ -127,9 +133,12 @@ struct SingleTimerView: View {
                 )
                 .frame(minWidth: 80)
             }
-            .buttonStyle(.borderedProminent)
-            .tint(controller.isRunning ? .red : .accentColor)
-            .controlSize(.large)
+            .buttonStyle(
+                AppActionButtonStyle(
+                    prominent: true,
+                    tint: controller.isRunning ? .red : .accentColor
+                )
+            )
 
             if controller.kind != .time {
                 Button {
@@ -140,17 +149,20 @@ struct SingleTimerView: View {
                         systemImage: controller.isPaused ? "play.fill" : "pause.fill"
                     )
                 }
+                .buttonStyle(AppActionButtonStyle())
                 .disabled(!controller.canPauseResume)
-                .controlSize(.large)
 
                 Spacer()
 
-                HStack(spacing: 6) {
+                HStack(spacing: 8) {
                     Button {
                         controller.adjustBy(minutes: -1)
                     } label: {
                         Image(systemName: "minus")
+                            .frame(width: 18, height: 18)
                     }
+                    .buttonStyle(AppActionButtonStyle())
+                    .frame(width: 44)
                     .disabled(!controller.isRunning)
                     .help("Subtract 1 minute")
 
@@ -162,7 +174,10 @@ struct SingleTimerView: View {
                         controller.addMinute()
                     } label: {
                         Image(systemName: "plus")
+                            .frame(width: 18, height: 18)
                     }
+                    .buttonStyle(AppActionButtonStyle())
+                    .frame(width: 44)
                     .disabled(!controller.isRunning)
                     .help("Add 1 minute")
                 }
@@ -174,6 +189,7 @@ struct SingleTimerView: View {
                 } label: {
                     Label("Reset", systemImage: "arrow.counterclockwise")
                 }
+                .buttonStyle(AppActionButtonStyle())
                 .disabled(!controller.isRunning)
             }
         }
@@ -204,11 +220,12 @@ struct SingleTimerView: View {
                     Text("Upgrade to Pro to unlock this timer and all advanced features.")
                         .foregroundStyle(.secondary)
 
-                    Button("Go to Pro") {
+                    Button {
                         appModel.selectedItem = .pro
+                    } label: {
+                        Label("Go to Pro", systemImage: "sparkles")
                     }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.small)
+                    .buttonStyle(AppActionButtonStyle(prominent: true))
                 }
             }
         }
@@ -217,10 +234,13 @@ struct SingleTimerView: View {
     // MARK: - Time input
 
     private var timeInputCard: some View {
-        SectionCard(title: "Duration", subtitle: controller.kind == .time ? "Clock display settings." : "Set how long the timer runs.") {
-            if controller.kind == .time {
-                clockFormatGrid
-            } else if controller.kind.isCountdown {
+        SectionCard(
+            title: controller.kind.isCountUp ? "Start at" : "Duration",
+            subtitle: controller.kind.isCountUp
+                ? "Optionally begin the count up from a specific elapsed time."
+                : "Set how long the timer runs."
+        ) {
+            if controller.kind.isCountdown {
                 countdownInputSection
             } else {
                 durationFields
@@ -242,16 +262,17 @@ struct SingleTimerView: View {
                 }
             }
 
-            Toggle(isOn: Binding(
-                get: { controller.showAMPM },
-                set: {
-                    controller.showAMPM = $0
-                    controller.persist()
-                })
+            LeadingToggleRow(
+                isOn: Binding(
+                    get: { controller.showAMPM },
+                    set: {
+                        controller.showAMPM = $0
+                        controller.persist()
+                    }
+                )
             ) {
                 Label("Show AM/PM suffix", systemImage: "clock")
             }
-            .toggleStyle(.switch)
         }
     }
 
@@ -272,17 +293,35 @@ struct SingleTimerView: View {
             if controller.useMinutes {
                 durationFields
             } else {
-                DatePicker(
-                    "Finish at",
-                    selection: Binding(
-                        get: { controller.finishAt },
-                        set: {
-                            controller.finishAt = $0
-                            controller.persist()
-                        }),
-                    displayedComponents: [.hourAndMinute]
+                HStack(spacing: 14) {
+                    Label("Finish at", systemImage: "clock.badge.checkmark")
+                        .font(.body.weight(.semibold))
+
+                    DatePicker(
+                        "",
+                        selection: Binding(
+                            get: { controller.finishAt },
+                            set: {
+                                controller.finishAt = $0
+                                controller.persist()
+                            }),
+                        displayedComponents: [.hourAndMinute]
+                    )
+                    .labelsHidden()
+                    .datePickerStyle(.stepperField)
+                    .controlSize(.large)
+
+                    Spacer()
+                }
+                .padding(12)
+                .background(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color(nsColor: .controlBackgroundColor))
                 )
-                .datePickerStyle(.field)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .strokeBorder(Color(nsColor: .separatorColor).opacity(0.7))
+                }
 
                 Text("Timer will count down until this time. If the time has passed today, it targets tomorrow.")
                     .font(.caption)
@@ -293,63 +332,29 @@ struct SingleTimerView: View {
 
     private var durationFields: some View {
         HStack(spacing: 16) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Minutes")
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(.secondary)
-
-                HStack(spacing: 6) {
-                    TextField("0", value: Binding(
+            NumericTimeField(
+                title: "Minutes",
+                value: Binding(
                         get: { controller.minutes },
                         set: {
                             controller.minutes = $0
                             controller.persist()
-                        }),
-                        format: .number
-                    )
-                    .textFieldStyle(.roundedBorder)
-                    .frame(width: 80)
+                        }
+                    ),
+                range: 0...100_000
+            )
 
-                    Stepper("", value: Binding(
-                        get: { controller.minutes },
-                        set: {
-                            controller.minutes = $0
-                            controller.persist()
-                        }),
-                        in: 0...100_000
-                    )
-                    .labelsHidden()
-                }
-            }
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Seconds")
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(.secondary)
-
-                HStack(spacing: 6) {
-                    TextField("0", value: Binding(
+            NumericTimeField(
+                title: "Seconds",
+                value: Binding(
                         get: { controller.seconds },
                         set: {
                             controller.seconds = $0
                             controller.persist()
-                        }),
-                        format: .number
-                    )
-                    .textFieldStyle(.roundedBorder)
-                    .frame(width: 80)
-
-                    Stepper("", value: Binding(
-                        get: { controller.seconds },
-                        set: {
-                            controller.seconds = $0
-                            controller.persist()
-                        }),
-                        in: 0...59
-                    )
-                    .labelsHidden()
-                }
-            }
+                        }
+                    ),
+                range: 0...59
+            )
 
             Spacer()
         }
@@ -359,21 +364,33 @@ struct SingleTimerView: View {
 
     private var formatCard: some View {
         SectionCard(title: "Format", subtitle: "How the timer value appears in the text file.") {
-            if controller.kind != .time {
+            if controller.kind == .time {
+                clockFormatGrid
+            } else {
                 VStack(alignment: .leading, spacing: 12) {
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: 10)], spacing: 10) {
                         ForEach(Array(controller.kind.outputStyleOptions.enumerated()), id: \.offset) { index, title in
+                            let isProFormatLocked = index > 0 && !appModel.purchaseManager.isPro
                             OptionTile(
                                 title: title,
-                                isSelected: controller.outputStyle == index
+                                isSelected: controller.effectiveOutputStyle == index,
+                                isLocked: isProFormatLocked
                             ) {
+                                guard !isProFormatLocked else {
+                                    appModel.showAlert(
+                                        title: "Pro Feature",
+                                        message: "\(title) is available with My Stream Timer Pro."
+                                    )
+                                    appModel.selectedItem = .pro
+                                    return
+                                }
                                 controller.outputStyle = index
                                 controller.persist()
                             }
                         }
                     }
 
-                    if controller.outputStyle == 0 {
+                    if controller.effectiveOutputStyle == 0 {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Template")
                                 .font(.caption.weight(.medium))
@@ -425,12 +442,14 @@ struct SingleTimerView: View {
     private var behaviorCard: some View {
         SectionCard(title: "Behavior", subtitle: "Automation and alerts.") {
             VStack(alignment: .leading, spacing: 10) {
-                Toggle(isOn: Binding(
-                    get: { controller.autoStart },
-                    set: {
-                        controller.autoStart = $0
-                        controller.persist()
-                    })
+                LeadingToggleRow(
+                    isOn: Binding(
+                        get: { controller.autoStart },
+                        set: {
+                            controller.autoStart = $0
+                            controller.persist()
+                        }
+                    )
                 ) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Auto start on launch")
@@ -439,17 +458,18 @@ struct SingleTimerView: View {
                             .foregroundStyle(.tertiary)
                     }
                 }
-                .toggleStyle(.switch)
 
                 if controller.kind.isCountdown {
                     Divider()
 
-                    Toggle(isOn: Binding(
-                        get: { controller.beepAtZero },
-                        set: {
-                            controller.beepAtZero = $0
-                            controller.persist()
-                        })
+                    LeadingToggleRow(
+                        isOn: Binding(
+                            get: { controller.beepAtZero },
+                            set: {
+                                controller.beepAtZero = $0
+                                controller.persist()
+                            }
+                        )
                     ) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Beep at zero")
@@ -458,7 +478,6 @@ struct SingleTimerView: View {
                                 .foregroundStyle(.tertiary)
                         }
                     }
-                    .toggleStyle(.switch)
                 }
             }
         }
@@ -498,15 +517,19 @@ struct SingleTimerView: View {
 
                     Spacer()
 
-                    Button("Open") {
+                    Button {
                         appModel.openOutputFolder()
+                    } label: {
+                        Label("Open", systemImage: "folder")
                     }
-                    .controlSize(.small)
+                    .buttonStyle(AppActionButtonStyle())
 
-                    Button("Copy Path") {
+                    Button {
                         appModel.copyOutputFolder()
+                    } label: {
+                        Label("Copy Path", systemImage: "doc.on.doc")
                     }
-                    .controlSize(.small)
+                    .buttonStyle(AppActionButtonStyle())
                 }
             }
         }
@@ -518,25 +541,80 @@ struct SingleTimerView: View {
 struct OptionTile: View {
     let title: String
     let isSelected: Bool
+    var isLocked = false
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            Text(title)
-                .font(.subheadline.weight(isSelected ? .semibold : .regular))
+            HStack(spacing: 6) {
+                Text(title)
+                    .font(.subheadline.weight(isSelected ? .semibold : .regular))
+                if isLocked {
+                    Image(systemName: "lock.fill")
+                        .font(.caption)
+                }
+            }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 10)
                 .padding(.horizontal, 12)
                 .background(
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(isSelected ? Color.accentColor.opacity(0.12) : Color(nsColor: .controlBackgroundColor))
+                        .fill(isSelected ? Color.accentColor.opacity(0.18) : Color(nsColor: .controlBackgroundColor))
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .strokeBorder(isSelected ? Color.accentColor : Color.gray.opacity(0.2), lineWidth: 1)
+                        .strokeBorder(
+                            isSelected ? Color.accentColor : Color(nsColor: .separatorColor).opacity(0.75),
+                            lineWidth: 1
+                        )
                 )
         }
         .buttonStyle(.plain)
-        .foregroundStyle(isSelected ? Color.accentColor : .primary)
+        .foregroundStyle(isLocked ? Color.secondary : (isSelected ? Color.accentColor : Color.primary))
+    }
+}
+
+private struct NumericTimeField: View {
+    let title: String
+    @Binding var value: Int
+    let range: ClosedRange<Int>
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            HStack(spacing: 8) {
+                Button {
+                    value = max(range.lowerBound, value - 1)
+                } label: {
+                    Image(systemName: "minus")
+                        .frame(width: 18, height: 18)
+                }
+                .buttonStyle(AppActionButtonStyle())
+                .frame(width: 44)
+                .disabled(value <= range.lowerBound)
+
+                TextField("0", value: $value, format: .number)
+                    .textFieldStyle(.roundedBorder)
+                    .multilineTextAlignment(.center)
+                    .font(.title3.monospacedDigit())
+                    .frame(width: 88)
+                    .onChange(of: value) { _, newValue in
+                        value = min(range.upperBound, max(range.lowerBound, newValue))
+                    }
+
+                Button {
+                    value = min(range.upperBound, value + 1)
+                } label: {
+                    Image(systemName: "plus")
+                        .frame(width: 18, height: 18)
+                }
+                .buttonStyle(AppActionButtonStyle())
+                .frame(width: 44)
+                .disabled(value >= range.upperBound)
+            }
+        }
     }
 }

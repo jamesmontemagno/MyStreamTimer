@@ -47,6 +47,10 @@ final class TimerController: ObservableObject, Identifiable {
         isPaused ? "Resume" : "Pause"
     }
 
+    var effectiveOutputStyle: Int {
+        outputStyle > 0 && !canUseProFeatures() ? 0 : outputStyle
+    }
+
     init(
         kind: TimerKind,
         settingsStore: LegacySettingsStore,
@@ -139,7 +143,7 @@ final class TimerController: ObservableObject, Identifiable {
             return
         }
 
-        if outputStyle == 0, kind != .time {
+        if effectiveOutputStyle == 0, kind != .time {
             let test = renderCustomOutput(for: 5)
             if test.isEmpty {
                 currentText = "Invalid time format. Use {0:hh:mm:ss}"
@@ -318,7 +322,7 @@ final class TimerController: ObservableObject, Identifiable {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
 
-        switch outputStyle {
+        switch effectiveOutputStyle {
         case 1:
             formatter.dateFormat = showAMPM ? "h:mm:ss a" : "h:mm:ss"
         case 2:
@@ -333,7 +337,7 @@ final class TimerController: ObservableObject, Identifiable {
     }
 
     private func formattedInterval(_ interval: TimeInterval) -> String {
-        switch outputStyle {
+        switch effectiveOutputStyle {
         case 1:
             return formatAuto(interval)
         case 2:

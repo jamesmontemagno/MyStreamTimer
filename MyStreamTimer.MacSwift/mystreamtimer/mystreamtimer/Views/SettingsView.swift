@@ -23,26 +23,40 @@ struct SettingsWorkspaceView: View {
                         .textSelection(.enabled)
 
                     HStack {
-                        Button("Choose Folder") {
+                        Button {
                             appModel.chooseOutputFolder()
+                        } label: {
+                            Label("Choose Folder", systemImage: "folder.badge.plus")
                         }
-                        .buttonStyle(.borderedProminent)
+                        .buttonStyle(AppActionButtonStyle(prominent: true))
 
-                        Button("Open in Finder") {
+                        Button {
                             appModel.openOutputFolder()
+                        } label: {
+                            Label("Open in Finder", systemImage: "folder")
                         }
+                        .buttonStyle(AppActionButtonStyle())
 
-                        Button("Test Access") {
+                        Button {
                             appModel.validateOutputFolder()
+                        } label: {
+                            Label("Test Access", systemImage: "checkmark.shield")
                         }
+                        .buttonStyle(AppActionButtonStyle())
 
-                        Button("Use Default Folder") {
+                        Button {
                             appModel.resetOutputFolder()
+                        } label: {
+                            Label("Use Default", systemImage: "arrow.counterclockwise")
                         }
+                        .buttonStyle(AppActionButtonStyle())
 
-                        Button("Copy Path") {
+                        Button {
                             appModel.copyOutputFolder()
+                        } label: {
+                            Label("Copy Path", systemImage: "doc.on.doc")
                         }
+                        .buttonStyle(AppActionButtonStyle())
                     }
                 }
             }
@@ -78,22 +92,33 @@ struct SettingsWorkspaceView: View {
 
             SectionCard(title: "Window", subtitle: "Streaming quality-of-life options.") {
                 VStack(alignment: .leading, spacing: 10) {
-                    Toggle("Stay on top of other windows", isOn: Binding(
-                        get: { appModel.settingsStore.stayOnTop },
-                        set: { appModel.settingsStore.stayOnTop = $0 }
-                    ))
+                    LeadingToggleRow(
+                        isOn: Binding(
+                            get: { appModel.settingsStore.stayOnTop },
+                            set: { appModel.settingsStore.stayOnTop = $0 }
+                        )
+                    ) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Stay on top of other windows")
+                            Text("Keep the main timer window above other apps.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
 
                     Divider()
 
-                    Toggle(isOn: Binding(
-                        get: { appModel.settingsStore.hideOnAutomation },
-                        set: { appModel.settingsStore.hideOnAutomation = $0 }
-                    )) {
+                    LeadingToggleRow(
+                        isOn: Binding(
+                            get: { appModel.settingsStore.hideOnAutomation },
+                            set: { appModel.settingsStore.hideOnAutomation = $0 }
+                        )
+                    ) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Hide after automation command")
                             Text("Automatically hide the app when a mystreamtimer:// URL is received.")
                                 .font(.caption)
-                                .foregroundStyle(.tertiary)
+                                .foregroundStyle(.secondary)
                         }
                     }
                 }
@@ -193,11 +218,12 @@ struct PopOutAppearanceCard: View {
                         Text("Upgrade to Pro to customize pop-out appearance.")
                             .foregroundStyle(.secondary)
 
-                        Button("Go to Pro") {
+                        Button {
                             goToPro()
+                        } label: {
+                            Label("Go to Pro", systemImage: "sparkles")
                         }
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.small)
+                        .buttonStyle(AppActionButtonStyle(prominent: true))
                     }
                 }
             }

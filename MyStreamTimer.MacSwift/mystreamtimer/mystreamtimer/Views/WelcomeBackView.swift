@@ -52,19 +52,23 @@ struct WelcomeBackView: View {
             // Actions
             HStack {
                 if !appModel.purchaseManager.isPro {
-                    Button("Learn About Pro") {
+                    Button {
                         dismiss()
                         appModel.selectedItem = .pro
+                    } label: {
+                        Label("Learn About Pro", systemImage: "sparkles")
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(AppActionButtonStyle())
                 }
 
                 Spacer()
 
-                Button("Get Started") {
+                Button {
                     dismiss()
+                } label: {
+                    Label("Get Started", systemImage: "arrow.right")
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(AppActionButtonStyle(prominent: true))
                 .keyboardShortcut(.defaultAction)
             }
             .padding(20)
