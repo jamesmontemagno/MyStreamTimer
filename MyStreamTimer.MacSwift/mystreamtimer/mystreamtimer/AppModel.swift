@@ -40,6 +40,7 @@ final class AppModel: ObservableObject {
     }()
 
     private var hasStarted = false
+    private var cancellables = Set<AnyCancellable>()
 
     var allControllers: [TimerController] {
         countdownControllers + countUpControllers + [timeController]
@@ -69,21 +70,33 @@ final class AppModel: ObservableObject {
         let fileAccess = BookmarkFileAccess(settingsStore: settingsStore)
         self.fileAccess = fileAccess
 
-        self.purchaseManager = PurchaseManager(settingsStore: settingsStore)
+        let purchaseManager = PurchaseManager(settingsStore: settingsStore)
+        self.purchaseManager = purchaseManager
 
         self.countdownControllers = [
-            TimerController(kind: .countdown, settingsStore: settingsStore, fileAccess: fileAccess),
-            TimerController(kind: .countdown2, settingsStore: settingsStore, fileAccess: fileAccess),
-            TimerController(kind: .countdown3, settingsStore: settingsStore, fileAccess: fileAccess),
-            TimerController(kind: .countdown4, settingsStore: settingsStore, fileAccess: fileAccess),
+            TimerController(kind: .countdown, settingsStore: settingsStore, fileAccess: fileAccess, canUseProFeatures: { purchaseManager.isPro }),
+            TimerController(kind: .countdown2, settingsStore: settingsStore, fileAccess: fileAccess, canUseProFeatures: { purchaseManager.isPro }),
+            TimerController(kind: .countdown3, settingsStore: settingsStore, fileAccess: fileAccess, canUseProFeatures: { purchaseManager.isPro }),
+            TimerController(kind: .countdown4, settingsStore: settingsStore, fileAccess: fileAccess, canUseProFeatures: { purchaseManager.isPro }),
         ]
 
         self.countUpControllers = [
-            TimerController(kind: .countup, settingsStore: settingsStore, fileAccess: fileAccess),
-            TimerController(kind: .countup2, settingsStore: settingsStore, fileAccess: fileAccess),
+            TimerController(kind: .countup, settingsStore: settingsStore, fileAccess: fileAccess, canUseProFeatures: { purchaseManager.isPro }),
+            TimerController(kind: .countup2, settingsStore: settingsStore, fileAccess: fileAccess, canUseProFeatures: { purchaseManager.isPro }),
         ]
 
-        self.timeController = TimerController(kind: .time, settingsStore: settingsStore, fileAccess: fileAccess)
+        self.timeController = TimerController(
+            kind: .time,
+            settingsStore: settingsStore,
+            fileAccess: fileAccess,
+            canUseProFeatures: { purchaseManager.isPro }
+        )
+
+        purchaseManager.objectWillChange
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+            .store(in: &cancellables)
     }
 
     func startup() async {
@@ -103,6 +116,9 @@ final class AppModel: ObservableObject {
         }
 
         await purchaseManager.start()
+        allControllers
+            .filter(\.autoStart)
+            .forEach { $0.start() }
     }
 
     func showAlert(title: String, message: String) {
@@ -173,14 +189,16 @@ final class AppModel: ObservableObject {
     }
 
     func validateOutputFolder() {
-        do {
-            try fileAccess.validateDirectory(path: settingsStore.directoryPath)
-            showAlert(
-                title: "Success",
-                message: "This directory is writable and ready to use for timer outputs."
-            )
-        } catch {
-            showAlert(title: "Folder Validation", message: error.localizedDescription)
+        Task {
+            do {
+                try await fileAccess.validateDirectory(path: settingsStore.directoryPath)
+                showAlert(
+                    title: "Success",
+                    message: "This directory is writable and ready to use for timer outputs."
+                )
+            } catch {
+                showAlert(title: "Folder Validation", message: error.localizedDescription)
+            }
         }
     }
 
@@ -200,7 +218,11 @@ final class AppModel: ObservableObject {
         }
 
         selectedItem = .timer(command.kind)
-        controllerLookup[command.kind]?.apply(command)
+        if let controller = controllerLookup[command.kind] {
+            Task {
+                await controller.apply(command)
+            }
+        }
 
         if settingsStore.hideOnAutomation {
             NSApp.hide(nil)
@@ -215,5 +237,26 @@ final class AppModel: ObservableObject {
     func restorePurchases() async {
         let message = await purchaseManager.restorePurchases()
         showAlert(title: "Restore Purchases", message: message)
+    }
+
+    @available(macOS 15.0, *)
+    func redeemOfferCode() async {
+        guard let viewController = NSApp.keyWindow?.contentViewController
+            ?? NSApp.mainWindow?.contentViewController
+        else {
+            showAlert(title: "Offer Code", message: "Open the main app window and try again.")
+            return
+        }
+
+        do {
+            try await AppStore.presentOfferCodeRedeemSheet(from: viewController)
+            await purchaseManager.refreshPurchaseStatus()
+            showAlert(title: "Offer Code", message: "Your purchase status has been refreshed.")
+        } catch {
+            showAlert(
+                title: "Offer Code",
+                message: "The offer code couldn't be redeemed: \(error.localizedDescription)"
+            )
+        }
     }
 }

@@ -1,13 +1,18 @@
 import Combine
 import Foundation
+import OSLog
 import StoreKit
 
 @MainActor
 final class PurchaseManager: ObservableObject {
+    static let bronzeLifetimeID = "mstbronze"
+    static let silverLifetimeID = "mstsilver"
     static let lifetimeID = "mstgold"
     static let oneMonthSubscriptionID = "mstsub"
     static let sixMonthSubscriptionID = "mstsub6months"
+    static let lifetimeIDs: Set<String> = [bronzeLifetimeID, silverLifetimeID, lifetimeID]
     static let subscriptionIDs: Set<String> = [oneMonthSubscriptionID, sixMonthSubscriptionID]
+    static let entitlementIDs = lifetimeIDs.union(subscriptionIDs)
 
     @Published private(set) var productsByID: [String: Product] = [:]
     @Published private(set) var entitledProductIDs: Set<String> = []
@@ -17,6 +22,10 @@ final class PurchaseManager: ObservableObject {
 
     private let settingsStore: LegacySettingsStore
     private var updatesTask: Task<Void, Never>?
+    private let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier ?? "com.refractored.mystreamtimer",
+        category: "Purchases"
+    )
 
     init(settingsStore: LegacySettingsStore) {
         self.settingsStore = settingsStore
@@ -30,7 +39,7 @@ final class PurchaseManager: ObservableObject {
         #if DEBUG
         return true
         #else
-        return entitledProductIDs.contains(Self.lifetimeID)
+        return !entitledProductIDs.intersection(Self.lifetimeIDs).isEmpty
             || !entitledProductIDs.intersection(Self.subscriptionIDs).isEmpty
             || settingsStore.hasLegacyProEntitlement
         #endif
@@ -65,10 +74,18 @@ final class PurchaseManager: ObservableObject {
     func restorePurchases() async -> String {
         do {
             try await AppStore.sync()
-            await refreshEntitlements()
-            let message = entitledProductIDs.isEmpty
-                ? "No active purchases were found to restore."
-                : "Your purchase status has been refreshed successfully."
+            let hadVerificationFailure = await refreshEntitlements(
+                includeHistory: true,
+                authoritative: true
+            )
+            let message: String
+            if hadVerificationFailure {
+                message = "Some purchase history couldn't be verified. Your legacy access was left unchanged; please try again or contact support."
+            } else if entitledProductIDs.isEmpty {
+                message = "No active purchases were found to restore."
+            } else {
+                message = "Your purchase status has been refreshed successfully."
+            }
             storeMessage = message
             return message
         } catch {
@@ -76,6 +93,10 @@ final class PurchaseManager: ObservableObject {
             storeMessage = message
             return message
         }
+    }
+
+    func refreshPurchaseStatus() async {
+        await refreshEntitlements(includeHistory: true)
     }
 
     private func loadProducts() async {
@@ -105,6 +126,11 @@ final class PurchaseManager: ObservableObject {
             switch result {
             case .success(let verificationResult):
                 guard case .verified(let transaction) = verificationResult else {
+                    if case .unverified(let transaction, let error) = verificationResult {
+                        logger.error(
+                            "Purchase verification failed for \(transaction.productID, privacy: .public): \(error.localizedDescription, privacy: .public)"
+                        )
+                    }
                     let message = "The purchase couldn't be verified."
                     storeMessage = message
                     return message
@@ -141,54 +167,87 @@ final class PurchaseManager: ObservableObject {
     private func observeTransactions() -> Task<Void, Never> {
         Task(priority: .background) {
             for await result in Transaction.updates {
-                // Accept unverified transactions to support upgrades from StoreKit 1 where
-                // existing receipts may not pass StoreKit 2 local verification.
-                let transaction: Transaction
                 switch result {
-                case .verified(let t):
-                    transaction = t
-                case .unverified(let t, let error):
-                    print("[PurchaseManager] Unverified transaction \(t.productID): \(error)")
-                    transaction = t
+                case .verified(let transaction):
+                    await self.refreshEntitlements()
+                    await transaction.finish()
+                case .unverified(let transaction, let error):
+                    self.logger.error(
+                        "Transaction update verification failed for \(transaction.productID, privacy: .public): \(error.localizedDescription, privacy: .public)"
+                    )
                 }
-                await self.refreshEntitlements()
-                await transaction.finish()
             }
         }
     }
 
-    private func refreshEntitlements() async {
+    @discardableResult
+    private func refreshEntitlements(
+        includeHistory: Bool = false,
+        authoritative: Bool = false
+    ) async -> Bool {
         var currentIDs = Set<String>()
         var latestSubscriptionExpiration: Date?
+        var hadVerificationFailure = false
 
         for await result in Transaction.currentEntitlements {
-            // Accept unverified transactions to support upgrades from StoreKit 1 where
-            // existing receipts may not pass StoreKit 2 local verification.
-            let transaction: Transaction
             switch result {
-            case .verified(let t):
-                transaction = t
-            case .unverified(let t, let error):
-                print("[PurchaseManager] Unverified entitlement \(t.productID): \(error)")
-                transaction = t
+            case .verified(let transaction):
+                apply(
+                    transaction,
+                    to: &currentIDs,
+                    latestSubscriptionExpiration: &latestSubscriptionExpiration
+                )
+            case .unverified(let transaction, let error):
+                hadVerificationFailure = true
+                logger.error(
+                    "Current entitlement verification failed for \(transaction.productID, privacy: .public): \(error.localizedDescription, privacy: .public)"
+                )
             }
-            if transaction.revocationDate != nil { continue }
+        }
 
-            if let expiration = transaction.expirationDate {
-                if expiration < Date() { continue }
-                if latestSubscriptionExpiration == nil || expiration > latestSubscriptionExpiration! {
-                    latestSubscriptionExpiration = expiration
+        if includeHistory {
+            for await result in Transaction.all {
+                switch result {
+                case .verified(let transaction):
+                    apply(
+                        transaction,
+                        to: &currentIDs,
+                        latestSubscriptionExpiration: &latestSubscriptionExpiration
+                    )
+                case .unverified(let transaction, let error):
+                    hadVerificationFailure = true
+                    logger.error(
+                        "Transaction history verification failed for \(transaction.productID, privacy: .public): \(error.localizedDescription, privacy: .public)"
+                    )
                 }
             }
-
-            currentIDs.insert(transaction.productID)
         }
 
         entitledProductIDs = currentIDs
         subscriptionExpiration = latestSubscriptionExpiration
         settingsStore.syncPurchaseState(
             entitledProductIDs: currentIDs,
-            subscriptionExpiration: latestSubscriptionExpiration
+            subscriptionExpiration: latestSubscriptionExpiration,
+            authoritative: authoritative && !hadVerificationFailure
         )
+        return hadVerificationFailure
+    }
+
+    private func apply(
+        _ transaction: Transaction,
+        to currentIDs: inout Set<String>,
+        latestSubscriptionExpiration: inout Date?
+    ) {
+        guard Self.entitlementIDs.contains(transaction.productID) else { return }
+        guard transaction.revocationDate == nil else { return }
+
+        if let expiration = transaction.expirationDate {
+            guard expiration >= Date() else { return }
+            if latestSubscriptionExpiration == nil || expiration > latestSubscriptionExpiration! {
+                latestSubscriptionExpiration = expiration
+            }
+        }
+
+        currentIDs.insert(transaction.productID)
     }
 }

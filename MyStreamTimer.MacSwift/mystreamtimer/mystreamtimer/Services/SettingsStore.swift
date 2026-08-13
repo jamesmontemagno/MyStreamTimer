@@ -91,7 +91,7 @@ final class LegacySettingsStore: ObservableObject {
         let hasBronze = defaults.object(forKey: "IsBronze") as? Bool ?? false
         let hasSilver = defaults.object(forKey: "IsSilver") as? Bool ?? false
         let hasSubscription = defaults.object(forKey: "HasTippedSub") as? Bool ?? false
-        let expiry = defaults.object(forKey: "SubExpirationDate") as? Date ?? .distantPast
+        let expiry = legacyDate(forKey: "SubExpirationDate") ?? .distantPast
         return hasGold || hasBronze || hasSilver || (hasSubscription && expiry > Date())
     }
 
@@ -100,21 +100,57 @@ final class LegacySettingsStore: ObservableObject {
         defaults.set(newPath, forKey: "global_directory_path")
     }
 
-    func syncPurchaseState(entitledProductIDs: Set<String>, subscriptionExpiration: Date?) {
-        let hasGold = entitledProductIDs.contains(PurchaseManager.lifetimeID)
+    func syncPurchaseState(
+        entitledProductIDs: Set<String>,
+        subscriptionExpiration: Date?,
+        authoritative: Bool
+    ) {
         let hasSubscription = !entitledProductIDs.intersection(PurchaseManager.subscriptionIDs).isEmpty
 
-        // Only ever set lifetime flags to true — never clear them. Legacy lifetime buyers
-        // (IsGold, IsBronze, IsSilver) are Pro for life and must not be overwritten to false.
-        if hasGold {
-            defaults.set(true, forKey: "IsGold")
+        let lifetimeKeys = [
+            PurchaseManager.bronzeLifetimeID: "IsBronze",
+            PurchaseManager.silverLifetimeID: "IsSilver",
+            PurchaseManager.lifetimeID: "IsGold",
+        ]
+        for (productID, key) in lifetimeKeys {
+            if entitledProductIDs.contains(productID) {
+                defaults.set(true, forKey: key)
+            } else if authoritative {
+                defaults.set(false, forKey: key)
+            }
         }
-        defaults.set(hasSubscription, forKey: "HasTippedSub")
-        defaults.set(hasSubscription, forKey: "CheckSubStatus")
 
-        if let subscriptionExpiration {
+        if hasSubscription, let subscriptionExpiration {
+            defaults.set(true, forKey: "HasTippedSub")
+            defaults.set(true, forKey: "CheckSubStatus")
             defaults.set(subscriptionExpiration, forKey: "SubExpirationDate")
+        } else if authoritative {
+            defaults.set(false, forKey: "HasTippedSub")
+            defaults.set(false, forKey: "CheckSubStatus")
+            defaults.removeObject(forKey: "SubExpirationDate")
         }
+    }
+
+    private func legacyDate(forKey key: String) -> Date? {
+        guard let storedValue = defaults.object(forKey: key) else { return nil }
+        if let date = storedValue as? Date {
+            return date
+        }
+
+        let rawTicks: Int64?
+        if let string = storedValue as? String {
+            rawTicks = Int64(string)
+        } else if let number = storedValue as? NSNumber {
+            rawTicks = number.int64Value
+        } else {
+            rawTicks = nil
+        }
+
+        guard let rawTicks, rawTicks != .min else { return nil }
+        let ticks = rawTicks < 0 ? -rawTicks : rawTicks
+        let dotNetTicksAtUnixEpoch: Int64 = 621_355_968_000_000_000
+        let secondsSinceUnixEpoch = Double(ticks - dotNetTicksAtUnixEpoch) / 10_000_000
+        return Date(timeIntervalSince1970: secondsSinceUnixEpoch)
     }
 
     func loadConfiguration(for kind: TimerKind) -> TimerConfiguration {

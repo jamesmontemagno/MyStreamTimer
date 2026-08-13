@@ -24,6 +24,7 @@ final class TimerController: ObservableObject, Identifiable {
 
     private let settingsStore: LegacySettingsStore
     private let fileAccess: BookmarkFileAccess
+    private let canUseProFeatures: () -> Bool
 
     private var startDate = Date()
     private var endDate = Date()
@@ -46,10 +47,16 @@ final class TimerController: ObservableObject, Identifiable {
         isPaused ? "Resume" : "Pause"
     }
 
-    init(kind: TimerKind, settingsStore: LegacySettingsStore, fileAccess: BookmarkFileAccess) {
+    init(
+        kind: TimerKind,
+        settingsStore: LegacySettingsStore,
+        fileAccess: BookmarkFileAccess,
+        canUseProFeatures: @escaping () -> Bool
+    ) {
         self.kind = kind
         self.settingsStore = settingsStore
         self.fileAccess = fileAccess
+        self.canUseProFeatures = canUseProFeatures
 
         let configuration = settingsStore.loadConfiguration(for: kind)
         self.minutes = configuration.minutes
@@ -69,13 +76,10 @@ final class TimerController: ObservableObject, Identifiable {
         Task { [weak self] in
             guard let self else { return }
             do {
-                try self.fileAccess.initializeFile(named: configuration.fileName)
+                try await self.fileAccess.initializeFile(named: configuration.fileName)
                 self.lastError = nil
             } catch {
                 self.lastError = "Couldn't prepare \(configuration.fileName): \(error.localizedDescription)"
-            }
-            if configuration.autoStart {
-                self.start()
             }
         }
     }
@@ -97,16 +101,16 @@ final class TimerController: ObservableObject, Identifiable {
         settingsStore.saveConfiguration(configuration, for: kind)
     }
 
-    func apply(_ command: URLCommand) {
+    func apply(_ command: URLCommand) async {
         switch command.action {
         case .start:
             if isRunning {
-                stop(clearOutput: false)
+                await stop(clearOutput: false)
             }
             start(overrideMinutes: command.minutes)
 
         case .stop:
-            stop(clearOutput: true)
+            await stop(clearOutput: true)
 
         case .add:
             adjustBy(minutes: command.minutes)
@@ -125,11 +129,16 @@ final class TimerController: ObservableObject, Identifiable {
             }
 
         case .reset:
-            reset()
+            await reset()
         }
     }
 
     func start(overrideMinutes: Double? = nil) {
+        guard !kind.requiresPro || canUseProFeatures() else {
+            lastError = "\(kind.title) requires Pro."
+            return
+        }
+
         if outputStyle == 0, kind != .time {
             let test = renderCustomOutput(for: 5)
             if test.isEmpty {
@@ -188,7 +197,7 @@ final class TimerController: ObservableObject, Identifiable {
         }
     }
 
-    func stop(clearOutput: Bool) {
+    func stop(clearOutput: Bool) async {
         updateTask?.cancel()
         updateTask = nil
         isRunning = false
@@ -202,7 +211,7 @@ final class TimerController: ObservableObject, Identifiable {
         if clearOutput {
             currentText = ""
             do {
-                try fileAccess.write(text: "", fileName: fileName)
+                try await fileAccess.write(text: "", fileName: fileName)
             } catch {
                 lastError = error.localizedDescription
             }
@@ -233,9 +242,9 @@ final class TimerController: ObservableObject, Identifiable {
         adjustBy(minutes: 1)
     }
 
-    func reset() {
+    func reset() async {
         guard isRunning else { return }
-        stop(clearOutput: true)
+        await stop(clearOutput: true)
         start()
     }
 
@@ -243,7 +252,11 @@ final class TimerController: ObservableObject, Identifiable {
         guard isRunning else { return }
 
         if kind.isCountdown {
-            endDate = endDate.addingTimeInterval(delta * 60)
+            if isPaused {
+                pausedRemaining = max(0, pausedRemaining + (delta * 60))
+            } else {
+                endDate = endDate.addingTimeInterval(delta * 60)
+            }
         } else if kind.isCountUp {
             pausedElapsed = max(0, pausedElapsed + (delta * 60))
         }
@@ -262,9 +275,11 @@ final class TimerController: ObservableObject, Identifiable {
             if nextText != currentText {
                 currentText = nextText
                 do {
-                    try fileAccess.write(text: nextText, fileName: fileName)
+                    try await fileAccess.write(text: nextText, fileName: fileName)
+                    guard !Task.isCancelled else { return }
                     lastError = nil
                 } catch {
+                    guard !Task.isCancelled else { return }
                     lastError = error.localizedDescription
                     currentText = "Unable to save timer output: \(error.localizedDescription)"
                 }
@@ -274,7 +289,7 @@ final class TimerController: ObservableObject, Identifiable {
                 if beepAtZero {
                     NSSound.beep()
                 }
-                stop(clearOutput: false)
+                await stop(clearOutput: false)
                 break
             }
 

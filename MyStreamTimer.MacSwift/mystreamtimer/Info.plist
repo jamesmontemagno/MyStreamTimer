@@ -40,7 +40,7 @@
 	<key>NSNetworkVolumesUsageDescription</key>
 	<string>If you would like to store files on network volumes, will need permission.</string>
 	<key>NSRemovableVolumesUsageDescription</key>
-	<string>If you would like to store files on removeable storage, will need permission.</string>
+	<string>If you would like to store files on removable storage, will need permission.</string>
 	<key>NSFileProviderDomainUsageDescription</key>
 	<string>If you would like to store files via file provider domain, will need permission.</string>
 	<key>NSPrincipalClass</key>

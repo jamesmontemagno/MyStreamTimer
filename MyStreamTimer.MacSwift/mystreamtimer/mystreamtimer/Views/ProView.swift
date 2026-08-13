@@ -78,6 +78,12 @@ struct ProWorkspaceView: View {
                 }
                 .buttonStyle(.borderedProminent)
 
+                if #available(macOS 15.0, *) {
+                    Button("Redeem Offer Code") {
+                        Task { await appModel.redeemOfferCode() }
+                    }
+                }
+
                 if appModel.purchaseManager.isPro {
                     Button("Manage Subscription") {
                         appModel.openExternalURL("https://support.apple.com/HT202039")

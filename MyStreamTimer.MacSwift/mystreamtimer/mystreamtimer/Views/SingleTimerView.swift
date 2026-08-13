@@ -14,11 +14,11 @@ struct SingleTimerView: View {
     var body: some View {
         WorkspaceContainer {
             timerHeader
-            transportBar
 
             if isLocked {
                 proLockedCard
             } else {
+                transportBar
                 timeInputCard
                 formatCard
                 behaviorCard
@@ -113,10 +113,12 @@ struct SingleTimerView: View {
     private var transportBar: some View {
         HStack(spacing: 10) {
             Button {
-                if controller.isRunning {
-                    controller.stop(clearOutput: true)
-                } else {
-                    controller.start()
+                Task {
+                    if controller.isRunning {
+                        await controller.stop(clearOutput: true)
+                    } else {
+                        controller.start()
+                    }
                 }
             } label: {
                 Label(
@@ -166,7 +168,9 @@ struct SingleTimerView: View {
                 }
 
                 Button {
-                    controller.reset()
+                    Task {
+                        await controller.reset()
+                    }
                 } label: {
                     Label("Reset", systemImage: "arrow.counterclockwise")
                 }
