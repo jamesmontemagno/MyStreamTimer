@@ -8,17 +8,25 @@
 
 /* Begin PBXBuildFile section */
 		B3E7811E2F91F7CA00EFB447 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = B3E7811D2F91F7CA00EFB447 /* AppIcon.icon */; };
+		B3E782032F91F7CA00EFB447 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B3E782012F91F7CA00EFB447 /* XCTest.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		B3E780F72F91EDF800EFB447 /* My Stream Timer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "My Stream Timer.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		B3E7811D2F91F7CA00EFB447 /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIcon.icon; sourceTree = "<group>"; };
+		B3E782002F91F7CA00EFB447 /* mystreamtimerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = mystreamtimerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B3E782012F91F7CA00EFB447 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = System/Library/Frameworks/XCTest.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		B3E780F92F91EDF800EFB447 /* mystreamtimer */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = mystreamtimer;
+			sourceTree = "<group>";
+		};
+		B3E782022F91F7CA00EFB447 /* mystreamtimerTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = mystreamtimerTests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -31,6 +39,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B3E782052F91F7CA00EFB447 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B3E782032F91F7CA00EFB447 /* XCTest.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -38,6 +54,7 @@
 			isa = PBXGroup;
 			children = (
 				B3E780F92F91EDF800EFB447 /* mystreamtimer */,
+				B3E782022F91F7CA00EFB447 /* mystreamtimerTests */,
 				B3E780F82F91EDF800EFB447 /* Products */,
 				B3E7811D2F91F7CA00EFB447 /* AppIcon.icon */,
 			);
@@ -47,6 +64,7 @@
 			isa = PBXGroup;
 			children = (
 				B3E780F72F91EDF800EFB447 /* My Stream Timer.app */,
+				B3E782002F91F7CA00EFB447 /* mystreamtimerTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -76,7 +94,40 @@
 			productReference = B3E780F72F91EDF800EFB447 /* My Stream Timer.app */;
 			productType = "com.apple.product-type.application";
 		};
+		B3E782072F91F7CA00EFB447 /* mystreamtimerTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B3E7820C2F91F7CA00EFB447 /* Build configuration list for PBXNativeTarget "mystreamtimerTests" */;
+			buildPhases = (
+				B3E782042F91F7CA00EFB447 /* Sources */,
+				B3E782052F91F7CA00EFB447 /* Frameworks */,
+				B3E782062F91F7CA00EFB447 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				B3E782092F91F7CA00EFB447 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				B3E782022F91F7CA00EFB447 /* mystreamtimerTests */,
+			);
+			name = mystreamtimerTests;
+			packageProductDependencies = (
+			);
+			productName = mystreamtimerTests;
+			productReference = B3E782002F91F7CA00EFB447 /* mystreamtimerTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
+
+/* Begin PBXContainerItemProxy section */
+		B3E782082F91F7CA00EFB447 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = B3E780EF2F91EDF800EFB447 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B3E780F62F91EDF800EFB447;
+			remoteInfo = mystreamtimer;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXProject section */
 		B3E780EF2F91EDF800EFB447 /* Project object */ = {
@@ -88,6 +139,10 @@
 				TargetAttributes = {
 					B3E780F62F91EDF800EFB447 = {
 						CreatedOnToolsVersion = 26.2;
+					};
+					B3E782072F91F7CA00EFB447 = {
+						CreatedOnToolsVersion = 26.2;
+						TestTargetID = B3E780F62F91EDF800EFB447;
 					};
 				};
 			};
@@ -106,6 +161,7 @@
 			projectRoot = "";
 			targets = (
 				B3E780F62F91EDF800EFB447 /* mystreamtimer */,
+				B3E782072F91F7CA00EFB447 /* mystreamtimerTests */,
 			);
 		};
 /* End PBXProject section */
@@ -119,6 +175,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B3E782062F91F7CA00EFB447 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -129,7 +192,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B3E782042F91F7CA00EFB447 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		B3E782092F91F7CA00EFB447 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B3E780F62F91EDF800EFB447 /* mystreamtimer */;
+			targetProxy = B3E782082F91F7CA00EFB447 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		B3E781002F91EE0300EFB447 /* Debug */ = {
@@ -326,6 +404,36 @@
 			};
 			name = Release;
 		};
+		B3E7820A2F91F7CA00EFB447 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.refractored.mystreamtimer.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/My Stream Timer.app/Contents/MacOS/My Stream Timer";
+			};
+			name = Debug;
+		};
+		B3E7820B2F91F7CA00EFB447 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.refractored.mystreamtimer.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/My Stream Timer.app/Contents/MacOS/My Stream Timer";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -343,6 +451,15 @@
 			buildConfigurations = (
 				B3E781032F91EE0300EFB447 /* Debug */,
 				B3E781042F91EE0300EFB447 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B3E7820C2F91F7CA00EFB447 /* Build configuration list for PBXNativeTarget "mystreamtimerTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B3E7820A2F91F7CA00EFB447 /* Debug */,
+				B3E7820B2F91F7CA00EFB447 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
