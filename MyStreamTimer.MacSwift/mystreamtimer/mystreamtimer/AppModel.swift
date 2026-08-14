@@ -176,6 +176,7 @@ final class AppModel: ObservableObject {
         do {
             if let selectedPath = try fileAccess.chooseDirectory() {
                 settingsStore.updateDirectoryPath(selectedPath)
+                refreshRunningTimerDestinations()
                 showAlert(
                     title: "Folder Updated",
                     message: "My Stream Timer will now save output files to the selected location."
@@ -188,6 +189,7 @@ final class AppModel: ObservableObject {
 
     func resetOutputFolder() {
         fileAccess.resetToDefaultDirectory()
+        refreshRunningTimerDestinations()
         showAlert(
             title: "Folder Reset",
             message: "The output folder has been reset to the default app Documents location."
@@ -206,6 +208,10 @@ final class AppModel: ObservableObject {
                 showAlert(title: "Folder Validation", message: error.localizedDescription)
             }
         }
+    }
+
+    private func refreshRunningTimerDestinations() {
+        allControllers.forEach { $0.refreshOutputDestination() }
     }
 
     func handleIncomingURL(_ url: URL) {
@@ -230,9 +236,6 @@ final class AppModel: ObservableObject {
             }
         }
 
-        if settingsStore.hideOnAutomation {
-            NSApp.hide(nil)
-        }
     }
 
     func purchase(productID: String) async {

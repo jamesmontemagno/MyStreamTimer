@@ -106,21 +106,6 @@ struct SettingsWorkspaceView: View {
                         }
                     }
 
-                    Divider()
-
-                    LeadingToggleRow(
-                        isOn: Binding(
-                            get: { appModel.settingsStore.hideOnAutomation },
-                            set: { appModel.settingsStore.hideOnAutomation = $0 }
-                        )
-                    ) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Hide after automation command")
-                            Text("Automatically hide the app when a mystreamtimer:// URL is received.")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
                 }
             }
 

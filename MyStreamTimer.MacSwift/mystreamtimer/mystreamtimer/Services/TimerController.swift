@@ -30,8 +30,12 @@ final class TimerController: ObservableObject, Identifiable {
     private var endDate = Date()
     private var pausedRemaining: TimeInterval = 0
     private var pausedElapsed: TimeInterval = 0
-    private var updateTask: Task<Void, Never>?
+    private var generation: UInt64 = 0
+    private var activeGeneration: UInt64?
     private var activityToken: NSObjectProtocol?
+    private lazy var timerEngine = TimerEngine { [weak self] event in
+        self?.handleTimerEvent(event)
+    }
 
     var id: String { kind.rawValue }
 
@@ -103,6 +107,10 @@ final class TimerController: ObservableObject, Identifiable {
             outputStyle: outputStyle
         )
         settingsStore.saveConfiguration(configuration, for: kind)
+
+        if isRunning, !isPaused {
+            launchTimerEngine()
+        }
     }
 
     func apply(_ command: URLCommand) async {
@@ -143,16 +151,13 @@ final class TimerController: ObservableObject, Identifiable {
             return
         }
 
-        if effectiveOutputStyle == 0, kind != .time {
-            let test = renderCustomOutput(for: 5)
-            if test.isEmpty {
-                currentText = "Invalid time format. Use {0:hh:mm:ss}"
-                lastError = currentText
-                return
-            }
+        if effectiveOutputStyle == 0, kind != .time, renderCustomOutput(for: 5).isEmpty {
+            currentText = "Invalid time format. Use {0:hh:mm:ss}"
+            lastError = currentText
+            return
         }
 
-        updateTask?.cancel()
+        invalidateTimerEngine()
         lastError = nil
         isRunning = true
         isPaused = false
@@ -183,39 +188,29 @@ final class TimerController: ObservableObject, Identifiable {
             endDate = now.addingTimeInterval(duration)
         } else if kind.isCountUp {
             startDate = now
-            if let overrideMinutes {
-                pausedElapsed = max(0, overrideMinutes) * 60
-            } else {
-                pausedElapsed = TimeInterval((minutes * 60) + seconds)
-            }
+            pausedElapsed = overrideMinutes.map { max(0, $0) * 60 }
+                ?? TimeInterval((minutes * 60) + seconds)
         }
 
         activityToken = ProcessInfo.processInfo.beginActivity(
-            options: [.userInitiated, .idleDisplaySleepDisabled],
-            reason: "My Stream Timer is actively running a stream timer."
+            options: [.userInitiated, .latencyCritical, .idleDisplaySleepDisabled],
+            reason: "My Stream Timer is actively writing timer output."
         )
-
-        updateTask = Task { [weak self] in
-            guard let self else { return }
-            await self.runTimerLoop()
-        }
+        launchTimerEngine()
     }
 
     func stop(clearOutput: Bool) async {
-        updateTask?.cancel()
-        updateTask = nil
+        let invalidatedGeneration = invalidateTimerEngine()
+        await timerEngine.invalidate(upThrough: invalidatedGeneration)
         isRunning = false
         isPaused = false
-
-        if let activityToken {
-            ProcessInfo.processInfo.endActivity(activityToken)
-            self.activityToken = nil
-        }
+        endActivity()
 
         if clearOutput {
             currentText = ""
             do {
-                try await fileAccess.write(text: "", fileName: fileName)
+                try await fileAccess.writeTimerOutput(text: "", fileName: fileName)
+                lastError = nil
             } catch {
                 lastError = error.localizedDescription
             }
@@ -226,12 +221,13 @@ final class TimerController: ObservableObject, Identifiable {
         guard canPauseResume else { return }
 
         if !isPaused {
-            isPaused = true
             if kind.isCountdown {
                 pausedRemaining = max(0, endDate.timeIntervalSinceNow)
             } else if kind.isCountUp {
                 pausedElapsed = max(0, Date().timeIntervalSince(startDate) + pausedElapsed)
             }
+            isPaused = true
+            invalidateTimerEngine()
         } else {
             isPaused = false
             if kind.isCountdown {
@@ -239,6 +235,7 @@ final class TimerController: ObservableObject, Identifiable {
             } else if kind.isCountUp {
                 startDate = Date()
             }
+            launchTimerEngine()
         }
     }
 
@@ -260,146 +257,100 @@ final class TimerController: ObservableObject, Identifiable {
                 pausedRemaining = max(0, pausedRemaining + (delta * 60))
             } else {
                 endDate = endDate.addingTimeInterval(delta * 60)
+                launchTimerEngine()
             }
         } else if kind.isCountUp {
             pausedElapsed = max(0, pausedElapsed + (delta * 60))
+            if !isPaused {
+                launchTimerEngine()
+            }
         }
     }
 
-    private func runTimerLoop() async {
-        while !Task.isCancelled {
-            if isPaused {
-                try? await Task.sleep(nanoseconds: 100_000_000)
-                continue
-            }
+    func refreshOutputDestination() {
+        guard isRunning, !isPaused else { return }
+        launchTimerEngine()
+    }
 
-            let now = Date()
-            let nextText = formattedOutput(now: now)
+    private func launchTimerEngine() {
+        guard isRunning, !isPaused else { return }
 
-            if nextText != currentText {
-                currentText = nextText
-                do {
-                    try await fileAccess.write(text: nextText, fileName: fileName)
-                    guard !Task.isCancelled else { return }
-                    lastError = nil
-                } catch {
-                    guard !Task.isCancelled else { return }
-                    lastError = error.localizedDescription
-                    currentText = "Unable to save timer output: \(error.localizedDescription)"
-                }
-            }
+        generation &+= 1
+        let newGeneration = generation
+        activeGeneration = newGeneration
+        let configuration = TimerEngine.Configuration(
+            generation: newGeneration,
+            mode: kind.isCountdown ? .countdown : kind.isCountUp ? .countUp : .time,
+            startDate: startDate,
+            endDate: endDate,
+            initialElapsed: pausedElapsed,
+            output: output.isEmpty ? kind.defaultOutput : output,
+            finishText: finishText,
+            showAMPM: showAMPM,
+            outputStyle: effectiveOutputStyle,
+            destination: fileAccess.timerOutputDestination(fileName: fileName)
+        )
 
-            if kind.isCountdown, now >= endDate {
-                if beepAtZero {
-                    NSSound.beep()
-                }
-                await stop(clearOutput: false)
-                break
-            }
-
-            try? await Task.sleep(nanoseconds: 100_000_000)
+        Task {
+            await timerEngine.start(configuration)
         }
     }
 
-    private func formattedOutput(now: Date) -> String {
-        if kind == .time {
-            return formattedTimeOutput(now: now)
+    @discardableResult
+    private func invalidateTimerEngine() -> UInt64 {
+        generation &+= 1
+        activeGeneration = nil
+        let invalidatedGeneration = generation
+        Task {
+            await timerEngine.invalidate(upThrough: invalidatedGeneration)
+        }
+        return invalidatedGeneration
+    }
+
+    private func handleTimerEvent(_ event: TimerEngine.Event) {
+        let eventGeneration: UInt64
+        switch event {
+        case let .rendered(generation, _),
+             let .writeSucceeded(generation, _, _),
+             let .writeFailed(generation, _),
+             let .completed(generation):
+            eventGeneration = generation
         }
 
-        if kind.isCountdown {
-            let remaining = max(0, endDate.timeIntervalSince(now))
-            if remaining <= 0 {
-                return finishText
+        guard activeGeneration == eventGeneration else { return }
+
+        switch event {
+        case let .rendered(_, text):
+            if currentText != text {
+                currentText = text
             }
-            return formattedInterval(remaining)
-        }
 
-        let elapsed = max(0, now.timeIntervalSince(startDate) + pausedElapsed)
-        return formattedInterval(elapsed)
-    }
+        case let .writeSucceeded(_, refreshedBookmark, destination):
+            fileAccess.applyRefreshedTimerBookmark(
+                refreshedBookmark,
+                destination: destination
+            )
+            lastError = nil
 
-    private func formattedTimeOutput(now: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
+        case let .writeFailed(_, message):
+            lastError = "Unable to save timer output: \(message)"
 
-        switch effectiveOutputStyle {
-        case 1:
-            formatter.dateFormat = showAMPM ? "h:mm:ss a" : "h:mm:ss"
-        case 2:
-            formatter.dateFormat = showAMPM ? "H:mm a" : "H:mm"
-        case 3:
-            formatter.dateFormat = showAMPM ? "H:mm:ss a" : "H:mm:ss"
-        default:
-            formatter.dateFormat = showAMPM ? "h:mm a" : "h:mm"
-        }
-
-        return formatter.string(from: now)
-    }
-
-    private func formattedInterval(_ interval: TimeInterval) -> String {
-        switch effectiveOutputStyle {
-        case 1:
-            return formatAuto(interval)
-        case 2:
-            let total = Int(floor(interval))
-            let formatter = NumberFormatter()
-            formatter.numberStyle = .decimal
-            formatter.maximumFractionDigits = 0
-            return formatter.string(from: NSNumber(value: total)) ?? "\(total)"
-        case 3:
-            let totalSeconds = Int(floor(interval))
-            let mins = totalSeconds / 60
-            let secs = totalSeconds % 60
-            let formatter = NumberFormatter()
-            formatter.numberStyle = .decimal
-            formatter.maximumFractionDigits = 0
-            let minsStr = formatter.string(from: NSNumber(value: mins)) ?? "\(mins)"
-            return "\(minsStr):\(String(format: "%02d", secs))"
-        default:
-            return renderCustomOutput(for: interval)
+        case .completed:
+            isRunning = false
+            isPaused = false
+            activeGeneration = nil
+            endActivity()
+            if beepAtZero {
+                NSSound.beep()
+            }
         }
     }
 
-    private func formatAuto(_ interval: TimeInterval) -> String {
-        let totalSeconds = max(0, Int(floor(interval)))
-        let days = totalSeconds / 86_400
-        let hours = (totalSeconds % 86_400) / 3_600
-        let mins = (totalSeconds % 3_600) / 60
-        let secs = totalSeconds % 60
-
-        if days > 0 {
-            let dayPadding: Int
-            if days >= 10_000 { dayPadding = 5 }
-            else if days >= 1_000 { dayPadding = 4 }
-            else if days >= 100 { dayPadding = 3 }
-            else if days >= 10 { dayPadding = 2 }
-            else { dayPadding = 1 }
-            let dayStr = String(repeating: "0", count: max(0, dayPadding - String(days).count)) + "\(days)"
-            return "\(dayStr):\(String(format: "%02d", hours)):\(String(format: "%02d", mins)):\(String(format: "%02d", secs))"
+    private func endActivity() {
+        if let activityToken {
+            ProcessInfo.processInfo.endActivity(activityToken)
+            self.activityToken = nil
         }
-
-        if hours > 0 {
-            if hours >= 10 {
-                return "\(String(format: "%02d", hours)):\(String(format: "%02d", mins)):\(String(format: "%02d", secs))"
-            }
-            return "\(hours):\(String(format: "%02d", mins)):\(String(format: "%02d", secs))"
-        }
-
-        if mins > 0 {
-            if mins >= 10 {
-                return "\(String(format: "%02d", mins)):\(String(format: "%02d", secs))"
-            }
-            return "\(mins):\(String(format: "%02d", secs))"
-        }
-
-        if secs >= 10 {
-            return String(format: "%02d", secs)
-        }
-
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.maximumFractionDigits = 0
-        return formatter.string(from: NSNumber(value: secs)) ?? "\(secs)"
     }
 
     private func renderCustomOutput(for interval: TimeInterval) -> String {
@@ -410,10 +361,7 @@ final class TimerController: ObservableObject, Identifiable {
 
         let range = NSRange(pattern.startIndex..<pattern.endIndex, in: pattern)
         let matches = regex.matches(in: pattern, range: range)
-
-        guard !matches.isEmpty else {
-            return pattern
-        }
+        guard !matches.isEmpty else { return pattern }
 
         var rendered = pattern
         for match in matches.reversed() {
@@ -423,25 +371,23 @@ final class TimerController: ObservableObject, Identifiable {
             else {
                 continue
             }
-
-            let token = String(rendered[tokenRange])
-            let replacement = formattedToken(token, for: interval)
-            rendered.replaceSubrange(fullRange, with: replacement)
+            rendered.replaceSubrange(
+                fullRange,
+                with: formattedToken(String(rendered[tokenRange]), interval: interval)
+            )
         }
-
         return rendered
     }
 
-    private func formattedToken(_ token: String, for interval: TimeInterval) -> String {
+    private func formattedToken(_ token: String, interval: TimeInterval) -> String {
         let totalSeconds = max(0, Int(floor(interval)))
         let days = totalSeconds / 86_400
         let hours = (totalSeconds % 86_400) / 3_600
         let mins = (totalSeconds % 3_600) / 60
         let secs = totalSeconds % 60
-
         var value = token.replacingOccurrences(of: #"\\:"# , with: ":")
 
-        let replacements: [(String, String)] = [
+        for (needle, replacement) in [
             ("ddddd", String(format: "%05d", days)),
             ("dddd", String(format: "%04d", days)),
             ("ddd", String(format: "%03d", days)),
@@ -453,12 +399,9 @@ final class TimerController: ObservableObject, Identifiable {
             ("m", "\(mins)"),
             ("ss", String(format: "%02d", secs)),
             ("s", "\(secs)"),
-        ]
-
-        for (needle, replacement) in replacements {
+        ] {
             value = value.replacingOccurrences(of: needle, with: replacement)
         }
-
         return value
     }
 }

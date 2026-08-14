@@ -1,13 +1,20 @@
 import AppKit
 import Foundation
 
-private struct DirectoryAccessSnapshot: Sendable {
+struct DirectoryAccessSnapshot: Sendable {
     let path: String
     let defaultPath: String
     let bookmarkData: Data?
 }
 
-private actor BookmarkFileWorker {
+struct TimerOutputDestination: Sendable {
+    let fileName: String
+    let directory: DirectoryAccessSnapshot
+}
+
+actor BookmarkFileWorker {
+    static let shared = BookmarkFileWorker()
+
     func validateDirectory(_ snapshot: DirectoryAccessSnapshot) throws -> Data? {
         try withDirectoryAccess(snapshot) { url in
             try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
@@ -39,6 +46,20 @@ private actor BookmarkFileWorker {
             try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
             let outputURL = url.appendingPathComponent(fileName)
             try text.write(to: outputURL, atomically: true, encoding: .utf8)
+        }
+    }
+
+    func writeTimerOutput(
+        text: String,
+        destination: TimerOutputDestination
+    ) throws -> Data? {
+        try withDirectoryAccess(destination.directory) { url in
+            try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+            let outputURL = url.appendingPathComponent(destination.fileName)
+            guard let data = text.data(using: .utf8) else {
+                throw CocoaError(.fileWriteInapplicableStringEncoding)
+            }
+            try data.write(to: outputURL)
         }
     }
 
@@ -84,7 +105,7 @@ private actor BookmarkFileWorker {
 @MainActor
 final class BookmarkFileAccess {
     private let settingsStore: LegacySettingsStore
-    private let worker = BookmarkFileWorker()
+    private let worker = BookmarkFileWorker.shared
 
     init(settingsStore: LegacySettingsStore) {
         self.settingsStore = settingsStore
@@ -143,6 +164,35 @@ final class BookmarkFileAccess {
         applyRefreshedBookmark(refreshedBookmark)
     }
 
+    func timerOutputDestination(fileName: String) -> TimerOutputDestination {
+        TimerOutputDestination(
+            fileName: fileName,
+            directory: snapshot(path: settingsStore.directoryPath)
+        )
+    }
+
+    func writeTimerOutput(text: String, fileName: String) async throws {
+        let destination = timerOutputDestination(fileName: fileName)
+        let refreshedBookmark = try await worker.writeTimerOutput(
+            text: text,
+            destination: destination
+        )
+        applyRefreshedBookmark(
+            refreshedBookmark,
+            for: destination.directory
+        )
+    }
+
+    func applyRefreshedTimerBookmark(
+        _ refreshedBookmark: Data?,
+        destination: TimerOutputDestination
+    ) {
+        applyRefreshedBookmark(
+            refreshedBookmark,
+            for: destination.directory
+        )
+    }
+
     private func snapshot(path: String) -> DirectoryAccessSnapshot {
         DirectoryAccessSnapshot(
             path: path,
@@ -151,8 +201,15 @@ final class BookmarkFileAccess {
         )
     }
 
-    private func applyRefreshedBookmark(_ refreshedBookmark: Data?) {
-        if let refreshedBookmark {
+    private func applyRefreshedBookmark(
+        _ refreshedBookmark: Data?,
+        for snapshot: DirectoryAccessSnapshot? = nil
+    ) {
+        if let refreshedBookmark,
+           snapshot == nil || (
+            snapshot?.path == settingsStore.directoryPath
+                && snapshot?.bookmarkData == settingsStore.bookmarkData
+           ) {
             settingsStore.bookmarkData = refreshedBookmark
         }
     }
