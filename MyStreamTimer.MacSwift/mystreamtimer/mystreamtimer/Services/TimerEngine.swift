@@ -68,7 +68,7 @@ actor TimerEngine {
         while !Task.isCancelled, isCurrent(configuration.generation) {
             let now = Date()
             let text = formattedOutput(configuration, now: now)
-            await eventHandler(.rendered(generation: configuration.generation, text: text))
+            emit(.rendered(generation: configuration.generation, text: text))
 
             guard !Task.isCancelled, isCurrent(configuration.generation) else { return }
 
@@ -82,7 +82,7 @@ actor TimerEngine {
 
                     lastSuccessfullyWrittenText = text
                     shouldRetryWrite = false
-                    await eventHandler(
+                    emit(
                         .writeSucceeded(
                             generation: configuration.generation,
                             refreshedBookmark: refreshedBookmark,
@@ -93,7 +93,7 @@ actor TimerEngine {
                     guard !Task.isCancelled, isCurrent(configuration.generation) else { return }
 
                     shouldRetryWrite = true
-                    await eventHandler(
+                    emit(
                         .writeFailed(
                             generation: configuration.generation,
                             message: error.localizedDescription
@@ -104,9 +104,14 @@ actor TimerEngine {
 
             if configuration.mode == .countdown, now >= configuration.endDate {
                 guard isCurrent(configuration.generation) else { return }
+                if shouldRetryWrite {
+                    try? await Task.sleep(nanoseconds: 1_000_000_000)
+                    continue
+                }
+
                 activeGeneration = nil
                 runTask = nil
-                await eventHandler(.completed(generation: configuration.generation))
+                emit(.completed(generation: configuration.generation))
                 return
             }
 
@@ -117,6 +122,13 @@ actor TimerEngine {
             let wakeDate = min(nextTransition, retryDate)
             let delay = max(0.01, wakeDate.timeIntervalSinceNow)
             try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+        }
+    }
+
+    private func emit(_ event: Event) {
+        let eventHandler = eventHandler
+        Task { @MainActor in
+            eventHandler(event)
         }
     }
 

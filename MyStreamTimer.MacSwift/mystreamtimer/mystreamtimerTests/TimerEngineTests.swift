@@ -82,6 +82,7 @@ final class TimerEngineTests: XCTestCase {
         )
 
         await fulfillment(of: [written], timeout: 2)
+        await engine.invalidate(upThrough: 2)
         XCTAssertEqual(
             try String(contentsOf: directory.appendingPathComponent("timer.txt")),
             "New"
@@ -116,6 +117,7 @@ final class TimerEngineTests: XCTestCase {
         )
 
         await fulfillment(of: [advanced], timeout: 2)
+        await engine.invalidate(upThrough: 1)
     }
 
     private func temporaryDirectory() throws -> URL {
