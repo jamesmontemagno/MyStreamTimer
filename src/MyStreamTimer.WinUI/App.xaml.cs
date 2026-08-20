@@ -1,12 +1,11 @@
+using System.Diagnostics;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
-
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
+using MyStreamTimer.Core.Purchases;
+using MyStreamTimer.Core.Services;
+using MyStreamTimer.Core.Settings;
+using MyStreamTimer.WinUI.Services;
+using Windows.Storage;
 
 namespace MyStreamTimer.WinUI;
 
@@ -15,44 +14,105 @@ namespace MyStreamTimer.WinUI;
 /// </summary>
 public partial class App : Application
 {
-    /// <summary>
-    /// The main application window. Use <c>App.Window</c> from any class that needs
-    /// the window reference (for dialogs, pickers, interop, etc.).
-    /// </summary>
+    /// <summary>The main application window.</summary>
     public static Window Window { get; private set; } = null!;
 
-    /// <summary>
-    /// The UI thread dispatcher. Use <c>App.DispatcherQueue</c> to marshal calls
-    /// to the UI thread. Fully qualified to avoid CS0104 ambiguity with
-    /// <see cref="Windows.System.DispatcherQueue"/>.
-    /// </summary>
+    /// <summary>The UI thread dispatcher; use to marshal calls to the UI thread.</summary>
     public static Microsoft.UI.Dispatching.DispatcherQueue DispatcherQueue { get; private set; } = null!;
 
-    /// <summary>
-    /// The native window handle (HWND). Use for file pickers,
-    /// <c>DataTransferManager</c>, and any WinRT interop that requires
-    /// <c>InitializeWithWindow</c>.
-    /// </summary>
-    public static nint WindowHandle =>
-        WinRT.Interop.WindowNative.GetWindowHandle(Window);
+    /// <summary>The native window handle (HWND) of the main window.</summary>
+    public static nint WindowHandle => WinRT.Interop.WindowNative.GetWindowHandle(Window);
 
-    /// <summary>
-    /// Initializes the singleton application object.
-    /// </summary>
+    /// <summary>Application-wide service container.</summary>
+    public static IServiceProvider Services { get; private set; } = null!;
+
+    /// <summary>Shorthand for <c>Services.GetRequiredService&lt;T&gt;()</c>.</summary>
+    public static T GetService<T>() where T : notnull => Services.GetRequiredService<T>();
+
     public App()
     {
         InitializeComponent();
+        DispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
+        UnhandledException += OnUnhandledException;
+        Services = ConfigureServices();
     }
 
-    /// <summary>
-    /// Invoked when the application is launched.
-    /// </summary>
-    /// <param name="args">Details about the launch request and process.</param>
-    protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
+    private static ServiceProvider ConfigureServices()
     {
+        var services = new ServiceCollection();
+
+        var folders = new DefaultFolderProvider();
+        folders.LogDiagnostics();
+
+        services.AddSingleton(folders);
+        services.AddSingleton<ISettingsStore, LocalSettingsStore>();
+        services.AddSingleton(sp => new GlobalSettings(sp.GetRequiredService<ISettingsStore>(), folders.DefaultDirectoryPath));
+        services.AddSingleton<ProEntitlement>();
+        services.AddSingleton<IFileOutputService, FileOutputService>();
+        services.AddSingleton<IClock>(SystemClock.Instance);
+
+        services.AddSingleton<BeepService>();
+        services.AddSingleton<PowerService>();
+        services.AddSingleton<TimerPlatformService>();
+        services.AddSingleton<ITimerPlatform>(sp => sp.GetRequiredService<TimerPlatformService>());
+        services.AddSingleton<TimerHost>();
+
+        services.AddSingleton<ActivationService>();
+        services.AddSingleton<WindowService>();
+        services.AddSingleton<ClipboardService>();
+        services.AddSingleton<LauncherService>();
+        services.AddSingleton<DialogService>();
+        services.AddSingleton<FolderService>();
+        services.AddSingleton<StoreService>();
+
+        return services.BuildServiceProvider();
+    }
+
+    protected override void OnLaunched(LaunchActivatedEventArgs args)
+    {
+        var activation = GetService<ActivationService>();
+        var timers = GetService<TimerHost>();
+        var settings = GetService<GlobalSettings>();
+        var windowService = GetService<WindowService>();
+        var store = GetService<StoreService>();
+
+        // Capture the launch activation before any UI so a protocol launch boot-starts the right timer.
+        activation.HandleLaunchActivation();
+        activation.CommandReceived += (_, command) => timers.Dispatch(command);
+        activation.Start();
+
+        timers.AutoStart();
+        if (activation.TakePendingCommand() is { } pending)
+        {
+            timers.Dispatch(pending);
+        }
+
         Window = new MainWindow();
-        DispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
+        windowService.Initialize(Window);
         Window.Activate();
+
+        settings.TimesUsed++;
+        if (settings.TimesUsed == 10)
+        {
+            _ = store.RequestRatingAsync();
+        }
+
+        _ = store.RefreshLicensesAsync();
+    }
+
+    private void OnUnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
+    {
+        try
+        {
+            var logs = Path.Combine(ApplicationData.Current.LocalFolder.Path, "logs");
+            Directory.CreateDirectory(logs);
+            var file = Path.Combine(logs, $"crash-{DateTime.Now:yyyyMMdd-HHmmss}.txt");
+            File.WriteAllText(file, $"{DateTime.Now:O}{Environment.NewLine}{e.Message}{Environment.NewLine}{e.Exception}");
+            Debug.WriteLine($"[App] Unhandled exception logged to {file}");
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[App] Failed to write crash log: {ex.Message}");
+        }
     }
 }
-

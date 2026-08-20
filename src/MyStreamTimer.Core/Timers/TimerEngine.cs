@@ -297,7 +297,7 @@ public sealed class TimerEngine : IDisposable
 
         loopCts = new CancellationTokenSource();
         var token = loopCts.Token;
-        loopTask = Task.Factory.StartNew(() => UpdateLoop(token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default).Unwrap();
+        loopTask = Task.Run(() => UpdateLoop(token), CancellationToken.None);
     }
 
     void StopLoop()
@@ -380,6 +380,8 @@ public sealed class TimerEngine : IDisposable
             }
 
         Delay:
+            if (token.IsCancellationRequested)
+                return;
             try { await Task.Delay(TickMilliseconds, token).ConfigureAwait(false); }
             catch (OperationCanceledException) { return; }
         }
