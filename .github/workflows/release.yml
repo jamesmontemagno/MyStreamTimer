@@ -1,0 +1,131 @@
+name: Release
+
+on:
+  push:
+    tags: [ 'v*' ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Package version (e.g. 3.0.0.0). Defaults to the tag.'
+        required: false
+
+permissions:
+  contents: write
+
+env:
+  PROJECT: src/MyStreamTimer.WinUI/MyStreamTimer.WinUI.csproj
+
+jobs:
+  test:
+    name: Core tests
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet test tests/MyStreamTimer.Core.Tests/MyStreamTimer.Core.Tests.csproj -c Release
+
+  package:
+    name: Build & package (${{ matrix.platform }})
+    needs: test
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        platform: [ x64, ARM64 ]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - uses: microsoft/setup-WinAppCli@v1
+
+      - name: Resolve version
+        id: ver
+        shell: pwsh
+        run: |
+          $v = '${{ github.event.inputs.version }}'
+          if (-not $v) { $v = '${{ github.ref_name }}'.TrimStart('v') }
+          if ($v -notmatch '^\d+\.\d+\.\d+(\.\d+)?$') { throw "Bad version '$v'" }
+          if ($v.Split('.').Count -eq 3) { $v = "$v.0" }
+          "version=$v" >> $env:GITHUB_OUTPUT
+
+      - name: Stamp manifest version
+        shell: pwsh
+        run: |
+          $m = 'src/MyStreamTimer.WinUI/Package.appxmanifest'
+          (Get-Content $m -Raw) -replace 'Version="\d+\.\d+\.\d+\.\d+"', 'Version="${{ steps.ver.outputs.version }}"' | Set-Content $m -Encoding utf8
+
+      - name: Build (Release, Store identity)
+        run: dotnet build ${{ env.PROJECT }} -c Release -p:Platform=${{ matrix.platform }} -p:UseDevIdentity=false
+
+      - name: Package
+        shell: pwsh
+        run: |
+          $out = Get-ChildItem -Directory -Path src/MyStreamTimer.WinUI/bin -Recurse | Where-Object { $_.FullName -match '\\Release\\' -and (Test-Path (Join-Path $_.FullName 'MyStreamTimer.exe')) } | Select-Object -First 1
+          New-Item -ItemType Directory -Force artifacts | Out-Null
+          winapp package $out.FullName --output artifacts/MyStreamTimer_${{ steps.ver.outputs.version }}_${{ matrix.platform }}.msix --quiet
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: msix-${{ matrix.platform }}
+          path: artifacts/*.msix
+
+  bundle-sign-release:
+    name: Bundle, sign, publish
+    needs: package
+    runs-on: windows-latest
+    environment: release
+    steps:
+      - uses: actions/checkout@v4
+      - uses: microsoft/setup-WinAppCli@v1
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Bundle x64 + ARM64
+        shell: pwsh
+        run: |
+          $sdk = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\10.*\x64\makeappx.exe" | Sort-Object FullName -Descending | Select-Object -First 1
+          $ver = (Get-ChildItem artifacts/*.msix | Select-Object -First 1).BaseName.Split('_')[1]
+          New-Item -ItemType Directory -Force bundle/input | Out-Null
+          Copy-Item artifacts/*.msix bundle/input/
+          & $sdk.FullName bundle /d bundle/input /p "bundle/MyStreamTimer_$ver.msixbundle" /o
+          "version=$ver" >> $env:GITHUB_OUTPUT
+        id: bundle
+
+      # Sideload builds are signed with the publisher certificate (CN=Refractored LLC). Store submissions are
+      # re-signed by the Store, so the unsigned bundle is what gets uploaded to Partner Center.
+      - name: Sign (sideload)
+        if: ${{ secrets.SIGNING_PFX_BASE64 != '' }}
+        shell: pwsh
+        run: |
+          [IO.File]::WriteAllBytes('signing.pfx', [Convert]::FromBase64String('${{ secrets.SIGNING_PFX_BASE64 }}'))
+          Copy-Item "bundle/MyStreamTimer_${{ steps.bundle.outputs.version }}.msixbundle" "bundle/MyStreamTimer_${{ steps.bundle.outputs.version }}_sideload.msixbundle"
+          winapp sign "bundle/MyStreamTimer_${{ steps.bundle.outputs.version }}_sideload.msixbundle" --cert signing.pfx --password '${{ secrets.SIGNING_PFX_PASSWORD }}' --timestamp http://timestamp.digicert.com --quiet
+          Remove-Item signing.pfx
+
+      - name: Upload to Microsoft Store (flight)
+        if: ${{ secrets.STORE_TENANT_ID != '' }}
+        uses: microsoft/setup-msstore-cli@v1
+      - name: Store publish
+        if: ${{ secrets.STORE_TENANT_ID != '' }}
+        shell: pwsh
+        env:
+          MSSTORE_TENANT: ${{ secrets.STORE_TENANT_ID }}
+          MSSTORE_SELLER: ${{ secrets.STORE_SELLER_ID }}
+          MSSTORE_CLIENT: ${{ secrets.STORE_CLIENT_ID }}
+          MSSTORE_SECRET: ${{ secrets.STORE_CLIENT_SECRET }}
+        run: |
+          msstore reconfigure --tenantId $env:MSSTORE_TENANT --sellerId $env:MSSTORE_SELLER --clientId $env:MSSTORE_CLIENT --clientSecret $env:MSSTORE_SECRET
+          # 9N5NXX3WK7K7 = My Stream Timer. Flight id is configured in Partner Center; omit --flightId for production.
+          msstore publish "bundle/MyStreamTimer_${{ steps.bundle.outputs.version }}.msixbundle" --appId 9N5NXX3WK7K7 ${{ vars.STORE_FLIGHT_ID != '' && format('--flightId {0}', vars.STORE_FLIGHT_ID) || '' }}
+
+      - name: GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            bundle/*.msixbundle
+          generate_release_notes: true
+          draft: ${{ !startsWith(github.ref, 'refs/tags/') }}

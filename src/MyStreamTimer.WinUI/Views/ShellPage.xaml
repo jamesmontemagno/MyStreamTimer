@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Page
+    x:Class="MyStreamTimer.WinUI.Views.ShellPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:helpers="using:MyStreamTimer.WinUI.Helpers"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Page.Resources>
+        <!-- Trailing lock glyph shown on Pro-gated timers while the user is not Pro. -->
+        <Style x:Key="NavLockIconStyle" TargetType="FontIcon">
+            <Setter Property="Glyph" Value="&#xE72E;" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="{ThemeResource LockGlyphBrush}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="8,0,0,0" />
+            <Setter Property="AutomationProperties.Name" Value="Pro feature" />
+        </Style>
+        <Style x:Key="NavItemTextStyle" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        </Style>
+    </Page.Resources>
+
+    <Page.KeyboardAccelerators>
+        <KeyboardAccelerator Key="Number1" Modifiers="Control,Shift" Invoked="OnTimerAccelerator" />
+        <KeyboardAccelerator Key="Number2" Modifiers="Control,Shift" Invoked="OnTimerAccelerator" />
+        <KeyboardAccelerator Key="Number3" Modifiers="Control,Shift" Invoked="OnTimerAccelerator" />
+        <KeyboardAccelerator Key="Number4" Modifiers="Control,Shift" Invoked="OnTimerAccelerator" />
+        <KeyboardAccelerator Key="Number5" Modifiers="Control,Shift" Invoked="OnTimerAccelerator" />
+        <KeyboardAccelerator Key="Number6" Modifiers="Control,Shift" Invoked="OnTimerAccelerator" />
+        <KeyboardAccelerator Key="Number7" Modifiers="Control,Shift" Invoked="OnTimerAccelerator" />
+    </Page.KeyboardAccelerators>
+
+    <NavigationView
+        x:Name="Nav"
+        AutomationProperties.AutomationId="MainNavigation"
+        AutomationProperties.Name="Main navigation"
+        CompactModeThresholdWidth="480"
+        ExpandedModeThresholdWidth="720"
+        IsBackButtonVisible="Collapsed"
+        IsSettingsVisible="True"
+        IsTitleBarAutoPaddingEnabled="False"
+        OpenPaneLength="248"
+        PaneDisplayMode="Auto"
+        SelectionChanged="OnSelectionChanged">
+
+        <NavigationView.MenuItems>
+            <NavigationViewItemHeader Content="COUNTDOWNS" />
+
+            <NavigationViewItem
+                x:Name="Countdown1Item"
+                AutomationProperties.AutomationId="NavCountdown1"
+                AutomationProperties.Name="{x:Bind ViewModel.Countdown1.Title, Mode=OneWay}"
+                Tag="countdown">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="{x:Bind ViewModel.Countdown1.IconGlyph, Mode=OneWay}" />
+                </NavigationViewItem.Icon>
+                <NavigationViewItem.InfoBadge>
+                    <InfoBadge
+                        AutomationProperties.Name="Running"
+                        Style="{StaticResource AttentionDotInfoBadgeStyle}"
+                        Visibility="{x:Bind helpers:Bind.ToVisibility(ViewModel.Countdown1.IsRunning), Mode=OneWay}" />
+                </NavigationViewItem.InfoBadge>
+                <TextBlock Style="{StaticResource NavItemTextStyle}" Text="{x:Bind ViewModel.Countdown1.Title, Mode=OneWay}" />
+            </NavigationViewItem>
+
+            <NavigationViewItem
+                x:Name="Countdown2Item"
+                AutomationProperties.AutomationId="NavCountdown2"
+                AutomationProperties.Name="{x:Bind ViewModel.Countdown2.Title, Mode=OneWay}"
+                Tag="countdown2">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="{x:Bind ViewModel.Countdown2.IconGlyph, Mode=OneWay}" />
+                </NavigationViewItem.Icon>
+                <NavigationViewItem.InfoBadge>
+                    <InfoBadge
+                        AutomationProperties.Name="Running"
+                        Style="{StaticResource AttentionDotInfoBadgeStyle}"
+                        Visibility="{x:Bind helpers:Bind.ToVisibility(ViewModel.Countdown2.IsRunning), Mode=OneWay}" />
+                </NavigationViewItem.InfoBadge>
+                <TextBlock Style="{StaticResource NavItemTextStyle}" Text="{x:Bind ViewModel.Countdown2.Title, Mode=OneWay}" />
+            </NavigationViewItem>
+
+            <NavigationViewItem
+                x:Name="Countdown3Item"
+                AutomationProperties.AutomationId="NavCountdown3"
+                AutomationProperties.Name="{x:Bind ViewModel.Countdown3.Title, Mode=OneWay}"
+                Tag="countdown3">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="{x:Bind ViewModel.Countdown3.IconGlyph, Mode=OneWay}" />
+                </NavigationViewItem.Icon>
+                <NavigationViewItem.InfoBadge>
+                    <InfoBadge
+                        AutomationProperties.Name="Running"
+                        Style="{StaticResource AttentionDotInfoBadgeStyle}"
+                        Visibility="{x:Bind helpers:Bind.ToVisibility(ViewModel.Countdown3.IsRunning), Mode=OneWay}" />
+                </NavigationViewItem.InfoBadge>
+                <TextBlock Style="{StaticResource NavItemTextStyle}" Text="{x:Bind ViewModel.Countdown3.Title, Mode=OneWay}" />
+            </NavigationViewItem>
+
+            <NavigationViewItem
+                x:Name="Countdown4Item"
+                AutomationProperties.AutomationId="NavCountdown4"
+                AutomationProperties.Name="{x:Bind ViewModel.Countdown4.Title, Mode=OneWay}"
+                Tag="countdown4">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="{x:Bind ViewModel.Countdown4.IconGlyph, Mode=OneWay}" />
+                </NavigationViewItem.Icon>
+                <NavigationViewItem.InfoBadge>
+                    <InfoBadge
+                        AutomationProperties.Name="Running"
+                        Style="{StaticResource AttentionDotInfoBadgeStyle}"
+                        Visibility="{x:Bind helpers:Bind.ToVisibility(ViewModel.Countdown4.IsRunning), Mode=OneWay}" />
+                </NavigationViewItem.InfoBadge>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource NavItemTextStyle}" Text="{x:Bind ViewModel.Countdown4.Title, Mode=OneWay}" />
+                    <FontIcon
+                        Grid.Column="1"
+                        Style="{StaticResource NavLockIconStyle}"
+                        Visibility="{x:Bind helpers:Bind.ToVisibility(ViewModel.Countdown4.IsLocked), Mode=OneWay}" />
+                </Grid>
+            </NavigationViewItem>
+
+            <NavigationViewItemHeader Content="COUNT UP" />
+
+            <NavigationViewItem
+                x:Name="CountUp1Item"
+                AutomationProperties.AutomationId="NavCountUp1"
+                AutomationProperties.Name="{x:Bind ViewModel.CountUp1.Title, Mode=OneWay}"
+                Tag="countup">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="{x:Bind ViewModel.CountUp1.IconGlyph, Mode=OneWay}" />
+                </NavigationViewItem.Icon>
+                <NavigationViewItem.InfoBadge>
+                    <InfoBadge
+                        AutomationProperties.Name="Running"
+                        Style="{StaticResource AttentionDotInfoBadgeStyle}"
+                        Visibility="{x:Bind helpers:Bind.ToVisibility(ViewModel.CountUp1.IsRunning), Mode=OneWay}" />
+                </NavigationViewItem.InfoBadge>
+                <TextBlock Style="{StaticResource NavItemTextStyle}" Text="{x:Bind ViewModel.CountUp1.Title, Mode=OneWay}" />
+            </NavigationViewItem>
+
+            <NavigationViewItem
+                x:Name="CountUp2Item"
+                AutomationProperties.AutomationId="NavCountUp2"
+                AutomationProperties.Name="{x:Bind ViewModel.CountUp2.Title, Mode=OneWay}"
+                Tag="countup2">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="{x:Bind ViewModel.CountUp2.IconGlyph, Mode=OneWay}" />
+                </NavigationViewItem.Icon>
+                <NavigationViewItem.InfoBadge>
+                    <InfoBadge
+                        AutomationProperties.Name="Running"
+                        Style="{StaticResource AttentionDotInfoBadgeStyle}"
+                        Visibility="{x:Bind helpers:Bind.ToVisibility(ViewModel.CountUp2.IsRunning), Mode=OneWay}" />
+                </NavigationViewItem.InfoBadge>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource NavItemTextStyle}" Text="{x:Bind ViewModel.CountUp2.Title, Mode=OneWay}" />
+                    <FontIcon
+                        Grid.Column="1"
+                        Style="{StaticResource NavLockIconStyle}"
+                        Visibility="{x:Bind helpers:Bind.ToVisibility(ViewModel.CountUp2.IsLocked), Mode=OneWay}" />
+                </Grid>
+            </NavigationViewItem>
+
+            <NavigationViewItemHeader Content="CLOCK" />
+
+            <NavigationViewItem
+                x:Name="CurrentTimeItem"
+                AutomationProperties.AutomationId="NavCurrentTime"
+                AutomationProperties.Name="{x:Bind ViewModel.CurrentTime.Title, Mode=OneWay}"
+                Tag="time">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="{x:Bind ViewModel.CurrentTime.IconGlyph, Mode=OneWay}" />
+                </NavigationViewItem.Icon>
+                <NavigationViewItem.InfoBadge>
+                    <InfoBadge
+                        AutomationProperties.Name="Running"
+                        Style="{StaticResource AttentionDotInfoBadgeStyle}"
+                        Visibility="{x:Bind helpers:Bind.ToVisibility(ViewModel.CurrentTime.IsRunning), Mode=OneWay}" />
+                </NavigationViewItem.InfoBadge>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource NavItemTextStyle}" Text="{x:Bind ViewModel.CurrentTime.Title, Mode=OneWay}" />
+                    <FontIcon
+                        Grid.Column="1"
+                        Style="{StaticResource NavLockIconStyle}"
+                        Visibility="{x:Bind helpers:Bind.ToVisibility(ViewModel.CurrentTime.IsLocked), Mode=OneWay}" />
+                </Grid>
+            </NavigationViewItem>
+
+            <NavigationViewItemHeader Content="MORE" />
+
+            <NavigationViewItem
+                x:Name="AutomationItem"
+                AutomationProperties.AutomationId="NavAutomation"
+                AutomationProperties.Name="Automation"
+                Content="Automation"
+                Tag="automation">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE945;" />
+                </NavigationViewItem.Icon>
+            </NavigationViewItem>
+
+            <NavigationViewItem
+                x:Name="ProItem"
+                AutomationProperties.AutomationId="NavPro"
+                AutomationProperties.Name="Pro"
+                Content="Pro"
+                Tag="pro">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE735;" />
+                </NavigationViewItem.Icon>
+            </NavigationViewItem>
+        </NavigationView.MenuItems>
+
+        <NavigationView.FooterMenuItems>
+            <NavigationViewItem
+                x:Name="AboutItem"
+                AutomationProperties.AutomationId="NavAbout"
+                AutomationProperties.Name="About"
+                Content="About"
+                Tag="about">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE946;" />
+                </NavigationViewItem.Icon>
+            </NavigationViewItem>
+        </NavigationView.FooterMenuItems>
+
+        <Frame
+            x:Name="ContentFrame"
+            AutomationProperties.AutomationId="ContentFrame"
+            IsNavigationStackEnabled="False">
+            <Frame.ContentTransitions>
+                <TransitionCollection>
+                    <NavigationThemeTransition>
+                        <NavigationThemeTransition.DefaultNavigationTransitionInfo>
+                            <EntranceNavigationTransitionInfo />
+                        </NavigationThemeTransition.DefaultNavigationTransitionInfo>
+                    </NavigationThemeTransition>
+                </TransitionCollection>
+            </Frame.ContentTransitions>
+        </Frame>
+    </NavigationView>
+</Page>
+

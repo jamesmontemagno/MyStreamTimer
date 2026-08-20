@@ -65,4 +65,13 @@ public sealed class TimerSettings
 
     // ----- New in 3.0 -----
     public string PopOutBounds { get => store.GetString(Key("PopOutBounds"), string.Empty); set => store.Set(Key("PopOutBounds"), value); }
+
+    /// <summary>User-defined display name; empty means the default <see cref="TimerKindExtensions.Title"/>.</summary>
+    public string DisplayName { get => store.GetString(Key("DisplayName"), string.Empty); set => store.Set(Key("DisplayName"), value); }
+
+    /// <summary>User-chosen Segoe Fluent Icons glyph (e.g. "\uE916"); empty means the default glyph for the kind.</summary>
+    public string IconGlyph { get => store.GetString(Key("IconGlyph"), string.Empty); set => store.Set(Key("IconGlyph"), value); }
+
+    public string EffectiveTitle => string.IsNullOrWhiteSpace(DisplayName) ? Kind.Title() : DisplayName.Trim();
+    public string EffectiveIconGlyph => string.IsNullOrWhiteSpace(IconGlyph) ? Kind.DefaultIconGlyph() : IconGlyph;
 }

@@ -64,6 +64,12 @@ public partial class App : Application
         services.AddSingleton<DialogService>();
         services.AddSingleton<FolderService>();
         services.AddSingleton<StoreService>();
+        services.AddSingleton<PopOutService>();
+
+        services.AddTransient<ViewModels.SettingsViewModel>();
+        services.AddTransient<ViewModels.AutomationViewModel>();
+        services.AddTransient<ViewModels.ProViewModel>();
+        services.AddTransient<ViewModels.AboutViewModel>();
 
         return services.BuildServiceProvider();
     }
@@ -98,6 +104,10 @@ public partial class App : Application
         }
 
         _ = store.RefreshLicensesAsync();
+
+        // Upgrading users (TimesUsed was already >= 1 before this launch's increment) see the welcome-back sheet once.
+        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low,
+            async () => await Views.WelcomeBackDialog.TryShowAsync(settings));
     }
 
     private void OnUnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)

@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window
+    x:Class="MyStreamTimer.WinUI.Views.PopOutWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid
+        x:Name="Root"
+        AutomationProperties.AutomationId="PopOutRoot"
+        AutomationProperties.Name="{x:Bind ViewModel.Title}"
+        Background="{x:Bind ViewModel.Background, Mode=OneWay}"
+        IsTabStop="True"
+        KeyDown="OnRootKeyDown"
+        PointerPressed="OnRootPointerPressed"
+        UseSystemFocusVisuals="False">
+
+        <Grid.ContextFlyout>
+            <MenuFlyout>
+                <MenuFlyoutItem
+                    AutomationProperties.AutomationId="PopOutCopyPath"
+                    AutomationProperties.Name="Copy file path"
+                    Click="OnCopyPathClick"
+                    Text="Copy file path">
+                    <MenuFlyoutItem.Icon>
+                        <FontIcon Glyph="&#xE8C8;" />
+                    </MenuFlyoutItem.Icon>
+                </MenuFlyoutItem>
+                <MenuFlyoutItem
+                    AutomationProperties.AutomationId="PopOutOpenFolder"
+                    AutomationProperties.Name="Open folder"
+                    Click="OnOpenFolderClick"
+                    Text="Open folder">
+                    <MenuFlyoutItem.Icon>
+                        <FontIcon Glyph="&#xE838;" />
+                    </MenuFlyoutItem.Icon>
+                </MenuFlyoutItem>
+                <MenuFlyoutSeparator />
+                <MenuFlyoutItem
+                    AutomationProperties.AutomationId="PopOutResetBounds"
+                    AutomationProperties.Name="Reset size and position"
+                    Click="OnResetBoundsClick"
+                    Text="Reset size &amp; position">
+                    <MenuFlyoutItem.Icon>
+                        <FontIcon Glyph="&#xE72C;" />
+                    </MenuFlyoutItem.Icon>
+                </MenuFlyoutItem>
+                <MenuFlyoutSeparator />
+                <MenuFlyoutItem
+                    AutomationProperties.AutomationId="PopOutClose"
+                    AutomationProperties.Name="Close pop-out"
+                    Click="OnCloseClick"
+                    Text="Close">
+                    <MenuFlyoutItem.Icon>
+                        <FontIcon Glyph="&#xE8BB;" />
+                    </MenuFlyoutItem.Icon>
+                </MenuFlyoutItem>
+            </MenuFlyout>
+        </Grid.ContextFlyout>
+
+        <Viewbox
+            Margin="12"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            StretchDirection="DownOnly">
+            <TextBlock
+                x:Name="TimerText"
+                AutomationProperties.AutomationId="PopOutText"
+                AutomationProperties.LiveSetting="Polite"
+                FontFamily="{x:Bind ViewModel.FontFamily, Mode=OneWay}"
+                FontSize="{x:Bind ViewModel.FontSize, Mode=OneWay}"
+                FontWeight="SemiBold"
+                Foreground="{x:Bind ViewModel.Foreground, Mode=OneWay}"
+                IsTextSelectionEnabled="False"
+                Text="{x:Bind ViewModel.Text, Mode=OneWay}"
+                TextAlignment="Center"
+                TextTrimming="None"
+                TextWrapping="Wrap" />
+        </Viewbox>
+    </Grid>
+</Window>

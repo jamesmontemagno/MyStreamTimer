@@ -80,6 +80,19 @@ public static class TimerKindExtensions
 
     public static string DefaultFileName(this TimerKind kind) => $"{kind.Id()}.txt";
 
+    /// <summary>Default Segoe Fluent Icons glyph: Stopwatch / Up / Recent(clock).</summary>
+    public static string DefaultIconGlyph(this TimerKind kind) =>
+        kind.IsCountdown() ? "\uE916" : kind.IsCountUp() ? "\uE74A" : "\uE823";
+
+    /// <summary>Curated icon choices offered in Settings (glyph, label).</summary>
+    public static readonly IReadOnlyList<(string Glyph, string Label)> IconChoices =
+    [
+        ("\uE916", "Stopwatch"), ("\uE74A", "Up"), ("\uE823", "Clock"), ("\uE945", "Lightning"), ("\uE735", "Star"),
+        ("\uE8D4", "Trophy"), ("\uE7C8", "Gift"), ("\uE7F4", "Game"), ("\uE8B8", "Music"), ("\uE714", "Video"),
+        ("\uE8A1", "Megaphone"), ("\uE7EE", "Coffee"), ("\uE8C9", "Rocket"), ("\uE734", "Favorite"), ("\uE8EC", "Flag"),
+        ("\uE720", "Microphone"), ("\uE7FC", "Monitor"), ("\uE8BD", "Chat"), ("\uE787", "Calendar"), ("\uE8F1", "Book"),
+    ];
+
     public static IReadOnlyList<string> OutputStyleOptions(this TimerKind kind) => kind.IsTime()
         ? ["Hour:Minute (9:10)", "Hour:Minute:Second (9:10:05)", "Hour:Minute (24-hour) (19:10)", "Hour:Minute:Second (24-hour) (19:10:05)"]
         : ["Custom", "Auto", "Total Seconds (120)", "Total Minutes:Seconds (90:00)"];

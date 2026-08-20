@@ -45,7 +45,7 @@
 5. **Behavior** section: `SettingsCard` Auto start (`ToggleSwitch`), Beep at zero (`ToggleSwitch`).
 6. Locked state for Pro kinds when not Pro: center illustration glyph `&#xE72E;`, title "Countdown 4 is a Pro feature", body, `AccentButtonStyle` "See Pro options" → navigates to Pro.
 
-Keyboard: Space = Start/Stop, P = Pause/Resume, R = Reset, Ctrl+1…7 = switch timer, Ctrl+, = Settings. All interactive elements have `AutomationProperties.Name`.
+Keyboard: Space = Start/Stop, P = Pause/Resume, R = Reset (only when focus is not in a text input), **Ctrl+Shift+1…7** = switch timer (Ctrl+1…4 is reserved by ZoomIt, which streamers use), Ctrl+, = Settings. All interactive elements have `AutomationProperties.Name`.
 
 ## Settings page
 `SettingsCard`/`SettingsExpander` groups: **Output folder** (path display + Choose / Open / Test access / Use default / Copy; expander lists file names per timer), **Appearance** (Theme `RadioButtons` System/Light/Dark; Stay on top toggle), **Pop-out appearance** (Pro; font size `Slider` 12–200, font family `ComboBox`, text & background colour `DropDownButton` → `Flyout` with `ColorPicker`, live preview card), **Data** (Reset all settings → confirm `ContentDialog`).
@@ -63,3 +63,4 @@ App icon, name, version (`x:Bind`), OSS blurb, link buttons (GitHub, X/Twitter, 
 - `ContentDialog` only for: destructive confirms (Reset all settings), blocking errors (invalid directory), welcome-back sheet.
 - Everything else: `Flyout` / `MenuFlyout` / `TeachingTip` / inline `InfoBar`.
 - Toast-style confirmations (copied/saved) → `TeachingTip` auto-dismiss 2 s or transient `InfoBar`.
+

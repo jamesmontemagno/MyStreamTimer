@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+        Semantic brushes (named by purpose). Light/Dark redirect to the platform's Fluent brushes so they stay
+        correct if the system retunes them; HighContrast uses only SystemColor* brushes.
+    -->
+    <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+            <StaticResource x:Key="HeroCardBackgroundBrush" ResourceKey="CardBackgroundFillColorDefaultBrush" />
+            <StaticResource x:Key="HeroCardBorderBrush" ResourceKey="CardStrokeColorDefaultBrush" />
+            <StaticResource x:Key="HeroCardBorderRunningBrush" ResourceKey="AccentFillColorDefaultBrush" />
+            <StaticResource x:Key="HeroCardBorderFinishedBrush" ResourceKey="SystemFillColorSuccessBrush" />
+            <StaticResource x:Key="HeroTextBrush" ResourceKey="TextFillColorPrimaryBrush" />
+            <StaticResource x:Key="SuccessTextBrush" ResourceKey="SystemFillColorSuccessBrush" />
+            <StaticResource x:Key="StatusPillIdleBackgroundBrush" ResourceKey="SystemFillColorSolidNeutralBackgroundBrush" />
+            <StaticResource x:Key="StatusPillIdleForegroundBrush" ResourceKey="TextFillColorSecondaryBrush" />
+            <StaticResource x:Key="StatusPillRunningBackgroundBrush" ResourceKey="AccentFillColorDefaultBrush" />
+            <StaticResource x:Key="StatusPillRunningForegroundBrush" ResourceKey="TextOnAccentFillColorPrimaryBrush" />
+            <StaticResource x:Key="StatusPillPausedBackgroundBrush" ResourceKey="SystemFillColorCautionBackgroundBrush" />
+            <StaticResource x:Key="StatusPillPausedForegroundBrush" ResourceKey="SystemFillColorCautionBrush" />
+            <StaticResource x:Key="StatusPillFinishedBackgroundBrush" ResourceKey="SystemFillColorSuccessBackgroundBrush" />
+            <StaticResource x:Key="StatusPillFinishedForegroundBrush" ResourceKey="SystemFillColorSuccessBrush" />
+            <StaticResource x:Key="LockGlyphBrush" ResourceKey="TextFillColorSecondaryBrush" />
+            <StaticResource x:Key="LockedIllustrationBrush" ResourceKey="AccentTextFillColorPrimaryBrush" />
+        </ResourceDictionary>
+
+        <ResourceDictionary x:Key="Dark">
+            <StaticResource x:Key="HeroCardBackgroundBrush" ResourceKey="CardBackgroundFillColorDefaultBrush" />
+            <StaticResource x:Key="HeroCardBorderBrush" ResourceKey="CardStrokeColorDefaultBrush" />
+            <StaticResource x:Key="HeroCardBorderRunningBrush" ResourceKey="AccentFillColorDefaultBrush" />
+            <StaticResource x:Key="HeroCardBorderFinishedBrush" ResourceKey="SystemFillColorSuccessBrush" />
+            <StaticResource x:Key="HeroTextBrush" ResourceKey="TextFillColorPrimaryBrush" />
+            <StaticResource x:Key="SuccessTextBrush" ResourceKey="SystemFillColorSuccessBrush" />
+            <StaticResource x:Key="StatusPillIdleBackgroundBrush" ResourceKey="SystemFillColorSolidNeutralBackgroundBrush" />
+            <StaticResource x:Key="StatusPillIdleForegroundBrush" ResourceKey="TextFillColorSecondaryBrush" />
+            <StaticResource x:Key="StatusPillRunningBackgroundBrush" ResourceKey="AccentFillColorDefaultBrush" />
+            <StaticResource x:Key="StatusPillRunningForegroundBrush" ResourceKey="TextOnAccentFillColorPrimaryBrush" />
+            <StaticResource x:Key="StatusPillPausedBackgroundBrush" ResourceKey="SystemFillColorCautionBackgroundBrush" />
+            <StaticResource x:Key="StatusPillPausedForegroundBrush" ResourceKey="SystemFillColorCautionBrush" />
+            <StaticResource x:Key="StatusPillFinishedBackgroundBrush" ResourceKey="SystemFillColorSuccessBackgroundBrush" />
+            <StaticResource x:Key="StatusPillFinishedForegroundBrush" ResourceKey="SystemFillColorSuccessBrush" />
+            <StaticResource x:Key="LockGlyphBrush" ResourceKey="TextFillColorSecondaryBrush" />
+            <StaticResource x:Key="LockedIllustrationBrush" ResourceKey="AccentTextFillColorPrimaryBrush" />
+        </ResourceDictionary>
+
+        <ResourceDictionary x:Key="HighContrast">
+            <StaticResource x:Key="HeroCardBackgroundBrush" ResourceKey="SystemColorWindowColorBrush" />
+            <StaticResource x:Key="HeroCardBorderBrush" ResourceKey="SystemColorWindowTextColorBrush" />
+            <StaticResource x:Key="HeroCardBorderRunningBrush" ResourceKey="SystemColorHighlightColorBrush" />
+            <StaticResource x:Key="HeroCardBorderFinishedBrush" ResourceKey="SystemColorHighlightColorBrush" />
+            <StaticResource x:Key="HeroTextBrush" ResourceKey="SystemColorWindowTextColorBrush" />
+            <StaticResource x:Key="SuccessTextBrush" ResourceKey="SystemColorWindowTextColorBrush" />
+            <StaticResource x:Key="StatusPillIdleBackgroundBrush" ResourceKey="SystemColorWindowColorBrush" />
+            <StaticResource x:Key="StatusPillIdleForegroundBrush" ResourceKey="SystemColorWindowTextColorBrush" />
+            <StaticResource x:Key="StatusPillRunningBackgroundBrush" ResourceKey="SystemColorHighlightColorBrush" />
+            <StaticResource x:Key="StatusPillRunningForegroundBrush" ResourceKey="SystemColorHighlightTextColorBrush" />
+            <StaticResource x:Key="StatusPillPausedBackgroundBrush" ResourceKey="SystemColorHighlightColorBrush" />
+            <StaticResource x:Key="StatusPillPausedForegroundBrush" ResourceKey="SystemColorHighlightTextColorBrush" />
+            <StaticResource x:Key="StatusPillFinishedBackgroundBrush" ResourceKey="SystemColorHighlightColorBrush" />
+            <StaticResource x:Key="StatusPillFinishedForegroundBrush" ResourceKey="SystemColorHighlightTextColorBrush" />
+            <StaticResource x:Key="LockGlyphBrush" ResourceKey="SystemColorWindowTextColorBrush" />
+            <StaticResource x:Key="LockedIllustrationBrush" ResourceKey="SystemColorHighlightColorBrush" />
+        </ResourceDictionary>
+    </ResourceDictionary.ThemeDictionaries>
+</ResourceDictionary>

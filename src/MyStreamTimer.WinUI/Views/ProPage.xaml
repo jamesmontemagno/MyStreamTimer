@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="MyStreamTimer.WinUI.Views.ProPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="using:MyStreamTimer.WinUI.Views"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="using:MyStreamTimer.WinUI.ViewModels"
+    mc:Ignorable="d">
+
+    <Page.Resources>
+        <Style x:Key="CardStyle" TargetType="Border">
+            <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+            <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="{StaticResource OverlayCornerRadius}" />
+            <Setter Property="Padding" Value="16" />
+        </Style>
+        <Style x:Key="SectionHeaderStyle" BasedOn="{StaticResource BodyStrongTextBlockStyle}" TargetType="TextBlock">
+            <Setter Property="Margin" Value="1,24,0,8" />
+        </Style>
+    </Page.Resources>
+
+    <Grid>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel
+                MaxWidth="1000"
+                Padding="36,24,36,36"
+                HorizontalAlignment="Left"
+                Spacing="4">
+
+                <Grid ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock
+                        AutomationProperties.HeadingLevel="Level1"
+                        Style="{StaticResource TitleTextBlockStyle}"
+                        Text="My Stream Timer Pro" />
+                    <ProgressRing
+                        Grid.Column="1"
+                        Width="24"
+                        Height="24"
+                        VerticalAlignment="Center"
+                        AutomationProperties.AutomationId="ProBusyRing"
+                        AutomationProperties.Name="Working"
+                        IsActive="{x:Bind ViewModel.IsBusy, Mode=OneWay}" />
+                </Grid>
+
+                <!--  ======================= Status banner ======================= -->
+                <Border
+                    Margin="0,16,0,0"
+                    AutomationProperties.AutomationId="ProStatusBanner"
+                    AutomationProperties.Name="{x:Bind ViewModel.StatusTitle, Mode=OneWay}"
+                    Style="{StaticResource CardStyle}">
+                    <Grid ColumnSpacing="16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border
+                            Width="6"
+                            Background="{x:Bind ViewModel.StatusAccentBrush, Mode=OneWay}"
+                            CornerRadius="3"
+                            Visibility="{x:Bind local:ProPage.BoolToVisibility(ViewModel.HasTierColor), Mode=OneWay}" />
+                        <FontIcon
+                            Grid.Column="1"
+                            VerticalAlignment="Center"
+                            FontSize="28"
+                            Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                            Glyph="{x:Bind ViewModel.StatusGlyph, Mode=OneWay}" />
+                        <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="2">
+                            <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Text="{x:Bind ViewModel.StatusTitle, Mode=OneWay}" />
+                            <TextBlock
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Style="{StaticResource BodyTextBlockStyle}"
+                                Text="{x:Bind ViewModel.StatusDescription, Mode=OneWay}"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!--  ======================= Features ======================= -->
+                <TextBlock Style="{StaticResource SectionHeaderStyle}" Text="What you get" />
+                <Border Style="{StaticResource CardStyle}">
+                    <ItemsRepeater ItemsSource="{x:Bind ViewModel.Features}">
+                        <ItemsRepeater.Layout>
+                            <StackLayout Spacing="10" />
+                        </ItemsRepeater.Layout>
+                        <ItemsRepeater.ItemTemplate>
+                            <DataTemplate x:DataType="x:String">
+                                <StackPanel Orientation="Horizontal" Spacing="12">
+                                    <FontIcon
+                                        FontSize="16"
+                                        Foreground="{ThemeResource SystemFillColorSuccessBrush}"
+                                        Glyph="&#xE73E;" />
+                                    <TextBlock
+                                        VerticalAlignment="Center"
+                                        Style="{StaticResource BodyTextBlockStyle}"
+                                        Text="{x:Bind}"
+                                        TextWrapping="Wrap" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsRepeater.ItemTemplate>
+                    </ItemsRepeater>
+                </Border>
+
+                <!--  ======================= Plans ======================= -->
+                <TextBlock Style="{StaticResource SectionHeaderStyle}" Text="Choose a plan" />
+                <TextBlock
+                    Margin="0,0,0,8"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Style="{StaticResource CaptionTextBlockStyle}"
+                    Text="Lifetime tiers unlock the same features — pick the one that matches how much you'd like to support the app. Subscriptions keep Pro active while they renew."
+                    TextWrapping="Wrap" />
+
+                <ItemsRepeater AutomationProperties.AutomationId="PlanCards" ItemsSource="{x:Bind ViewModel.Plans}">
+                    <ItemsRepeater.Layout>
+                        <UniformGridLayout
+                            ItemsStretch="Fill"
+                            MinColumnSpacing="8"
+                            MinItemWidth="220"
+                            MinRowSpacing="8" />
+                    </ItemsRepeater.Layout>
+                    <ItemsRepeater.ItemTemplate>
+                        <DataTemplate x:DataType="vm:PlanCardViewModel">
+                            <Border AutomationProperties.Name="{x:Bind Title}" Style="{StaticResource CardStyle}">
+                                <Grid RowSpacing="8">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="*" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <FontIcon
+                                            FontSize="16"
+                                            Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                            Glyph="{x:Bind Glyph}" />
+                                        <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind Title}" />
+                                    </StackPanel>
+                                    <TextBlock
+                                        Grid.Row="1"
+                                        Style="{StaticResource SubtitleTextBlockStyle}"
+                                        Text="{x:Bind Price, Mode=OneWay}" />
+                                    <TextBlock
+                                        Grid.Row="2"
+                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                        Style="{StaticResource CaptionTextBlockStyle}"
+                                        Text="{x:Bind BillingPeriod, Mode=OneWay}" />
+                                    <TextBlock
+                                        Grid.Row="3"
+                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                        Style="{StaticResource CaptionTextBlockStyle}"
+                                        Text="{x:Bind Description}"
+                                        TextWrapping="Wrap" />
+                                    <Button
+                                        Grid.Row="4"
+                                        HorizontalAlignment="Stretch"
+                                        AutomationProperties.Name="{x:Bind BuyAutomationName}"
+                                        Command="{x:Bind BuyCommand}"
+                                        CommandParameter="{x:Bind}"
+                                        Content="Buy"
+                                        IsEnabled="{x:Bind CanBuy, Mode=OneWay}"
+                                        Style="{StaticResource AccentButtonStyle}"
+                                        Visibility="{x:Bind local:ProPage.BoolToVisibility(IsNotOwned), Mode=OneWay}" />
+                                    <StackPanel
+                                        Grid.Row="4"
+                                        Height="32"
+                                        Orientation="Horizontal"
+                                        Spacing="8"
+                                        Visibility="{x:Bind local:ProPage.BoolToVisibility(IsOwned), Mode=OneWay}">
+                                        <FontIcon
+                                            VerticalAlignment="Center"
+                                            FontSize="16"
+                                            Foreground="{ThemeResource SystemFillColorSuccessBrush}"
+                                            Glyph="&#xE73E;" />
+                                        <TextBlock
+                                            VerticalAlignment="Center"
+                                            Foreground="{ThemeResource SystemFillColorSuccessBrush}"
+                                            Style="{StaticResource BodyStrongTextBlockStyle}"
+                                            Text="Unlocked" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsRepeater.ItemTemplate>
+                </ItemsRepeater>
+
+                <!--  ======================= Actions ======================= -->
+                <StackPanel Margin="0,24,0,0" Orientation="Horizontal" Spacing="8">
+                    <Button
+                        AutomationProperties.AutomationId="RestorePurchasesButton"
+                        AutomationProperties.Name="Restore purchases"
+                        Command="{x:Bind ViewModel.RestoreCommand}"
+                        IsEnabled="{x:Bind local:ProPage.Not(ViewModel.IsBusy), Mode=OneWay}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon FontSize="16" Glyph="&#xE777;" />
+                            <TextBlock Text="Restore purchases" />
+                        </StackPanel>
+                    </Button>
+                    <Button
+                        AutomationProperties.AutomationId="ManageSubscriptionButton"
+                        AutomationProperties.Name="Manage subscription"
+                        Command="{x:Bind ViewModel.ManageSubscriptionCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon FontSize="16" Glyph="&#xE8A7;" />
+                            <TextBlock Text="Manage subscription" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+
+                <StackPanel Margin="0,8,0,0" Orientation="Horizontal" Spacing="4">
+                    <HyperlinkButton
+                        AutomationProperties.AutomationId="PrivacyPolicyButton"
+                        AutomationProperties.Name="Privacy policy"
+                        Command="{x:Bind ViewModel.OpenPrivacyCommand}"
+                        Content="Privacy policy" />
+                    <HyperlinkButton
+                        AutomationProperties.AutomationId="TermsOfUseButton"
+                        AutomationProperties.Name="Terms of use"
+                        Command="{x:Bind ViewModel.OpenTermsCommand}"
+                        Content="Terms of use" />
+                </StackPanel>
+
+                <TextBlock
+                    Margin="0,8,0,0"
+                    Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                    Style="{StaticResource CaptionTextBlockStyle}"
+                    Text="Subscriptions renew automatically through the Microsoft Store until cancelled. Manage or cancel any time from your Microsoft account."
+                    TextWrapping="Wrap" />
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>
