@@ -1,0 +1,110 @@
+{
+  "Test\\LocalState": {
+    "StayOnTop": {
+      "type": "Boolean",
+      "value": true
+    },
+    "key_minutes_countdown": {
+      "type": "Int32",
+      "value": 5
+    },
+    "key_output_countdown": {
+      "type": "String",
+      "value": "Starting in {0:hh\\:mm\\:ss}"
+    },
+    "key_finish_countdown": {
+      "type": "String",
+      "value": "Let\u0027s do this!"
+    },
+    "key_file_name_countdown": {
+      "type": "String",
+      "value": "countdown.txt"
+    },
+    "key_minutes_countdown2": {
+      "type": "Int32",
+      "value": 5
+    },
+    "key_output_countdown2": {
+      "type": "String",
+      "value": "Starting in {0:hh\\:mm\\:ss}"
+    },
+    "key_finish_countdown2": {
+      "type": "String",
+      "value": "Let\u0027s do this!"
+    },
+    "key_file_name_countdown2": {
+      "type": "String",
+      "value": "countdown2.txt"
+    },
+    "key_minutes_countdown3": {
+      "type": "Int32",
+      "value": 5
+    },
+    "key_output_countdown3": {
+      "type": "String",
+      "value": "Starting in {0:hh\\:mm\\:ss}"
+    },
+    "key_finish_countdown3": {
+      "type": "String",
+      "value": "Let\u0027s do this!"
+    },
+    "key_file_name_countdown3": {
+      "type": "String",
+      "value": "countdown3.txt"
+    },
+    "key_minutes_countdown4": {
+      "type": "Int32",
+      "value": 5
+    },
+    "key_output_countdown4": {
+      "type": "String",
+      "value": "Starting in {0:hh\\:mm\\:ss}"
+    },
+    "key_finish_countdown4": {
+      "type": "String",
+      "value": "Let\u0027s do this!"
+    },
+    "key_file_name_countdown4": {
+      "type": "String",
+      "value": "countdown4.txt"
+    },
+    "key_output_countup": {
+      "type": "String",
+      "value": "{0:hh\\:mm\\:ss}"
+    },
+    "key_file_name_countup": {
+      "type": "String",
+      "value": "countup.txt"
+    },
+    "key_output_countup2": {
+      "type": "String",
+      "value": "{0:hh\\:mm\\:ss}"
+    },
+    "key_file_name_countup2": {
+      "type": "String",
+      "value": "countup2.txt"
+    },
+    "key_file_name_time": {
+      "type": "String",
+      "value": "time.txt"
+    },
+    "TimesUsed": {
+      "type": "Int32",
+      "value": 1
+    }
+  },
+  "Test\\LocalState\\WindowsFlightInfo": {
+    "FlightID": {
+      "type": "String",
+      "value": "DC:40DD9222"
+    },
+    "FlightType": {
+      "type": "String",
+      "value": "App"
+    },
+    "UniqueID": {
+      "type": "String",
+      "value": "23875RefractoredLLC.MyStreamTimer_jcspp7mzn01xr"
+    }
+  }
+}

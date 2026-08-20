@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/MyStreamTimer.Core/MyStreamTimer.Core.csproj" />
+    <Project Path="src/MyStreamTimer.WinUI/MyStreamTimer.WinUI.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/MyStreamTimer.Core.Tests/MyStreamTimer.Core.Tests.csproj" />
+  </Folder>
+</Solution>
