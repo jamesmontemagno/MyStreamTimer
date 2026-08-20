@@ -70,7 +70,7 @@ Why it is safe: packaged apps that keep the same Package Family Name share the s
 | N7 | Folder management: Choose Folder, Open in Explorer, Test Access, Use Default, Copy Path, list of all output file names — `SettingsView.swift` | `FolderPicker` (+`InitializeWithWindow`), `Launcher.LaunchFolderPathAsync`; Test = write & delete random file |
 | N8 | +1 / ‑1 minute buttons while running; Open folder / Copy path per timer; segmented Duration vs Clock‑time — `SingleTimerView.swift` | `SegmentedControl`/`Selector Bar`, `NumberBox` for minutes/seconds, `TimePicker` |
 | N9 | `time` accepted as URL host (Swift `TimerKind(host:)`) | Extend parser: `mystreamtimer://time/?start|?stop` etc. (keep everything else byte‑identical) |
-| N10 | Purchase UX: plan cards (Lifetime tiers), status banner, Restore, Manage subscription — `ProView.swift` | Windows keeps **durables only** (`mstbronze/mstsilver/mstgold`); no subscriptions on Windows (legacy behaviour). Subscription flags still honoured if present |
+| N10 | Purchase UX: plan cards (Lifetime tiers + Monthly + 6‑Month subscriptions), status banner with expiry, Restore, Manage subscription — `ProView.swift` | Windows 3.0 adds **subscriptions** to match the Mac app: durables `mstbronze/mstsilver/mstgold` **plus** Store subscription add‑ons `mstsub` (1 month) and `mstsub6months` (6 months). Entitlement via `StoreContext.GetAppLicenseAsync().AddOnLicenses` (active subscription licenses have `ExpirationDate`), purchase via `RequestPurchaseAsync`, manage via `ms-windows-store://` subscription management link. Legacy keys `HasTippedSub`/`SubExpirationDate`/`CheckSubStatus` are written so `IsPro` formula stays unchanged |
 | N11 | Display names "Countdown 1…4", "Count Up 1‑2", "Current Time" + short titles | Use in sidebar + window titles |
 | N12 | Output template leniency: Swift strips `\:` → treat `{0:hh:mm:ss}` and `{0:hh\:mm\:ss}` as equivalent on input | Normalise user input: if template lacks `\:` escapes inside `{0:…}`, insert them before `string.Format` |
 
@@ -86,7 +86,7 @@ Why it is safe: packaged apps that keep the same Package Family Name share the s
 | Default output folder | Must resolve to the **same physical path** the UWP build used (`AppDataPaths.GetDefault().ProgramData` + `\MyStreamTimer`). Must be verified empirically in Phase 0 (see P0‑4) — if the desktop package resolves differently, detect the legacy folder and persist it into `global_directory_path` so OBS text sources keep working |
 | Output files | Same default names `countdown.txt`, `countdown2.txt`, … `time.txt`; same text; write only on change; UTF‑8 (`File.WriteAllText` default = UTF‑8 **without BOM** — keep) |
 | Pro rules | `countdown4`, `countup2`, `time`, output styles 1‑3, (new) pop‑out + appearance are Pro; `IsPro` formula unchanged; DEBUG = Pro |
-| Add‑on IDs | `mstbronze`, `mstsilver`, `mstgold` (durables) |
+| Add‑on IDs | `mstbronze`, `mstsilver`, `mstgold` (durables) — **new in 3.0:** `mstsub` (monthly), `mstsub6months` (6‑month) subscription add‑ons created in Partner Center with the same IDs as the Mac app |
 | Stream Deck plugin | `MyStreamTimer.StreamDeck` unchanged; its URLs must keep working |
 
 ### 1.5 Risks & mitigations
@@ -146,7 +146,7 @@ Design principles: MVVM with `x:Bind`, Core has zero Windows dependencies (fully
 - [ ] P0‑3 Capture `%LOCALAPPDATA%\Packages\23875RefractoredLLC.MyStreamTimer_*\Settings\settings.dat` (copy it) and dump all keys/values with a small script (PowerShell `Get-AppxPackage` + `Windows.Storage.ApplicationData` via `pwsh` or a throwaway console app with package identity). Store the dump (values only, no PII) under `tests/MyStreamTimer.Core.Tests/Fixtures/legacy-settings.json`.
 - [ ] P0‑4 **Record the exact legacy default output folder** from P0‑2. Then from a throwaway *packaged WinUI* app with the same identity, print `AppDataPaths.GetDefault().ProgramData`, `ApplicationData.Current.LocalFolder.Path`, `LocalCacheFolder.Path`. Decide: (a) identical → use `AppDataPaths`; (b) different → implement `LegacyFolderLocator` that probes the recorded pattern and persists it to `global_directory_path` on first run. Document result here: `____`.
 - [ ] P0‑5 Freeze the URL grammar: copy `Utils.ParseStartupArgs` verbatim into `tests/.../LegacyOracle/LegacyUtils.cs` for golden tests.
-- [ ] P0‑6 Snapshot Partner Center facts: current listing, add‑ons (`mstbronze/mstsilver/mstgold` durables), package flights, age rating, privacy URL (`https://refractored.com/about/`).
+- [ ] P0‑6 Snapshot Partner Center facts: current listing, add‑ons (`mstbronze/mstsilver/mstgold` durables), package flights, age rating, privacy URL (`https://refractored.com/about/`). **Create two subscription add‑ons** `mstsub` (1 month, with free‑trial optional) and `mstsub6months` (6 months) and publish them so `StoreContext` can query them before Phase 6.
 - [ ] P0‑7 Decide min OS: Windows 10 **1809 (17763)** (Windows App SDK minimum) — matches legacy `TargetPlatformMinVersion`.
 
 **Validation gate P0**
@@ -198,7 +198,7 @@ Design principles: MVVM with `x:Bind`, Core has zero Windows dependencies (fully
 - [ ] P3‑6 `BeepService`: port the generated WAV (200 amplitude, 2000 Hz, 75 ms, 3 plays 200 ms apart) using `MediaPlayer` + `InMemoryRandomAccessStream` (no `MediaElement` in WinUI 3).
 - [ ] P3‑7 `ClipboardService` (`Windows.ApplicationModel.DataTransfer.Clipboard`), `LauncherService` (`Launcher.LaunchUriAsync`, `LaunchFolderPathAsync`), `DialogService` (`ContentDialog` with `XamlRoot`).
 - [ ] P3‑8 `FolderService`: `FolderPicker` + `InitializeWithWindow`; Test Access (write/delete random file; block when timers running with legacy message); keep `global_directory_path`. Add picked folders to `StorageApplicationPermissions.FutureAccessList` (desktop packaged apps get normal FS access, but FAL keeps parity with brokered paths).
-- [ ] P3‑9 `StoreService` (`Windows.Services.Store.StoreContext` + `InitializeWithWindow`): `GetProductsAsync` for the three durables (`GetAssociatedStoreProductsAsync(["Durable"])`), `RequestPurchaseAsync`, restore via `GetAppLicenseAsync().AddOnLicenses` (+ `GetUserCollectionAsync`), map to `IsBronze/IsSilver/IsGold`, price strings to `ProPrice`/`ProPriceDate`; `StoreRequestHelper.SendRequestAsync(ctx,16,"")` for rating prompt on 10th launch; all legacy error messages preserved.
+- [ ] P3‑9 `StoreService` (`Windows.Services.Store.StoreContext` + `InitializeWithWindow`): `GetAssociatedStoreProductsAsync(["Durable","Subscription"])` for `mstbronze/mstsilver/mstgold/mstsub/mstsub6months`, `RequestPurchaseAsync` (subscriptions included), entitlements via `GetAppLicenseAsync().AddOnLicenses` (durables → `IsBronze/IsSilver/IsGold`; active subscription license → `HasTippedSub=true`, `SubExpirationDate=license.ExpirationDate`, `CheckSubStatus=true`), `StoreProduct.Skus[..].SubscriptionInfo` for billing period display, price strings to `ProPrice`/`SubPrice`/`SubPrice6Months`/`ProPriceDate`; re‑check licenses on every launch and on `StoreContext.OfflineLicensesChanged`; "Manage subscription" opens `https://account.microsoft.com/services`; `StoreRequestHelper.SendRequestAsync(ctx,16,"")` for rating prompt on 10th launch; all legacy error messages preserved.
 - [ ] P3‑10 `VersionService` (`Package.Current.Id.Version`), `ConnectivityService` (`NetworkInformation.GetInternetConnectionProfile()`), `HostThemeService` (apply `AppTheme`).
 
 **Validation gate P3**
@@ -235,7 +235,7 @@ Design principles: MVVM with `x:Bind`, Core has zero Windows dependencies (fully
 - [ ] P5‑5 **Automation page (N6)**: explanation, copyable examples (legacy four + `?pause`, `?addmins=1`), **command builder** (timer `ComboBox`, action `ComboBox` [Start mins / Start secs / Start at time / Top of hour / Add mins / Add secs / Subtract mins / Subtract secs / Pause / Resume / Reset / Stop], value input, generated URL read‑only, Copy, Run), plus Stream Deck/OBS tips.
 - [ ] P5‑6 **Settings page (N7)**: Output folder card (path, Choose Folder, Open in Explorer, Test Access, Use Default, Copy Path), list of all output file names with per‑timer copy; Stay on top toggle; Theme; Pop‑out appearance; "Reset all settings" (with confirm).
 - [ ] P5‑7 **About page**: version (`Package.Current.Id.Version`), OSS note, links (GitHub repo, GitHub, Twitter/X, YouTube, Blog), privacy policy, licenses.
-- [ ] P5‑8 **Pro page (N10)**: status banner (Pro lifetime unlocked ✓ tier colour bronze/silver/gold or "Free"), three purchase cards with live prices, Restore Purchases, Privacy Policy, Terms; busy indicator; all legacy dialogs.
+- [ ] P5‑8 **Pro page (N10)**: status banner (Pro lifetime unlocked ✓ tier colour bronze/silver/gold, "Pro subscription active until {date}", or "Free"), **five** purchase cards (Bronze/Silver/Gold lifetime + Monthly + 6‑Month subscription) with live prices and billing period, Restore Purchases, Manage Subscription, Privacy Policy, Terms; busy indicator; subscription‑expiry refresh prompt ported from legacy Mac `MainPage.OnAppearing`; all legacy dialogs.
 - [ ] P5‑9 `time` URL host (N9) wired end‑to‑end; Commands/Automation text updated.
 - [ ] P5‑10 Update `ProEntitlement` gating list to include pop‑out features; tests.
 
@@ -248,7 +248,7 @@ Design principles: MVVM with `x:Bind`, Core has zero Windows dependencies (fully
 
 ### Phase 6 — Store & purchases end‑to‑end
 - [ ] P6‑1 Associate the project with the Store app (Partner Center → `Package.StoreAssociation.xml`), keep identity fields exactly as §1.4.
-- [ ] P6‑2 Implement `StoreService` flows with the Store test/sandbox: prices for the 3 durables render in Pro page; purchase flow works; restore sets flags; `IsPro` unlocks Pro timers/styles/pop‑out immediately (property change notifications across all VMs).
+- [ ] P6‑2 Implement `StoreService` flows with the Store test/sandbox: prices for the 3 durables **and 2 subscriptions** render in Pro page; purchase flow works for each; restore sets flags; subscription expiry/renewal/cancellation reflected after relaunch; `IsPro` unlocks Pro timers/styles/pop‑out immediately (property change notifications across all VMs).
 - [ ] P6‑3 Legacy flag honouring: with P0‑3 settings.dat containing `IsGold=true`, app is Pro without network.
 - [ ] P6‑4 Rating prompt on 10th launch (`TimesUsed`) fires once.
 
@@ -337,3 +337,4 @@ Query precedence (first match wins, query lower‑cased): `?mins=` → `?secs=` 
 7. Pro: `IsGold` etc. honoured offline; Pro page shows "unlocked".
 8. Stay on top / theme / pop‑outs function; settings persist after restart.
 9. Uninstall → reinstall 3.0 → settings gone (expected), no crash.
+
