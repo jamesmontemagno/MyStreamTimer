@@ -26,7 +26,7 @@ private struct TimerMiniContent: View {
 
     var body: some View {
         Text(controller.previewDisplayText)
-            .font(.system(size: settingsStore.popOutFontSize, weight: .bold, design: .rounded))
+            .font(settingsStore.popOutFont)
             .monospacedDigit()
             .foregroundStyle(textColor)
             .contentTransition(.numericText())

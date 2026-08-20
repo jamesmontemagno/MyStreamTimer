@@ -144,6 +144,17 @@ struct PopOutAppearanceCard: View {
                         )
                     }
 
+                    Picker("Font", selection: $settingsStore.popOutFontFamily) {
+                        Text("System (Rounded)").tag("")
+                        Divider()
+                        ForEach(LegacySettingsStore.availableFontFamilies, id: \.self) { family in
+                            Text(family)
+                                .font(.custom(family, size: 13))
+                                .tag(family)
+                        }
+                    }
+                    .pickerStyle(.menu)
+
                     HStack(spacing: 24) {
                         ColorPicker(
                             "Text color",
@@ -176,11 +187,7 @@ struct PopOutAppearanceCard: View {
                                 .fill(Color(hex: settingsStore.popOutBackgroundColorHex) ?? .black)
 
                             Text("12:34")
-                                .font(.system(
-                                    size: settingsStore.popOutFontSize,
-                                    weight: .bold,
-                                    design: .rounded
-                                ))
+                                .font(settingsStore.popOutFont)
                                 .monospacedDigit()
                                 .foregroundStyle(Color(hex: settingsStore.popOutTextColorHex) ?? .white)
                                 .padding(20)

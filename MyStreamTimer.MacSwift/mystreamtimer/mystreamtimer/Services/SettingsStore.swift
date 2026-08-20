@@ -1,5 +1,7 @@
+import AppKit
 import Combine
 import Foundation
+import SwiftUI
 
 @MainActor
 final class LegacySettingsStore: ObservableObject {
@@ -16,6 +18,13 @@ final class LegacySettingsStore: ObservableObject {
     @Published var popOutFontSize: Double {
         didSet {
             defaults.set(popOutFontSize, forKey: "PopOutFontSize")
+        }
+    }
+
+    /// Empty string means the system rounded font.
+    @Published var popOutFontFamily: String {
+        didSet {
+            defaults.set(popOutFontFamily, forKey: "PopOutFontFamily")
         }
     }
 
@@ -42,9 +51,24 @@ final class LegacySettingsStore: ObservableObject {
         self.directoryPath = defaults.string(forKey: "global_directory_path") ?? defaultDirectoryPath
         self.stayOnTop = defaults.object(forKey: "StayOnTop") as? Bool ?? false
         self.popOutFontSize = defaults.object(forKey: "PopOutFontSize") as? Double ?? 48
+        self.popOutFontFamily = defaults.string(forKey: "PopOutFontFamily") ?? ""
         self.popOutTextColorHex = defaults.string(forKey: "PopOutTextColorHex") ?? "#FFFFFF"
         self.popOutBackgroundColorHex = defaults.string(forKey: "PopOutBackgroundColorHex") ?? "#000000"
         self.theme = AppTheme(rawValue: defaults.string(forKey: "AppTheme") ?? "") ?? .system
+    }
+
+    static let availableFontFamilies: [String] = NSFontManager.shared.availableFontFamilies.sorted {
+        $0.localizedCaseInsensitiveCompare($1) == .orderedAscending
+    }
+
+    var popOutFont: Font {
+        let size = popOutFontSize
+        guard !popOutFontFamily.isEmpty,
+              let nsFont = NSFont(name: popOutFontFamily, size: size) else {
+            return .system(size: size, weight: .bold, design: .rounded)
+        }
+        let bold = NSFontManager.shared.convert(nsFont, toHaveTrait: .boldFontMask)
+        return Font(bold)
     }
 
     static func defaultDirectoryURL() -> URL {
