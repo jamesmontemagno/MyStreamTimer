@@ -25,6 +25,7 @@ function Audit($page) {
 }
 
 $pages = @(
+    @{ Id = 'NavHome';        Name = 'home' },
     @{ Id = 'NavCountdown1';  Name = 'countdown1' },
     @{ Id = 'NavCountdown4';  Name = 'countdown4' },
     @{ Id = 'NavCountUp1';    Name = 'countup1' },
@@ -57,6 +58,19 @@ Step 'automation builder generates URL' {
     Nav 'NavAutomation'
     $v = winapp ui get-value 'GeneratedUrlTextBox' @T
     if ($v -notmatch '^mystreamtimer://') { throw "bad url '$v'" }
+}
+
+Step 'home dashboard shows 7 timer cards' {
+    Nav 'NavHome'
+    Audit 'home'
+    $cards = winapp ui search 'Card' @T 2>$null | Where-Object { $_ -match '^\s*Dash\w+Card Group' }
+    if ($cards.Count -ne 7) { throw "expected 7 dashboard cards, found $($cards.Count)" }
+    if (-not (winapp ui search 'DashCountdown' @T 2>$null | Where-Object { $_ -match 'DashCountdownStartStop' })) { throw 'DashCountdownStartStop missing' }
+    winapp ui invoke 'DashCountdownStartStop' @T | Out-Null
+    winapp ui wait-for 'DashCountdownCard' --value 'Countdown 1, Running' --timeout-ms 5000 @T | Out-Null
+    Shot 'dashboard-running.png'
+    winapp ui invoke 'DashStopAll' @T | Out-Null
+    winapp ui wait-for 'DashCountdownCard' --value 'Countdown 1, Idle' --timeout-ms 5000 @T | Out-Null
 }
 
 Write-Host "`nDone. Failures: $fail"

@@ -11,7 +11,7 @@ namespace MyStreamTimer.WinUI.Views;
 /// <summary>
 /// App shell: grouped <see cref="NavigationView"/> (timers, automation, Pro, about, settings) and the content
 /// <see cref="Frame"/>. Selection is persisted to <c>GlobalSettings.LastSelectedPage</c>, URL commands and
-/// <see cref="NavigationService"/> requests select the matching item, and Ctrl+1…7 / Ctrl+, are handled here.
+/// <see cref="NavigationService"/> requests select the matching item, and Ctrl+Shift+1…7 / Ctrl+Shift+H / Ctrl+, are handled here.
 /// </summary>
 public sealed partial class ShellPage : Page
 {
@@ -57,7 +57,7 @@ public sealed partial class ShellPage : Page
         }
     }
 
-    /// <summary>Selects the sidebar item for <paramref name="tag"/> (which in turn navigates); falls back to Countdown 1.</summary>
+    /// <summary>Selects the sidebar item for <paramref name="tag"/> (which in turn navigates); falls back to Home.</summary>
     private void SelectByTag(string tag)
     {
         if (tag == NavigationService.SettingsTag)
@@ -66,7 +66,7 @@ public sealed partial class ShellPage : Page
             return;
         }
 
-        var item = FindItem(tag) ?? Countdown1Item;
+        var item = FindItem(tag) ?? HomeItem;
         if (ReferenceEquals(Nav.SelectedItem, item))
         {
             return;
@@ -110,6 +110,16 @@ public sealed partial class ShellPage : Page
             return;
         }
 
+        if (tag == NavigationService.HomeTag)
+        {
+            if (ContentFrame.CurrentSourcePageType != typeof(DashboardPage))
+            {
+                ContentFrame.Navigate(typeof(DashboardPage), ViewModel, transition);
+            }
+
+            return;
+        }
+
         var pageType = tag switch
         {
             NavigationService.SettingsTag => typeof(SettingsPage),
@@ -121,7 +131,7 @@ public sealed partial class ShellPage : Page
 
         if (pageType == typeof(TimerPage))
         {
-            SelectByTag(NavigationService.CountdownTag);
+            SelectByTag(NavigationService.HomeTag);
             return;
         }
 
@@ -140,6 +150,12 @@ public sealed partial class ShellPage : Page
         }
 
         SelectByTag(TimerTagsByAcceleratorOrder[index]);
+        args.Handled = true;
+    }
+
+    private void OnHomeAccelerator(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        SelectByTag(NavigationService.HomeTag);
         args.Handled = true;
     }
 

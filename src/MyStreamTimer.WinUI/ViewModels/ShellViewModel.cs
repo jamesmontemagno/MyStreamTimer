@@ -44,7 +44,7 @@ public sealed partial class ShellViewModel : ObservableObject
     public TimerViewModel CountUp2 => _timers[TimerKind.Countup2];
     public TimerViewModel CurrentTime => _timers[TimerKind.Time];
 
-    /// <summary>Persisted sidebar selection (timer id, "automation", "pro", "about" or "settings").</summary>
+    /// <summary>Persisted sidebar selection ("home", timer id, "automation", "pro", "about" or "settings").</summary>
     public string LastSelectedPage
     {
         get => _settings.LastSelectedPage;
@@ -61,14 +61,15 @@ public sealed partial class ShellViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Page to show at startup: the last selection, unless a timer is already running (auto-start or URL boot)
-    /// and the last selection is not that timer — then the running timer wins so the user sees what is live.
+    /// Page to show at startup: the last selection (Home on first run), unless a timer is already running
+    /// (auto-start or URL boot) and the last selection is not that timer — then the running timer wins so the user
+    /// sees what is live.
     /// </summary>
     public string InitialPageTag
     {
         get
         {
-            var tag = string.IsNullOrWhiteSpace(LastSelectedPage) ? NavigationService.CountdownTag : LastSelectedPage;
+            var tag = string.IsNullOrWhiteSpace(LastSelectedPage) ? NavigationService.HomeTag : LastSelectedPage;
             if (GetTimer(tag) is { IsRunning: true })
             {
                 return tag;

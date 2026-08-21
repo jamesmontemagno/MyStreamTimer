@@ -160,6 +160,35 @@ public class TimerEngineTests
     }
 
     [Fact]
+    public async Task Stop_forces_idle_from_running_and_paused()
+    {
+        var (e, clock, files, _, _) = Create(TimerKind.Countdown, s => { s.Minutes = 1; });
+        e.Stop(); // idle -> no-op
+        Assert.Equal(TimerState.Idle, e.State);
+
+        e.StartStop();
+        await WaitFor(() => files.Last == "Starting in 00:01:00");
+        e.Stop();
+        Assert.Equal(TimerState.Idle, e.State);
+        Assert.Equal("", files.Last);
+
+        e.StartStop();
+        await WaitFor(() => files.Last == "Starting in 00:01:00");
+        e.PauseResume();
+        Assert.Equal(TimerState.Paused, e.State);
+        e.Stop();
+        Assert.Equal(TimerState.Idle, e.State);
+        Assert.False(e.CanPauseResume);
+        Assert.Equal("", files.Last);
+        Assert.Equal("", e.CountdownOutput);
+
+        // a following Start uses configured duration, not stale pause data
+        e.StartStop();
+        await WaitFor(() => files.Last == "Starting in 00:01:00");
+        e.StartStop();
+    }
+
+    [Fact]
     public void Boot_start_and_metadata()
     {
         var (e, _, files, platform, _) = Create(TimerKind.Countup2);
@@ -328,6 +357,7 @@ public class TimerEngineTests
         e.StartStop();
     }
 }
+
 
 
 

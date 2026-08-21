@@ -94,6 +94,41 @@ public sealed class TimerEngine : IDisposable
 
     public void StartStop() => ExecuteStartStop(true);
 
+    /// <summary>
+    /// Forces the timer to Idle regardless of state (Running or Paused), clearing the output file like a
+    /// legacy forced stop. No-op when already Idle.
+    /// </summary>
+    public void Stop()
+    {
+        if (State == TimerState.Running)
+        {
+            ExecuteStartStop(true);
+            return;
+        }
+
+        if (State == TimerState.Paused)
+        {
+            // Paused == engine idle with pending resume data; discard it and clear the file.
+            bootMins = -1;
+            extraTicksForUp = 0;
+            currentMinutes = 0;
+            firstTime = true;
+            State = TimerState.Idle;
+            CanPauseResume = false;
+            try
+            {
+                currentFileName = files.PrepareTarget(global.DirectoryPath, settings.FileName);
+                WriteTimeToDisk(string.Empty);
+            }
+            catch
+            {
+                // nothing to clear
+            }
+            CountdownOutput = string.Empty;
+            StateChanged?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
     public void PauseResume()
     {
         if (IsTime)

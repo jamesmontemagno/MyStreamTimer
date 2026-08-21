@@ -7,6 +7,7 @@ namespace MyStreamTimer.WinUI.Services;
 /// </summary>
 public sealed class NavigationService
 {
+    public const string HomeTag = "home";
     public const string CountdownTag = "countdown";
     public const string AutomationTag = "automation";
     public const string ProTag = "pro";
@@ -16,7 +17,7 @@ public sealed class NavigationService
     /// <summary>Process-wide instance (the shell is a singleton, so no DI is required).</summary>
     public static NavigationService Default { get; } = new();
 
-    /// <summary>Raised on the caller's thread with the requested page tag (timer id, "automation", "pro", "about", "settings").</summary>
+    /// <summary>Raised on the caller's thread with the requested page tag ("home", timer id, "automation", "pro", "about", "settings").</summary>
     public event EventHandler<string>? NavigationRequested;
 
     public void NavigateTo(string tag) => NavigationRequested?.Invoke(this, tag);

@@ -1,0 +1,425 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Page
+    x:Class="MyStreamTimer.WinUI.Views.DashboardPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:helpers="using:MyStreamTimer.WinUI.Helpers"
+    xmlns:local="using:MyStreamTimer.WinUI.Views"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="using:CommunityToolkit.WinUI"
+    xmlns:vm="using:MyStreamTimer.WinUI.ViewModels"
+    NavigationCacheMode="Required"
+    mc:Ignorable="d">
+
+    <Page.Resources>
+        <!-- Live/preview text on a card: large tabular monospace, one line, ellipsis. -->
+        <Style x:Key="DashboardLiveTextStyle" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Cascadia Mono, Consolas, Segoe UI" />
+            <Setter Property="FontSize" Value="24" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+            <Setter Property="TextWrapping" Value="NoWrap" />
+            <Setter Property="Typography.NumeralAlignment" Value="Tabular" />
+            <Setter Property="Foreground" Value="{ThemeResource HeroTextBrush}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
+        <Style x:Key="DashboardActionButtonStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+            <Setter Property="MinWidth" Value="72" />
+            <Setter Property="MinHeight" Value="32" />
+        </Style>
+
+        <Style x:Key="DashboardPrimaryActionButtonStyle" TargetType="Button" BasedOn="{StaticResource AccentButtonStyle}">
+            <Setter Property="MinWidth" Value="72" />
+            <Setter Property="MinHeight" Value="32" />
+        </Style>
+
+        <Style x:Key="DashboardIconButtonStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="Padding" Value="6" />
+            <Setter Property="MinWidth" Value="32" />
+            <Setter Property="MinHeight" Value="32" />
+        </Style>
+
+        <!-- ================= Timer card ================= -->
+        <DataTemplate x:Key="TimerCardTemplate" x:DataType="vm:TimerViewModel">
+            <Grid
+                MinHeight="168"
+                AutomationProperties.AutomationId="{x:Bind local:DashboardPage.AutomationId(Kind, 'Card')}"
+                AutomationProperties.Name="{x:Bind local:DashboardPage.CardName(Title, StatusText), Mode=OneWay}"
+                Style="{StaticResource CardGridStyle}"
+                Tag="{x:Bind}"
+                Tapped="OnCardTapped">
+
+                <!-- Accent stroke while running; success stroke when finished (theme-correct via ThemeResource). -->
+                <Border
+                    Margin="-16"
+                    BorderBrush="{ThemeResource HeroCardBorderRunningBrush}"
+                    BorderThickness="1"
+                    CornerRadius="{StaticResource OverlayCornerRadius}"
+                    IsHitTestVisible="False"
+                    Visibility="{x:Bind helpers:Bind.ToVisibility(IsRunning), Mode=OneWay}" />
+                <Border
+                    Margin="-16"
+                    BorderBrush="{ThemeResource HeroCardBorderFinishedBrush}"
+                    BorderThickness="1"
+                    CornerRadius="{StaticResource OverlayCornerRadius}"
+                    IsHitTestVisible="False"
+                    Visibility="{x:Bind helpers:Bind.ToVisibility(IsFinished), Mode=OneWay}" />
+
+                <!-- Unlocked content -->
+                <Grid RowSpacing="12" Visibility="{x:Bind helpers:Bind.ToVisibilityInverse(IsLocked), Mode=OneWay}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Row 1: icon + title + pill + open -->
+                    <Grid ColumnSpacing="10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <FontIcon
+                            VerticalAlignment="Center"
+                            AutomationProperties.AccessibilityView="Raw"
+                            FontSize="18"
+                            Glyph="{x:Bind IconGlyph, Mode=OneWay}" />
+
+                        <TextBlock
+                            Grid.Column="1"
+                            VerticalAlignment="Center"
+                            AutomationProperties.AutomationId="{x:Bind local:DashboardPage.AutomationId(Kind, 'Title')}"
+                            Style="{StaticResource BodyStrongTextBlockStyle}"
+                            Text="{x:Bind Title, Mode=OneWay}"
+                            TextTrimming="CharacterEllipsis" />
+
+                        <!-- Status pill: one Border per state so every colour is a {ThemeResource}. -->
+                        <Grid Grid.Column="2" AutomationProperties.AutomationId="{x:Bind local:DashboardPage.AutomationId(Kind, 'Status')}">
+                            <Border Style="{StaticResource StatusPillStyle}" Visibility="{x:Bind helpers:Bind.ToVisibility(IsIdle), Mode=OneWay}">
+                                <TextBlock Style="{StaticResource StatusPillTextStyle}" Text="{x:Bind StatusText, Mode=OneWay}" />
+                            </Border>
+                            <Border
+                                Background="{ThemeResource StatusPillRunningBackgroundBrush}"
+                                Style="{StaticResource StatusPillStyle}"
+                                Visibility="{x:Bind helpers:Bind.ToVisibility(IsRunning), Mode=OneWay}">
+                                <TextBlock
+                                    Foreground="{ThemeResource StatusPillRunningForegroundBrush}"
+                                    Style="{StaticResource StatusPillTextStyle}"
+                                    Text="{x:Bind StatusText, Mode=OneWay}" />
+                            </Border>
+                            <Border
+                                Background="{ThemeResource StatusPillPausedBackgroundBrush}"
+                                Style="{StaticResource StatusPillStyle}"
+                                Visibility="{x:Bind helpers:Bind.ToVisibility(IsPaused), Mode=OneWay}">
+                                <TextBlock
+                                    Foreground="{ThemeResource StatusPillPausedForegroundBrush}"
+                                    Style="{StaticResource StatusPillTextStyle}"
+                                    Text="{x:Bind StatusText, Mode=OneWay}" />
+                            </Border>
+                            <Border
+                                Background="{ThemeResource StatusPillFinishedBackgroundBrush}"
+                                Style="{StaticResource StatusPillStyle}"
+                                Visibility="{x:Bind helpers:Bind.ToVisibility(IsFinished), Mode=OneWay}">
+                                <TextBlock
+                                    Foreground="{ThemeResource StatusPillFinishedForegroundBrush}"
+                                    Style="{StaticResource StatusPillTextStyle}"
+                                    Text="{x:Bind StatusText, Mode=OneWay}" />
+                            </Border>
+                        </Grid>
+
+                        <Button
+                            Grid.Column="3"
+                            AutomationProperties.AutomationId="{x:Bind local:DashboardPage.AutomationId(Kind, 'Open')}"
+                            AutomationProperties.Name="{x:Bind local:DashboardPage.ActionName('Open', Title), Mode=OneWay}"
+                            Click="OnOpenTimerClick"
+                            Tag="{x:Bind}"
+                            Style="{StaticResource DashboardIconButtonStyle}"
+                            ToolTipService.ToolTip="Open timer page">
+                            <FontIcon FontSize="12" Glyph="&#xE76C;" />
+                        </Button>
+                    </Grid>
+
+                    <!-- Row 2: live text or idle preview — shrinks to fit so the full time is always visible -->
+                    <Viewbox Grid.Row="1" MinHeight="48" MaxHeight="48" HorizontalAlignment="Left" StretchDirection="DownOnly">
+                        <Grid>
+                            <TextBlock
+                                AutomationProperties.AutomationId="{x:Bind local:DashboardPage.AutomationId(Kind, 'LiveText')}"
+                                AutomationProperties.LiveSetting="Polite"
+                                AutomationProperties.Name="Timer text"
+                                Style="{StaticResource DashboardLiveTextStyle}"
+                                Text="{x:Bind LiveText, Mode=OneWay}"
+                                TextTrimming="None"
+                                Visibility="{x:Bind helpers:Bind.ToVisibility(LiveText), Mode=OneWay}" />
+                            <TextBlock
+                                AutomationProperties.AutomationId="{x:Bind local:DashboardPage.AutomationId(Kind, 'PreviewText')}"
+                                AutomationProperties.Name="Timer preview"
+                                Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                Style="{StaticResource DashboardLiveTextStyle}"
+                                Text="{x:Bind PreviewText, Mode=OneWay}"
+                                TextTrimming="None"
+                                Visibility="{x:Bind helpers:Bind.ToVisibilityInverse(LiveText), Mode=OneWay}" />
+                        </Grid>
+                    </Viewbox>
+
+                    <!-- Row 3: actions -->
+                    <Grid Grid.Row="2" ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <Button
+                            AutomationProperties.AutomationId="{x:Bind local:DashboardPage.AutomationId(Kind, 'StartStop')}"
+                            AutomationProperties.Name="{x:Bind local:DashboardPage.ActionName(StartStopLabel, Title), Mode=OneWay}"
+                            Command="{x:Bind StartStopCommand}"
+                            Content="{x:Bind StartStopLabel, Mode=OneWay}"
+                            Style="{x:Bind local:DashboardPage.StartStopStyle(IsRunning), Mode=OneWay}" />
+                        <Button
+                            Grid.Column="1"
+                            AutomationProperties.AutomationId="{x:Bind local:DashboardPage.AutomationId(Kind, 'PauseResume')}"
+                            AutomationProperties.Name="{x:Bind local:DashboardPage.ActionName(PauseResumeLabel, Title), Mode=OneWay}"
+                            Command="{x:Bind PauseResumeCommand}"
+                            Content="{x:Bind PauseResumeLabel, Mode=OneWay}"
+                            Style="{StaticResource DashboardActionButtonStyle}"
+                            Visibility="{x:Bind helpers:Bind.ToVisibility(SupportsPauseResume)}" />
+                        <Button
+                            Grid.Column="2"
+                            AutomationProperties.AutomationId="{x:Bind local:DashboardPage.AutomationId(Kind, 'Reset')}"
+                            AutomationProperties.Name="{x:Bind local:DashboardPage.ActionName('Reset', Title), Mode=OneWay}"
+                            Command="{x:Bind ResetCommand}"
+                            Content="Reset"
+                            Style="{StaticResource DashboardActionButtonStyle}"
+                            Visibility="{x:Bind helpers:Bind.ToVisibility(IsNotTime)}" />
+
+                        <Button
+                            Grid.Column="4"
+                            AutomationProperties.AutomationId="{x:Bind local:DashboardPage.AutomationId(Kind, 'More')}"
+                            AutomationProperties.Name="{x:Bind local:DashboardPage.ActionName('More options for', Title), Mode=OneWay}"
+                            Style="{StaticResource DashboardIconButtonStyle}"
+                            ToolTipService.ToolTip="More options">
+                            <FontIcon FontSize="14" Glyph="&#xE712;" />
+                            <Button.Flyout>
+                                <MenuFlyout Placement="BottomEdgeAlignedRight">
+                                    <MenuFlyoutItem
+                                        AutomationProperties.AutomationId="{x:Bind local:DashboardPage.AutomationId(Kind, 'MenuOpen')}"
+                                        Click="OnOpenTimerClick"
+                                        Tag="{x:Bind}"
+                                        Icon="{ui:FontIcon Glyph=&#xE8A5;}"
+                                        Text="Open timer page" />
+                                    <MenuFlyoutItem
+                                        AutomationProperties.AutomationId="{x:Bind local:DashboardPage.AutomationId(Kind, 'MenuPopOut')}"
+                                        Command="{x:Bind PopOutCommand}"
+                                        Icon="{ui:FontIcon Glyph=&#xE8A7;}"
+                                        Text="Pop-out" />
+                                    <MenuFlyoutSeparator />
+                                    <MenuFlyoutItem
+                                        AutomationProperties.AutomationId="{x:Bind local:DashboardPage.AutomationId(Kind, 'MenuAddMinute')}"
+                                        Command="{x:Bind AddMinuteCommand}"
+                                        Icon="{ui:FontIcon Glyph=&#xE710;}"
+                                        Text="+1 minute"
+                                        Visibility="{x:Bind helpers:Bind.ToVisibility(IsCountdown)}" />
+                                    <MenuFlyoutItem
+                                        AutomationProperties.AutomationId="{x:Bind local:DashboardPage.AutomationId(Kind, 'MenuSubtractMinute')}"
+                                        Command="{x:Bind SubtractMinuteCommand}"
+                                        Icon="{ui:FontIcon Glyph=&#xE738;}"
+                                        Text="−1 minute"
+                                        Visibility="{x:Bind helpers:Bind.ToVisibility(IsCountdown)}" />
+                                    <MenuFlyoutSeparator Visibility="{x:Bind helpers:Bind.ToVisibility(IsCountdown)}" />
+                                    <MenuFlyoutItem
+                                        AutomationProperties.AutomationId="{x:Bind local:DashboardPage.AutomationId(Kind, 'MenuCopyPath')}"
+                                        Command="{x:Bind CopyFilePathCommand}"
+                                        Icon="{ui:FontIcon Glyph=&#xE8C8;}"
+                                        Text="Copy file path" />
+                                    <MenuFlyoutItem
+                                        AutomationProperties.AutomationId="{x:Bind local:DashboardPage.AutomationId(Kind, 'MenuOpenFolder')}"
+                                        Command="{x:Bind OpenFolderCommand}"
+                                        Icon="{ui:FontIcon Glyph=&#xE838;}"
+                                        Text="Open folder" />
+                                </MenuFlyout>
+                            </Button.Flyout>
+                        </Button>
+                    </Grid>
+                </Grid>
+
+                <!-- Locked (Pro) content -->
+                <Grid RowSpacing="12" Visibility="{x:Bind helpers:Bind.ToVisibility(IsLocked), Mode=OneWay}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <Grid ColumnSpacing="10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <FontIcon
+                            VerticalAlignment="Center"
+                            AutomationProperties.AccessibilityView="Raw"
+                            FontSize="18"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Glyph="{x:Bind IconGlyph, Mode=OneWay}" />
+                        <TextBlock
+                            Grid.Column="1"
+                            VerticalAlignment="Center"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource BodyStrongTextBlockStyle}"
+                            Text="{x:Bind Title, Mode=OneWay}"
+                            TextTrimming="CharacterEllipsis" />
+                        <Border
+                            Grid.Column="2"
+                            AutomationProperties.Name="Pro feature"
+                            Background="{ThemeResource StatusPillRunningBackgroundBrush}"
+                            Style="{StaticResource StatusPillStyle}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <FontIcon
+                                    FontSize="11"
+                                    Foreground="{ThemeResource StatusPillRunningForegroundBrush}"
+                                    Glyph="&#xE735;" />
+                                <TextBlock
+                                    Foreground="{ThemeResource StatusPillRunningForegroundBrush}"
+                                    Style="{StaticResource StatusPillTextStyle}"
+                                    Text="Pro" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <StackPanel
+                        Grid.Row="1"
+                        VerticalAlignment="Center"
+                        Orientation="Horizontal"
+                        Spacing="12">
+                        <FontIcon
+                            AutomationProperties.AccessibilityView="Raw"
+                            FontSize="28"
+                            Foreground="{ThemeResource LockedIllustrationBrush}"
+                            Glyph="&#xE72E;" />
+                        <StackPanel VerticalAlignment="Center" Spacing="2">
+                            <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="Unlock with Pro" />
+                            <TextBlock
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Style="{StaticResource CaptionTextBlockStyle}"
+                                Text="Extra timers, formats and pop-out windows."
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <Button
+                        Grid.Row="2"
+                        HorizontalAlignment="Left"
+                        AutomationProperties.AutomationId="{x:Bind local:DashboardPage.AutomationId(Kind, 'SeePro')}"
+                        AutomationProperties.Name="{x:Bind local:DashboardPage.ActionName('See Pro options for', Title), Mode=OneWay}"
+                        Click="OnSeeProClick"
+                        Tag="{x:Bind}"
+                        Content="See Pro options"
+                        Style="{StaticResource DashboardPrimaryActionButtonStyle}" />
+                </Grid>
+            </Grid>
+        </DataTemplate>
+    </Page.Resources>
+
+    <Grid>
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="LayoutStates">
+                <VisualState x:Name="WideLayout">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="640" />
+                    </VisualState.StateTriggers>
+                </VisualState>
+                <VisualState x:Name="NarrowLayout">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="0" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="ContentPanel.Padding" Value="20,16,20,24" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+
+        <ScrollViewer HorizontalScrollMode="Disabled" VerticalScrollBarVisibility="Auto">
+            <StackPanel
+                x:Name="ContentPanel"
+                MaxWidth="1200"
+                Padding="36,24,36,36"
+                HorizontalAlignment="Left"
+                Spacing="24">
+
+                <!-- ================= Header ================= -->
+                <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Spacing="4">
+                        <TextBlock
+                            AutomationProperties.AutomationId="DashboardTitle"
+                            AutomationProperties.HeadingLevel="Level1"
+                            Style="{StaticResource TitleTextBlockStyle}"
+                            Text="Home" />
+                        <TextBlock
+                            AutomationProperties.AutomationId="DashboardSummary"
+                            AutomationProperties.LiveSetting="Polite"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Text="{x:Bind ViewModel.Summary, Mode=OneWay}"
+                            TextWrapping="Wrap" />
+                    </StackPanel>
+
+                    <CommandBar
+                        Grid.Column="1"
+                        VerticalAlignment="Top"
+                        AutomationProperties.AutomationId="DashboardCommandBar"
+                        AutomationProperties.Name="Dashboard commands"
+                        Background="Transparent"
+                        DefaultLabelPosition="Right"
+                        IsOpen="False"
+                        OverflowButtonVisibility="Collapsed">
+                        <AppBarButton
+                            AutomationProperties.AutomationId="DashStopAll"
+                            AutomationProperties.Name="Stop all timers"
+                            Command="{x:Bind ViewModel.StopAllCommand, Mode=OneWay}"
+                            Icon="{ui:FontIcon Glyph=&#xE71A;}"
+                            Label="Stop all"
+                            ToolTipService.ToolTip="Stop every running or paused timer" />
+                        <AppBarButton
+                            AutomationProperties.AutomationId="DashOpenFolder"
+                            AutomationProperties.Name="Open output folder"
+                            Command="{x:Bind ViewModel.OpenFolderCommand, Mode=OneWay}"
+                            Icon="{ui:FontIcon Glyph=&#xE838;}"
+                            Label="Open folder"
+                            ToolTipService.ToolTip="Open the output folder in File Explorer" />
+                    </CommandBar>
+                </Grid>
+
+                <!-- ================= Cards ================= -->
+                <ItemsRepeater
+                    AutomationProperties.AutomationId="DashboardCards"
+                    AutomationProperties.Name="Timers"
+                    ItemTemplate="{StaticResource TimerCardTemplate}"
+                    ItemsSource="{x:Bind ViewModel.Timers, Mode=OneWay}">
+                    <ItemsRepeater.Layout>
+                        <UniformGridLayout
+                            ItemsStretch="Fill"
+                            MinColumnSpacing="12"
+                            MinItemWidth="300"
+                            MinRowSpacing="12" />
+                    </ItemsRepeater.Layout>
+                </ItemsRepeater>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>

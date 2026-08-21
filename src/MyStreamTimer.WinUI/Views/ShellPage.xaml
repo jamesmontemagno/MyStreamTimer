@@ -32,6 +32,7 @@
         <KeyboardAccelerator Key="Number5" Modifiers="Control,Shift" Invoked="OnTimerAccelerator" />
         <KeyboardAccelerator Key="Number6" Modifiers="Control,Shift" Invoked="OnTimerAccelerator" />
         <KeyboardAccelerator Key="Number7" Modifiers="Control,Shift" Invoked="OnTimerAccelerator" />
+        <KeyboardAccelerator Key="H" Modifiers="Control,Shift" Invoked="OnHomeAccelerator" />
     </Page.KeyboardAccelerators>
 
     <NavigationView
@@ -48,6 +49,17 @@
         SelectionChanged="OnSelectionChanged">
 
         <NavigationView.MenuItems>
+            <NavigationViewItem
+                x:Name="HomeItem"
+                AutomationProperties.AutomationId="NavHome"
+                AutomationProperties.Name="Home"
+                Content="Home"
+                Tag="home">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE80F;" />
+                </NavigationViewItem.Icon>
+            </NavigationViewItem>
+
             <NavigationViewItemHeader Content="COUNTDOWNS" />
 
             <NavigationViewItem

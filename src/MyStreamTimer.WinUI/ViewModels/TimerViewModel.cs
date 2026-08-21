@@ -371,6 +371,9 @@ public sealed partial class TimerViewModel : ObservableObject
     [RelayCommand]
     private void StartStop() => _engine.StartStop();
 
+    /// <summary>Forces the timer to Idle (Running or Paused); used by the dashboard's Stop all.</summary>
+    public void Stop() => _engine.Stop();
+
     [RelayCommand(CanExecute = nameof(CanPauseResume))]
     private void PauseResume() => _engine.PauseResume();
 
@@ -543,3 +546,4 @@ public sealed partial class TimerViewModel : ObservableObject
         }
     }
 }
+
