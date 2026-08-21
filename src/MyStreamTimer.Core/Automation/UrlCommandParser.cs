@@ -140,14 +140,25 @@ public static class UrlCommandParser
     public static string Build(TimerKind kind, CommandAction action, double? value = null, bool valueIsSeconds = false, string? clockTime = null, bool topOfHour = false)
     {
         var host = kind.Id();
+
+        // The legacy parser uses culture-sensitive float.TryParse, so decimals do not round-trip on comma-decimal
+        // locales. Emit whole numbers only: fractional minutes are converted to whole seconds.
+        var v = Math.Max(0, value ?? 0);
+        if (!valueIsSeconds && Math.Abs(v - Math.Round(v)) > 0.0001)
+        {
+            v = Math.Round(v * 60);
+            valueIsSeconds = true;
+        }
+        var n = ((long)Math.Round(v)).ToString(System.Globalization.CultureInfo.InvariantCulture);
+
         var query = action switch
         {
             CommandAction.Start when topOfHour => "?topofhour",
             CommandAction.Start when clockTime is not null => $"?to={clockTime}",
             CommandAction.Start when kind.IsTime() => "?start",
-            CommandAction.Start => valueIsSeconds ? $"?secs={Fmt(value)}" : $"?mins={Fmt(value)}",
-            CommandAction.Add => valueIsSeconds ? $"?addsecs={Fmt(value)}" : $"?addmins={Fmt(value)}",
-            CommandAction.Subtract => valueIsSeconds ? $"?subtractsecs={Fmt(value)}" : $"?subtractmins={Fmt(value)}",
+            CommandAction.Start => valueIsSeconds ? $"?secs={n}" : $"?mins={n}",
+            CommandAction.Add => valueIsSeconds ? $"?addsecs={n}" : $"?addmins={n}",
+            CommandAction.Subtract => valueIsSeconds ? $"?subtractsecs={n}" : $"?subtractmins={n}",
             CommandAction.Pause => "?pause",
             CommandAction.Resume => "?resume",
             CommandAction.Reset => "?reset",
@@ -155,7 +166,5 @@ public static class UrlCommandParser
             _ => string.Empty,
         };
         return $"mystreamtimer://{host}/{query}";
-
-        static string Fmt(double? v) => (v ?? 0).ToString(System.Globalization.CultureInfo.InvariantCulture);
     }
 }

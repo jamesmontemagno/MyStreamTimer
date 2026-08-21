@@ -456,3 +456,4 @@ public sealed partial class SettingsViewModel : ObservableObject
         _popOuts.NotifyAppearanceChanged();
     }
 }
+

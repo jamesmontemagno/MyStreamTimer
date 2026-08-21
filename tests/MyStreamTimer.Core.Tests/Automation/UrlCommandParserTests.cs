@@ -87,3 +87,4 @@ public class UrlCommandParserTests
         Assert.Equal(kind, parsed.Kind);
     }
 }
+

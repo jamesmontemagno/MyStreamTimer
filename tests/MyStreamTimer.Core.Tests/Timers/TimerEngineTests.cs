@@ -31,11 +31,12 @@ sealed class FakeFiles : IFileOutputService
 sealed class FakePlatform : ITimerPlatform
 {
     public int Beeps;
+    public int BeepDelayMs;
     readonly HashSet<string> active = [];
     public void StartActivity(string id) => active.Add(id);
     public void StopActivity(string id) => active.Remove(id);
     public bool HasRunningTimers => active.Count > 0;
-    public Task BeepAsync() { Beeps++; return Task.CompletedTask; }
+    public async Task BeepAsync() { Beeps++; if (BeepDelayMs > 0) await Task.Delay(BeepDelayMs); }
 }
 
 public class TimerEngineTests
@@ -84,6 +85,31 @@ public class TimerEngineTests
         Assert.Equal(TimerState.Idle, e.State);
         await WaitFor(() => platform.Beeps == 1);
         Assert.False(platform.HasRunningTimers);
+    }
+
+    [Fact]
+    public async Task Start_during_finish_beep_is_not_orphaned()
+    {
+        var (e, clock, files, platform, _) = Create(TimerKind.Countdown, s => { s.Minutes = 0; s.Seconds = 1; s.MakeSound = true; });
+        platform.BeepDelayMs = 500; // slow beep like the real 3x200ms pattern
+        e.StartStop();
+        var completed = false;
+        e.Completed += (_, _) => completed = true;
+        clock.Advance(TimeSpan.FromSeconds(5));
+        await WaitFor(() => completed);
+
+        // user hits Start while the beep is still playing
+        e.Settings.Minutes = 1; e.Settings.Seconds = 0;
+        e.StartStop();
+        await WaitFor(() => files.Last == "Starting in 00:01:00");
+        await Task.Delay(700); // let the old loop finish its beep
+
+        e.StartStop(); // Stop must cancel the new loop
+        await WaitFor(() => e.State == TimerState.Idle);
+        var count = files.Writes.Count;
+        clock.Advance(TimeSpan.FromSeconds(1));
+        await Task.Delay(400);
+        Assert.Equal(count, files.Writes.Count); // no orphan loop still writing
     }
 
     [Fact]
@@ -240,5 +266,6 @@ public class TimerEngineTests
         e.StartStop();
     }
 }
+
 
 

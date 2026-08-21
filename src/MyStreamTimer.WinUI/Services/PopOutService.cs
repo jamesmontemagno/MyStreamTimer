@@ -51,6 +51,11 @@ public sealed class PopOutService
 
     public void NotifyTimerAppearanceChanged(TimerKind kind) => TimerAppearanceChanged?.Invoke(this, kind);
 
+    /// <summary>Raised after "Reset all settings" so long-lived timer view models re-read every setting.</summary>
+    public event EventHandler? SettingsReset;
+
+    public void NotifySettingsReset() => SettingsReset?.Invoke(this, EventArgs.Empty);
+
     /// <summary>Shows (or activates) the pop-out for <paramref name="kind"/>. Returns false when not Pro.</summary>
     public bool Show(TimerKind kind)
     {
@@ -124,3 +129,4 @@ public sealed class PopOutService
         }
     }
 }
+

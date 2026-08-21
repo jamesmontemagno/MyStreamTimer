@@ -42,6 +42,7 @@ public sealed partial class WelcomeBackDialog : ContentDialog
             if (result == ContentDialogResult.Secondary)
             {
                 NavigateToProRequested?.Invoke(dialog, EventArgs.Empty);
+                Services.NavigationService.Default.NavigateTo(Services.NavigationService.ProTag);
             }
 
             return true;
@@ -53,3 +54,4 @@ public sealed partial class WelcomeBackDialog : ContentDialog
         }
     }
 }
+

@@ -94,7 +94,7 @@ public sealed class StoreService
 
         try
         {
-            var result = await context.GetAssociatedStoreProductsAsync(["Durable", "Subscription"]);
+            var result = await context.GetAssociatedStoreProductsAsync(["Durable"]); // subscription add-ons are reported as Durable (detected via SubscriptionInfo)
             if (result.ExtendedError is not null)
             {
                 Debug.WriteLine($"[StoreService] GetAssociatedStoreProducts error: {result.ExtendedError.Message}");
@@ -325,3 +325,5 @@ public sealed class StoreService
         }
     }
 }
+
+

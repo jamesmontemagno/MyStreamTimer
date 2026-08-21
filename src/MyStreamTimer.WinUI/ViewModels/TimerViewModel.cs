@@ -62,6 +62,14 @@ public sealed partial class TimerViewModel : ObservableObject
                 Dispatch(RefreshAppearance);
             }
         };
+        popOuts.SettingsReset += (_, _) => Dispatch(() =>
+        {
+            // every pass-through property now reads a default; re-bind everything
+            OnPropertyChanged(string.Empty);
+            OutputValidationMessage = Validate(_engine.Settings.Output);
+            RefreshAppearance();
+            RefreshPreview();
+        });
 
         ApplyText(engine.CountdownOutput);
         RefreshState();

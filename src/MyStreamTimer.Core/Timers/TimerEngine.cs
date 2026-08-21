@@ -332,9 +332,10 @@ public sealed class TimerEngine : IDisposable
                         WriteTimeToDisk(text);
                         StateChanged?.Invoke(this, EventArgs.Empty);
                         Completed?.Invoke(this, EventArgs.Empty);
+                        // Beep fire-and-forget so a Start issued during the beep can never race this loop's CTS;
+                        // StopLoop() is the only place that clears loopCts.
                         if (currentBeepAtZero)
-                            await platform.BeepAsync().ConfigureAwait(false);
-                        loopCts = null;
+                            _ = platform.BeepAsync();
                         return;
                     }
 
