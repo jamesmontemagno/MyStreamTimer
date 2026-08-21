@@ -113,6 +113,68 @@ public class TimerEngineTests
     }
 
     [Fact]
+    public async Task Clock_time_mode_counts_down_to_finish_time_and_wraps_midnight()
+    {
+        var (e, clock, files, _, _) = Create(TimerKind.Countdown3, s => { s.UseMinutes = false; s.FinishAtTime = new TimeSpan(12, 30, 0); });
+        clock.Now = new DateTime(2026, 1, 1, 12, 0, 0);
+        e.StartStop();
+        await WaitFor(() => files.Last == "Starting in 00:30:00");
+        e.StartStop();
+
+        // finish time already passed today -> wraps to tomorrow
+        var (e2, clock2, files2, _, _) = Create(TimerKind.Countdown3, s => { s.UseMinutes = false; s.FinishAtTime = new TimeSpan(1, 0, 0); });
+        clock2.Now = new DateTime(2026, 1, 1, 23, 0, 0);
+        e2.StartStop();
+        await WaitFor(() => files2.Last == "Starting in 02:00:00");
+        e2.Dispose();
+        Assert.Equal(TimerState.Idle, e.State);
+    }
+
+    [Fact]
+    public async Task Url_pause_resume_reset_apply_like_legacy_Init()
+    {
+        var (e, clock, files, _, _) = Create(TimerKind.Countdown, s => { s.Minutes = 1; });
+        e.Apply(new UrlCommand(CommandAction.Start, 2, "countdown"));
+        await WaitFor(() => files.Last == "Starting in 00:02:00");
+
+        e.Apply(new UrlCommand(CommandAction.Pause, -1, "countdown"));
+        Assert.Equal(TimerState.Paused, e.State);
+        e.Apply(new UrlCommand(CommandAction.Pause, -1, "countdown")); // idempotent
+        Assert.Equal(TimerState.Paused, e.State);
+
+        e.Apply(new UrlCommand(CommandAction.Resume, -1, "countdown"));
+        Assert.Equal(TimerState.Running, e.State);
+        e.Apply(new UrlCommand(CommandAction.Resume, -1, "countdown")); // idempotent
+        Assert.Equal(TimerState.Running, e.State);
+
+        e.Apply(new UrlCommand(CommandAction.Subtract, 1, "countdown"));
+        clock.Advance(TimeSpan.FromSeconds(1));
+        await WaitFor(() => files.Last == "Starting in 00:00:59");
+
+        e.Apply(new UrlCommand(CommandAction.Reset, -1, "countdown"));
+        await WaitFor(() => files.Last == "Starting in 00:01:00"); // reset uses the configured duration, not bootMins
+        e.Apply(new UrlCommand(CommandAction.Stop, -1, "countdown"));
+        Assert.Equal(TimerState.Idle, e.State);
+        e.Apply(new UrlCommand(CommandAction.Stop, -1, "countdown")); // no-op when idle
+        Assert.Equal(TimerState.Idle, e.State);
+    }
+
+    [Fact]
+    public void Boot_start_and_metadata()
+    {
+        var (e, _, files, platform, _) = Create(TimerKind.Countup2);
+        Assert.True(e.RequiresPro);
+        Assert.False(e.IsDown);
+        Assert.False(e.IsTime);
+        Assert.Same(e.Settings, e.Settings);
+        e.StartAtBoot(3);
+        Assert.True(e.IsBusy);
+        Assert.True(platform.HasRunningTimers);
+        e.Dispose();
+        Assert.False(platform.HasRunningTimers);
+    }
+
+    [Fact]
     public async Task Writes_only_when_text_changes()
     {
         var (e, clock, files, _, _) = Create(TimerKind.Countdown, s => { s.Minutes = 1; });
@@ -266,6 +328,7 @@ public class TimerEngineTests
         e.StartStop();
     }
 }
+
 
 
 

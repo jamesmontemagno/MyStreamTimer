@@ -15,7 +15,7 @@
 1. **P7‑3/P7‑4 (one elevated step):** from an **admin** PowerShell run `.\winui-migration\Run-UpgradeTest.ps1` — trusts the dev cert, runs **WACK** (`artifacts\wack.xml`), installs 3.0 over the Store 2.6.2 in place — then walk `upgrade-test-checklist.md`; finish with `-Restore`. A Store‑uploadable `artifacts\MyStreamTimer_3.0.0.0.msixbundle` (x64+ARM64, unsigned) is already built. (Regenerate with: `dotnet build src\MyStreamTimer.WinUI -c Release -p:Platform=x64 -p:UseDevIdentity=false` → `winapp package <bin\x64\Release\...\win-x64> --cert artifacts\refractored-dev.pfx --output artifacts\MyStreamTimer_3.0.0.0_x64.msix`.) Afterwards reinstall the Store build to restore the machine.
 2. **P6 Store** (Partner Center): create `mstsub` / `mstsub6months` subscription add‑ons, associate app, sandbox purchase/restore.
 3. ~~Polish: Pro plan‑card truncation; Settings folder button row~~ (done).
-4. **P8**: `winui-code-review` skill pass, Core coverage → 90 %, perf numbers (P8‑3), trimming evaluation (P8‑5).
+4. ~~**P8**: review pass, coverage 91 %, perf, trimming~~ (done; optional 2 h soak + Release startup timing remain).
 5. **P9**: wire secrets for `release.yml`; tag `v3.0.0-rc.1`; P7‑4 `.msixupload`/bundle + WACK; P7‑5 Package Flight.
 6. **P10**: README, `legacy/` move/removal after 3.0 ships. macOS parity issue: [#81](https://github.com/jamesmontemagno/MyStreamTimer/issues/81).
 
@@ -201,7 +201,7 @@ Design principles: MVVM with `x:Bind`, Core has zero Windows dependencies (fully
   - Formatter goldens for each style at boundaries (0 s, 9 s, 10 s, 59 s, 1 min, 9:59, 10 min, 59:59, 1 h, 9 h, 10 h, 1 d, 10 d, 100 d …), time styles with/without AM/PM, template leniency, invalid template.
   - Settings codec: round‑trip + decode the captured `legacy-settings.json` values (bools, ints, `FinishAtTime` long, `SubExpirationDate` negative‑ticks string, positive legacy ticks).
   - Engine: countdown completes with finish text; pause/resume keeps remaining; add/subtract minute; reset restarts; writes only on change (count writes over 3 s ≈ 3‑4); Swift parity cases (finish text written, newer start supersedes older, multi‑token custom template advances each second).
-- [x] P2‑9 (342 tests, 81 % line coverage — raise to 90 % in P8) Run `dotnet test` and reach ≥ 90 % line coverage on Core (`coverlet`), enforce in CI.
+- [x] P2‑9 (351 tests, **91 % line coverage**) Run `dotnet test` and reach ≥ 90 % line coverage on Core (`coverlet`), enforce in CI.
 
 **Validation gate P2**
 - [x] All Core tests green locally and in CI; coverage badge/number recorded.
@@ -357,6 +357,7 @@ Query precedence (first match wins, query lower‑cased): `?mins=` → `?secs=` 
 7. Pro: `IsGold` etc. honoured offline; Pro page shows "unlocked".
 8. Stay on top / theme / pop‑outs function; settings persist after restart.
 9. Uninstall → reinstall 3.0 → settings gone (expected), no crash.
+
 
 
 
