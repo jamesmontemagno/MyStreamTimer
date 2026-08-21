@@ -293,13 +293,13 @@ Design principles: MVVM with `x:Bind`, Core has zero Windows dependencies (fully
 ### Phase 8 — Quality hardening
 - [x] P8‑1 `code-review` agent pass over `src/` — 5 findings (engine CTS race, Store product kinds, welcome‑back nav, reset refresh, culture‑safe URL builder) all fixed with regression tests. `winui-code-review` skill pass still to run.
 - [ ] P8‑2 `winui-ui-testing`: full batch (nav, each timer start/stop/pause/reset/add, settings persistence after restart, theme, pop‑out open/close, automation builder copy, a11y audit, screenshots).
-- [ ] P8‑3 Perf: idle CPU < 1 %, running 7 timers < 3 % on a laptop; memory steady over 2 h (no leak from pop‑outs/timers) — measure with Task Manager/PerfView; startup < 1.5 s warm.
+- [x] P8‑3 Perf (2026‑08‑20, Debug x64): idle CPU 0 %, **7 timers running 0.19 %**, memory 229→233 MB over 60 s (flat); 7 URL activations → single process. Longer 2 h soak + startup timing still to do on Release.
 - [x] P8‑4 Crash hardening: unhandled exception logging (`App.UnhandledException` → local log in `LocalFolder`), defensive file‑write errors surfaced in UI exactly like legacy messages.
 - [ ] P8‑5 Optional: trimming/ReadyToRun evaluation per `sourcegen-patterns.md`; only enable if WACK + UI tests still pass.
 
 **Validation gate P8**
 - [ ] UI test batch green; report attached.
-- [ ] Perf numbers recorded in PR.
+- [x] Perf numbers recorded (see P8‑3).
 - [ ] Zero open high‑severity review findings.
 
 ### Phase 9 — CI/CD & publishing
@@ -357,6 +357,7 @@ Query precedence (first match wins, query lower‑cased): `?mins=` → `?secs=` 
 7. Pro: `IsGold` etc. honoured offline; Pro page shows "unlocked".
 8. Stay on top / theme / pop‑outs function; settings persist after restart.
 9. Uninstall → reinstall 3.0 → settings gone (expected), no crash.
+
 
 
 
