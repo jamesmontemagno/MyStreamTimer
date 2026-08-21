@@ -80,13 +80,13 @@ public sealed partial class ProViewModel : ObservableObject
         _dialogs = dialogs;
         _launcher = launcher;
 
+        // Purchasable catalogue matches the macOS app: one Lifetime unlock (mstgold) plus the two subscriptions.
+        // Legacy Bronze/Silver lifetime purchases are no longer sold but remain valid entitlements (see RefreshStatus).
         Plans =
         [
-            new(ProductIds.Bronze, "Bronze", "Lifetime Pro. Pay once, keep it forever.", "\uE734", false, BuyCommand),
-            new(ProductIds.Silver, "Silver", "Lifetime Pro with a bigger thank-you.", "\uE735", false, BuyCommand),
-            new(ProductIds.Gold, "Gold", "Lifetime Pro for the most generous supporters.", "\uE7C1", false, BuyCommand),
-            new(ProductIds.SubMonthly, "Monthly", "Pro while you're subscribed. Cancel any time.", "\uE787", true, BuyCommand),
-            new(ProductIds.SubSixMonths, "6 Months", "Six months of Pro at a lower rate.", "\uE823", true, BuyCommand),
+            new(ProductIds.Gold, "Lifetime", "One-time purchase, yours forever.", "\uE7C1", false, BuyCommand),
+            new(ProductIds.SubMonthly, "Monthly", "Billed every month. Cancel any time.", "\uE787", true, BuyCommand),
+            new(ProductIds.SubSixMonths, "6 Months", "Best value subscription.", "\uE823", true, BuyCommand),
         ];
 
         Refresh();
@@ -185,11 +185,11 @@ public sealed partial class ProViewModel : ObservableObject
 
         if (_pro.HasLifetime)
         {
-            var (tier, color) = _settings.IsGold ? ("Gold", GoldColor)
-                : _settings.IsSilver ? ("Silver", SilverColor)
-                : ("Bronze", BronzeColor);
+            var (tier, color) = _settings.IsGold ? ("Lifetime", GoldColor)
+                : _settings.IsSilver ? ("Silver (legacy lifetime)", SilverColor)
+                : ("Bronze (legacy lifetime)", BronzeColor);
             StatusTitle = "Pro Lifetime unlocked";
-            StatusDescription = $"{tier} tier · Thank you for supporting My Stream Timer!";
+            StatusDescription = $"{tier} · Thank you for supporting My Stream Timer!";
             StatusGlyph = "\uE73E";
             StatusAccentBrush = new SolidColorBrush(color);
             HasTierColor = true;
@@ -239,7 +239,7 @@ public sealed partial class ProViewModel : ObservableObject
                 {
                     ProductIds.SubMonthly => FirstNonEmpty(_settings.SubPrice, "—"),
                     ProductIds.SubSixMonths => FirstNonEmpty(_settings.SubPrice6Months, "—"),
-                    _ => cachedLifetime.TryGetValue(plan.Title, out var cached) ? cached : "—",
+                    _ => cachedLifetime.TryGetValue("Gold", out var cached) ? cached : "—",
                 };
                 plan.BillingPeriod = plan.Id switch
                 {
@@ -251,9 +251,8 @@ public sealed partial class ProViewModel : ObservableObject
 
             plan.IsOwned = plan.Id switch
             {
-                ProductIds.Bronze => _settings.IsBronze,
-                ProductIds.Silver => _settings.IsSilver,
-                ProductIds.Gold => _settings.IsGold,
+                // Any lifetime tier (incl. legacy Bronze/Silver) satisfies the Lifetime card.
+                ProductIds.Gold => _pro.HasLifetime,
                 _ => _pro.HasActiveSubscription,
             };
             plan.CanBuy = !IsBusy && !plan.IsOwned && !(plan.IsSubscription && _pro.HasLifetime);

@@ -254,7 +254,7 @@ Design principles: MVVM with `x:Bind`, Core has zero Windows dependencies (fully
 - [x] P5‑5 **Automation page (N6)**: explanation, copyable examples (legacy four + `?pause`, `?addmins=1`), **command builder** (timer `ComboBox`, action `ComboBox` [Start mins / Start secs / Start at time / Top of hour / Add mins / Add secs / Subtract mins / Subtract secs / Pause / Resume / Reset / Stop], value input, generated URL read‑only, Copy, Run), plus Stream Deck/OBS tips.
 - [x] P5‑6 **Settings page (N7)**: Output folder card (path, Choose Folder, Open in Explorer, Test Access, Use Default, Copy Path), list of all output file names with per‑timer copy; Stay on top toggle; Theme; Pop‑out appearance; "Reset all settings" (with confirm).
 - [x] P5‑7 **About page**: version (`Package.Current.Id.Version`), OSS note, links (GitHub repo, GitHub, Twitter/X, YouTube, Blog), privacy policy, licenses.
-- [x] P5‑8 **Pro page (N10)**: status banner (Pro lifetime unlocked ✓ tier colour bronze/silver/gold, "Pro subscription active until {date}", or "Free"), **five** purchase cards (Bronze/Silver/Gold lifetime + Monthly + 6‑Month subscription) with live prices and billing period, Restore Purchases, Manage Subscription, Privacy Policy, Terms; busy indicator; subscription‑expiry refresh prompt ported from legacy Mac `MainPage.OnAppearing`; all legacy dialogs.
+- [x] P5‑8 **Pro page (N10)**: status banner (Pro lifetime unlocked ✓ tier colour bronze/silver/gold, "Pro subscription active until {date}", or "Free"), **three** purchase cards matching macOS (Lifetime `mstgold` + Monthly + 6‑Month subscription; Bronze/Silver are no longer sold but remain valid entitlements) with live prices and billing period, Restore Purchases, Manage Subscription, Privacy Policy, Terms; busy indicator; subscription‑expiry refresh prompt ported from legacy Mac `MainPage.OnAppearing`; all legacy dialogs.
 - [x] P5‑9 `time` URL host (N9) wired end‑to‑end; Commands/Automation text updated.
 - [ ] P5‑10 Update `ProEntitlement` gating list to include pop‑out features; tests.
 - [x] P5‑11 **Rename timers & icons (N13)**: Settings › Timers section (name + icon per timer, reset); `TimerSettings.EffectiveTitle`/`EffectiveIconGlyph` consumed by sidebar items, TimerPage header, pop‑out title and Automation builder timer list; live update via a `TimerAppearanceChanged(TimerKind)` event.
@@ -357,6 +357,7 @@ Query precedence (first match wins, query lower‑cased): `?mins=` → `?secs=` 
 7. Pro: `IsGold` etc. honoured offline; Pro page shows "unlocked".
 8. Stay on top / theme / pop‑outs function; settings persist after restart.
 9. Uninstall → reinstall 3.0 → settings gone (expected), no crash.
+
 
 
 

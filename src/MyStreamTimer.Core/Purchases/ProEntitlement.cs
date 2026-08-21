@@ -14,6 +14,9 @@ public static class ProductIds
     public static readonly IReadOnlyList<string> Subscriptions = [SubMonthly, SubSixMonths];
     public static readonly IReadOnlyList<string> All = [Bronze, Silver, Gold, SubMonthly, SubSixMonths];
 
+    /// <summary>What the app sells today (matches macOS): one Lifetime unlock + two subscriptions. Bronze/Silver remain valid legacy entitlements.</summary>
+    public static readonly IReadOnlyList<string> Purchasable = [Gold, SubMonthly, SubSixMonths];
+
     public static bool IsSubscription(string id) => id is SubMonthly or SubSixMonths;
 }
 
@@ -87,3 +90,4 @@ public sealed class ProEntitlement
 
     public void NotifyChanged() => Changed?.Invoke(this, EventArgs.Empty);
 }
+

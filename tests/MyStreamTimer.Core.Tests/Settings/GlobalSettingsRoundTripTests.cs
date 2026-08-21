@@ -94,6 +94,8 @@ public class GlobalSettingsRoundTripTests
         Assert.Equal(5, ProductIds.All.Count);
         Assert.Equal(3, ProductIds.Lifetime.Count);
         Assert.Equal(2, ProductIds.Subscriptions.Count);
+        Assert.Equal([ProductIds.Gold, ProductIds.SubMonthly, ProductIds.SubSixMonths], ProductIds.Purchasable);
+        Assert.DoesNotContain(ProductIds.Bronze, ProductIds.Purchasable); // legacy: still an entitlement, no longer sold
 
         var baseDate = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         Assert.Equal(new DateTime(2026, 2, 6, 0, 0, 0, DateTimeKind.Utc), ProEntitlement.AddSubTime(baseDate));
@@ -134,3 +136,4 @@ public class GlobalSettingsRoundTripTests
         Assert.False(new UrlCommand(CommandAction.Pause, -1, "nope").IsValid);
     }
 }
+

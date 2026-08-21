@@ -114,7 +114,7 @@
                     Margin="0,0,0,8"
                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                     Style="{StaticResource CaptionTextBlockStyle}"
-                    Text="Lifetime tiers unlock the same features — pick the one that matches how much you'd like to support the app. Subscriptions keep Pro active while they renew."
+                    Text="Pay once for Lifetime, or subscribe to keep Pro active while it renews. Every plan unlocks the same features."
                     TextWrapping="Wrap" />
 
                 <ItemsRepeater AutomationProperties.AutomationId="PlanCards" ItemsSource="{x:Bind ViewModel.Plans}">
@@ -239,4 +239,5 @@
         </ScrollViewer>
     </Grid>
 </Page>
+
 

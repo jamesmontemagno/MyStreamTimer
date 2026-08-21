@@ -105,7 +105,7 @@ public sealed class StoreService
             _storeProducts.Clear();
             foreach (var product in result.Products.Values)
             {
-                var id = ProductIds.All.FirstOrDefault(p => string.Equals(p, product.InAppOfferToken, StringComparison.OrdinalIgnoreCase));
+                var id = ProductIds.Purchasable.FirstOrDefault(p => string.Equals(p, product.InAppOfferToken, StringComparison.OrdinalIgnoreCase));
                 if (id is null)
                 {
                     continue;
