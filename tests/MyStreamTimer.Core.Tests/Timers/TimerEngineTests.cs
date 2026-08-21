@@ -189,6 +189,27 @@ public class TimerEngineTests
     }
 
     [Fact]
+    public async Task Real_clock_countdown_never_skips_a_second()
+    {
+        // Uses the real clock: every consecutive second must be written (no 5 -> 3 jumps).
+        var store = new InMemorySettingsStore();
+        var global = new GlobalSettings(store, @"C:\out") { IsGold = true };
+        var settings = new TimerSettings(store, TimerKind.Countdown) { Minutes = 0, Seconds = 6, Output = "{0:ss}" };
+        var files = new FakeFiles();
+        var e = new TimerEngine(settings, global, new ProEntitlement(global), files, new FakePlatform());
+        var done = false;
+        e.Completed += (_, _) => done = true;
+        e.StartStop();
+        await WaitFor(() => done, 12000);
+
+        var seconds = files.Writes.Where(w => w.Length > 0 && w != "Let's do this!").Select(int.Parse).ToList();
+        Assert.True(seconds.Count >= 5, $"too few samples: {string.Join(',', seconds)}");
+        for (var i = 1; i < seconds.Count; i++)
+            Assert.True(seconds[i] == seconds[i - 1] - 1, $"skipped a second: {string.Join(',', seconds)}");
+        Assert.Equal(0, seconds[^1]);
+    }
+
+    [Fact]
     public void Boot_start_and_metadata()
     {
         var (e, _, files, platform, _) = Create(TimerKind.Countup2);
@@ -352,11 +373,14 @@ public class TimerEngineTests
         var (e, clock, files, _, _) = Create(TimerKind.Countdown, s => { s.Minutes = 1; });
         files.FailWrites = true;
         e.StartStop();
-        for (var i = 0; i < 6; i++) { clock.Advance(TimeSpan.FromSeconds(1)); await Task.Delay(150); }
+        for (var i = 0; i < 8; i++) { clock.Advance(TimeSpan.FromSeconds(1)); await Task.Delay(300); } // loop wakes at most every 250 ms
         await WaitFor(() => e.CountdownOutput.Contains("Ensure app has access"));
         e.StartStop();
     }
 }
+
+
+
 
 
 

@@ -15,7 +15,10 @@ public enum TimerState { Idle, Running, Paused }
 /// </summary>
 public sealed class TimerEngine : IDisposable
 {
-    const int TickMilliseconds = 100;
+    /// <summary>Upper bound between samples; keeps URL/UI commands responsive even when the next boundary is far away.</summary>
+    const int MaxTickMilliseconds = 250;
+    /// <summary>Wake slightly after the boundary so truncation lands on the new second.</summary>
+    const int BoundaryGuardMilliseconds = 2;
 
     readonly object locker = new();
     readonly TimerSettings settings;
@@ -346,6 +349,7 @@ public sealed class TimerEngine : IDisposable
     {
         while (!token.IsCancellationRequested)
         {
+            var delayMs = MaxTickMilliseconds;
             try
             {
                 var now = clock.Now;
@@ -375,6 +379,7 @@ public sealed class TimerEngine : IDisposable
                     }
 
                     var elapsed = end - now;
+                    delayMs = MillisUntilNextSecondBoundaryDown(elapsed);
                     if (SameSecond(prevTime, elapsed) && !firstTime)
                         goto Delay;
                     firstTime = false;
@@ -384,6 +389,9 @@ public sealed class TimerEngine : IDisposable
                 else if (IsTime)
                 {
                     var minuteRes = OutputFormatter.TimeStyleIsMinuteResolution(currentOutputStyle);
+                    delayMs = minuteRes
+                        ? (int)(60_000 - (now.TimeOfDay.TotalMilliseconds % 60_000))
+                        : 1000 - now.Millisecond;
                     var same = minuteRes
                         ? prevDateTime.Minute == now.Minute && prevDateTime.Hour == now.Hour
                         : prevDateTime.Second == now.Second && prevDateTime.Minute == now.Minute && prevDateTime.Hour == now.Hour;
@@ -397,6 +405,7 @@ public sealed class TimerEngine : IDisposable
                 {
                     TimeSpan elapsed;
                     lock (locker) elapsed = now.AddTicks(extraTicksForUp) - startTime;
+                    delayMs = 1000 - (int)(elapsed.TotalMilliseconds % 1000);
                     if (SameSecond(prevTime, elapsed) && !firstTime)
                         goto Delay;
                     firstTime = false;
@@ -418,9 +427,19 @@ public sealed class TimerEngine : IDisposable
         Delay:
             if (token.IsCancellationRequested)
                 return;
-            try { await Task.Delay(TickMilliseconds, token).ConfigureAwait(false); }
+            // Sleep until just past the next boundary of the displayed value (never longer than MaxTick), so a second
+            // change is never sampled late or skipped — unlike a fixed 100 ms poll subject to timer-resolution jitter.
+            var wait = Math.Clamp(delayMs + BoundaryGuardMilliseconds, 1, MaxTickMilliseconds);
+            try { await Task.Delay(wait, token).ConfigureAwait(false); }
             catch (OperationCanceledException) { return; }
         }
+    }
+
+    /// <summary>ms until a counting-down TimeSpan drops to the next whole second (its fractional part).</summary>
+    static int MillisUntilNextSecondBoundaryDown(TimeSpan remaining)
+    {
+        var frac = (int)(remaining.TotalMilliseconds % 1000);
+        return frac <= 0 ? 1000 : frac;
     }
 
     static bool SameSecond(TimeSpan a, TimeSpan b) =>
@@ -451,3 +470,4 @@ public sealed class TimerEngine : IDisposable
         platform.StopActivity(Kind.Id());
     }
 }
+

@@ -49,7 +49,25 @@ public sealed class FileOutputService : IFileOutputService
         return Path.Combine(directory, fileName);
     }
 
-    public void Write(string fullPath, string text) => File.WriteAllText(fullPath, text);
+    /// <summary>
+    /// Writes atomically: the text goes to a sibling temp file which then replaces the target, so a reader
+    /// (OBS "read from file") never observes a truncated/empty file mid-write. Falls back to a direct write if the
+    /// replace fails (e.g. exotic file systems).
+    /// </summary>
+    public void Write(string fullPath, string text)
+    {
+        var tmp = fullPath + ".tmp";
+        try
+        {
+            File.WriteAllText(tmp, text);
+            File.Move(tmp, fullPath, overwrite: true);
+        }
+        catch (Exception) when (File.Exists(tmp))
+        {
+            try { File.Delete(tmp); } catch { /* best effort */ }
+            File.WriteAllText(fullPath, text);
+        }
+    }
 }
 
 /// <summary>Platform hooks the engine needs; everything else lives in the app layer.</summary>
