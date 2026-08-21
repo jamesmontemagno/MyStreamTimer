@@ -198,7 +198,8 @@ public class TimerEngineTests
             var (e, clock, files, _, _) = Create(TimerKind.Time, s => { s.OutputStyle = 3; });
             clock.Now = new DateTime(2026, 1, 1, 21, 10, 5);
             e.StartStop();
-            await WaitFor(() => files.Last == "21:10:05");
+            await WaitFor(() => files.Last.Length > 0);
+            Assert.Equal("21:10:05", files.Last);
             Assert.False(e.CanPauseResume);
             e.StartStop();
         }
