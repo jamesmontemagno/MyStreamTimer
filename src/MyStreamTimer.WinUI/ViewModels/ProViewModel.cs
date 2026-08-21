@@ -37,7 +37,9 @@ public sealed partial class PlanCardViewModel : ObservableObject
 
     public IAsyncRelayCommand<PlanCardViewModel?> BuyCommand { get; }
 
-    public string BuyAutomationName => $"Buy {Title}";
+    public string BuyLabel => IsSubscription ? "Subscribe" : "Buy";
+
+    public string BuyAutomationName => $"{BuyLabel} {Title}";
 
     [ObservableProperty]
     public partial string Price { get; set; } = "—";

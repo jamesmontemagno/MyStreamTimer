@@ -166,7 +166,7 @@
                                         AutomationProperties.Name="{x:Bind BuyAutomationName}"
                                         Command="{x:Bind BuyCommand}"
                                         CommandParameter="{x:Bind}"
-                                        Content="Buy"
+                                        Content="{x:Bind BuyLabel}"
                                         IsEnabled="{x:Bind CanBuy, Mode=OneWay}"
                                         Style="{StaticResource AccentButtonStyle}"
                                         Visibility="{x:Bind local:ProPage.BoolToVisibility(IsNotOwned), Mode=OneWay}" />
