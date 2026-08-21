@@ -10,7 +10,7 @@
     <Grid
         x:Name="Root"
         AutomationProperties.AutomationId="PopOutRoot"
-        AutomationProperties.Name="{x:Bind ViewModel.Title}"
+        AutomationProperties.Name="{x:Bind ViewModel.Title, Mode=OneWay}"
         Background="{x:Bind ViewModel.Background, Mode=OneWay}"
         IsTabStop="True"
         KeyDown="OnRootKeyDown"
@@ -81,3 +81,4 @@
         </Viewbox>
     </Grid>
 </Window>
+
