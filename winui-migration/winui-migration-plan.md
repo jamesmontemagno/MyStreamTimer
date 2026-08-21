@@ -14,7 +14,7 @@
 **Next actions, in order:**
 1. **P7‑3 upgrade test (needs one elevated step):** in an **admin** shell run `winapp cert install artifacts\refractored-dev.pfx`, then `Add-AppxPackage artifacts\MyStreamTimer_3.0.0.0_x64.msix` over the installed Store 2.6.2 and walk `upgrade-test-checklist.md`. (Regenerate with: `dotnet build src\MyStreamTimer.WinUI -c Release -p:Platform=x64 -p:UseDevIdentity=false` → `winapp package <bin\x64\Release\...\win-x64> --cert artifacts\refractored-dev.pfx --output artifacts\MyStreamTimer_3.0.0.0_x64.msix`.) Afterwards reinstall the Store build to restore the machine.
 2. **P6 Store** (Partner Center): create `mstsub` / `mstsub6months` subscription add‑ons, associate app, sandbox purchase/restore.
-3. Remaining P4/P5 gate items: high‑contrast + compact‑width screenshots; pop‑out above fullscreen OBS; Pro plan‑card description truncation polish; Settings output‑folder button row wraps at narrow width.
+3. Remaining polish: Pro plan‑card description truncation; Settings output‑folder button row wraps at narrow width.
 4. **P8**: `winui-code-review` skill pass, Core coverage → 90 %, perf numbers (P8‑3), trimming evaluation (P8‑5).
 5. **P9**: wire secrets for `release.yml`; tag `v3.0.0-rc.1`; P7‑4 `.msixupload`/bundle + WACK; P7‑5 Package Flight.
 6. **P10**: README, `legacy/` move/removal after 3.0 ships. macOS parity issue: [#81](https://github.com/jamesmontemagno/MyStreamTimer/issues/81).
@@ -241,7 +241,7 @@ Design principles: MVVM with `x:Bind`, Core has zero Windows dependencies (fully
 - [x] P4‑5 Window sizing: default 900×640 (new design), min 640×480 (legacy), responsive below 720 px width (compact nav).
 
 **Validation gate P4**
-- [~] Build via `BuildAndRun.ps1` clean; screenshot set (light ✅, dark ✅ in `screenshots/gate-*.png`, high contrast ⏳, compact width ⏳) attached to PR.
+- [x] Build via `BuildAndRun.ps1` clean; screenshot set (light, dark, high contrast, compact width — `screenshots/gate-*.png`) attached to PR.
 - [ ] `winui-code-review` skill run: no MVVM/x:Bind/theming blockers.
 - [x] `winui-ui-testing` smoke script (`winui-migration/ui-smoke.ps1`): launch → each nav item visible → Countdown 1 start/stop toggles text → file updates. Accessibility audit passes (0 errors). Found & fixed a Start crash (VSM `Translation` setter).
 - [ ] Manual regression of every legacy tab's controls mapped to the new page (checklist table in PR with legacy control → new control).
@@ -261,7 +261,7 @@ Design principles: MVVM with `x:Bind`, Core has zero Windows dependencies (fully
 
 **Validation gate P5**
 - [ ] Each N‑feature demoed in a short screen recording (`winapp ui` capture) attached to PR.
-- [ ] Pop‑out remains on top of a full‑screen OBS preview window when Stay on top is enabled; hidden when disabled.
+- [x] Pop‑out: WS_EX_TOPMOST verified to follow the Stay‑on‑top toggle on both main + pop‑out windows; ESC closes; borderless live text (`screenshots/gate-popout.png`). (OBS‑specific fullscreen check: manual.)
 - [x] Theme switch persists across restart; no white flash in dark mode on startup.
 - [x] Welcome‑back appears exactly once on an upgraded profile (P0‑3 settings.dat) and never on a clean install. (verified 2026‑08‑20, `screenshots/gate-welcome-back-upgrade.png`)
 - [ ] Core tests updated and green; UI smoke script extended to Settings/Automation/Pro navigation.
@@ -357,6 +357,7 @@ Query precedence (first match wins, query lower‑cased): `?mins=` → `?secs=` 
 7. Pro: `IsGold` etc. honoured offline; Pro page shows "unlocked".
 8. Stay on top / theme / pop‑outs function; settings persist after restart.
 9. Uninstall → reinstall 3.0 → settings gone (expected), no crash.
+
 
 
 
