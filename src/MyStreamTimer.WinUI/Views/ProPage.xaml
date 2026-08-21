@@ -152,8 +152,10 @@
                                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                         Style="{StaticResource CaptionTextBlockStyle}"
                                         Text="{x:Bind BillingPeriod, Mode=OneWay}" />
+                                    <!--  UniformGridLayout sizes every card like the first; reserve three caption lines so no description clips  -->
                                     <TextBlock
                                         Grid.Row="3"
+                                        MinHeight="48"
                                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                         Style="{StaticResource CaptionTextBlockStyle}"
                                         Text="{x:Bind Description}"
@@ -237,3 +239,4 @@
         </ScrollViewer>
     </Grid>
 </Page>
+

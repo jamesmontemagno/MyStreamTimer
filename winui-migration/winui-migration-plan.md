@@ -14,7 +14,7 @@
 **Next actions, in order:**
 1. **P7‑3 upgrade test (needs one elevated step):** in an **admin** shell run `winapp cert install artifacts\refractored-dev.pfx`, then `Add-AppxPackage artifacts\MyStreamTimer_3.0.0.0_x64.msix` over the installed Store 2.6.2 and walk `upgrade-test-checklist.md`. (Regenerate with: `dotnet build src\MyStreamTimer.WinUI -c Release -p:Platform=x64 -p:UseDevIdentity=false` → `winapp package <bin\x64\Release\...\win-x64> --cert artifacts\refractored-dev.pfx --output artifacts\MyStreamTimer_3.0.0.0_x64.msix`.) Afterwards reinstall the Store build to restore the machine.
 2. **P6 Store** (Partner Center): create `mstsub` / `mstsub6months` subscription add‑ons, associate app, sandbox purchase/restore.
-3. Remaining polish: Pro plan‑card description truncation; Settings output‑folder button row wraps at narrow width.
+3. ~~Polish: Pro plan‑card truncation; Settings folder button row~~ (done).
 4. **P8**: `winui-code-review` skill pass, Core coverage → 90 %, perf numbers (P8‑3), trimming evaluation (P8‑5).
 5. **P9**: wire secrets for `release.yml`; tag `v3.0.0-rc.1`; P7‑4 `.msixupload`/bundle + WACK; P7‑5 Package Flight.
 6. **P10**: README, `legacy/` move/removal after 3.0 ships. macOS parity issue: [#81](https://github.com/jamesmontemagno/MyStreamTimer/issues/81).
@@ -295,7 +295,7 @@ Design principles: MVVM with `x:Bind`, Core has zero Windows dependencies (fully
 - [ ] P8‑2 `winui-ui-testing`: full batch (nav, each timer start/stop/pause/reset/add, settings persistence after restart, theme, pop‑out open/close, automation builder copy, a11y audit, screenshots).
 - [x] P8‑3 Perf (2026‑08‑20, Debug x64): idle CPU 0 %, **7 timers running 0.19 %**, memory 229→233 MB over 60 s (flat); 7 URL activations → single process. Longer 2 h soak + startup timing still to do on Release.
 - [x] P8‑4 Crash hardening: unhandled exception logging (`App.UnhandledException` → local log in `LocalFolder`), defensive file‑write errors surfaced in UI exactly like legacy messages.
-- [ ] P8‑5 Optional: trimming/ReadyToRun evaluation per `sourcegen-patterns.md`; only enable if WACK + UI tests still pass.
+- [~] P8‑5 Trimming evaluated: `PublishTrimmed=true` publishes with only framework IL2104 warnings (WinRT.Runtime / Microsoft.Windows.SDK.NET); runtime verification needs a Store‑identity install (elevated). **Keep off for 3.0**; revisit for 3.1 after the upgrade test rig exists. ReadyToRun stays on.
 
 **Validation gate P8**
 - [ ] UI test batch green; report attached.
@@ -357,6 +357,7 @@ Query precedence (first match wins, query lower‑cased): `?mins=` → `?secs=` 
 7. Pro: `IsGold` etc. honoured offline; Pro page shows "unlocked".
 8. Stay on top / theme / pop‑outs function; settings persist after restart.
 9. Uninstall → reinstall 3.0 → settings gone (expected), no crash.
+
 
 
 

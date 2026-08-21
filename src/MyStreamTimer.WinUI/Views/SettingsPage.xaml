@@ -59,7 +59,7 @@
 
                 <controls:SettingsExpander.ItemsHeader>
                     <StackPanel Padding="44,12,44,12" Spacing="12">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
+                        <controls:WrapPanel HorizontalSpacing="8" VerticalSpacing="8">
                             <Button
                                 AutomationProperties.AutomationId="OpenFolderButton"
                                 AutomationProperties.Name="Open folder in Explorer"
@@ -108,7 +108,7 @@
                                 Height="20"
                                 VerticalAlignment="Center"
                                 IsActive="{x:Bind ViewModel.IsFolderBusy, Mode=OneWay}" />
-                        </StackPanel>
+                        </controls:WrapPanel>
                         <TextBlock
                             Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                             Style="{StaticResource CaptionTextBlockStyle}"
