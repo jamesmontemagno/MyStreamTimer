@@ -178,7 +178,7 @@ Design principles: MVVM with `x:Bind`, Core has zero Windows dependencies (fully
 - [x] P1‑2 `dotnet new classlib -n MyStreamTimer.Core -o src/MyStreamTimer.Core -f net10.0`; `dotnet new xunit -n MyStreamTimer.Core.Tests -o tests/MyStreamTimer.Core.Tests`; add project references; create `MyStreamTimer.sln` (`dotnet new sln`, `dotnet sln add …`). Keep `MyStreamTimer.All.sln` for legacy until Phase 10.
 - [x] P1‑3 Move legacy projects to `legacy/` (git mv), fix `MyStreamTimer.All.sln` paths. Do **not** delete yet.
 - [x] P1‑4 `Directory.Build.props`: `Nullable` enable, `ImplicitUsings`, `LangVersion latest`, `TreatWarningsAsErrors` for Core, analyzers (`Microsoft.WindowsAppSDK.Analyzers` from the winui-dev-workflow skill), `.editorconfig` already present (spaces, `var` everywhere, expression bodies).
-- [x] P1‑5 `Package.appxmanifest`: set Identity `23875RefractoredLLC.MyStreamTimer` / `CN=Refractored LLC` / `3.0.0.0`; `DisplayName`/`PublisherDisplayName`/`Description`/`BackgroundColor #169dcf` from legacy; `TargetDeviceFamily Windows.Desktop MinVersion 10.0.17763.0`; capabilities `internetClient` + `rescap:runFullTrust`; `uap:Protocol Name="mystreamtimer"` with display name/logo; copy tile/splash/store assets from `legacy/MyStreamTimer.UWP/Assets` (regenerate missing scales from `Art/Art1024.png`).
+- [x] P1‑5 `Package.appxmanifest`: set Identity `23875RefractoredLLC.MyStreamTimer` / `CN=Refractored LLC` / `3.0.0.0`; `DisplayName`/`PublisherDisplayName`/`Description`/`BackgroundColor #169dcf` from legacy; `TargetDeviceFamily Windows.Desktop MinVersion 10.0.17763.0`; capabilities `internetClient` + `rescap:runFullTrust`; `uap:Protocol Name="mystreamtimer"` with display name/logo; **all assets regenerated from the macOS purple icon** via `eng/IconGen` (gradient + glyph per `AppIcon.icon/icon.json`); manifest `BackgroundColor=#AE3EF7`; `Art/NewArt1024.png`, `Art/icon.ico` updated.
 - [x] P1‑6 Platforms: `x64;arm64` (+ `x86` optional). Never AnyCPU.
 - [x] P1‑7 First build + run via `winui-dev-workflow` `BuildAndRun.ps1` (async). Record PID/launch success.
 - [x] P1‑8 `.github/workflows/ci.yml`: on push/PR → `windows-latest`, `actions/setup-dotnet` 10.x, `microsoft/setup-WinAppCli`, `dotnet restore`, `dotnet build -c Release -p:Platform=x64`, `dotnet test tests/MyStreamTimer.Core.Tests`, `winapp cert generate --if-exists skip --quiet`, `winapp package … --cert devcert.pfx --quiet`, upload `.msix` artifact.
@@ -357,6 +357,7 @@ Query precedence (first match wins, query lower‑cased): `?mins=` → `?secs=` 
 7. Pro: `IsGold` etc. honoured offline; Pro page shows "unlocked".
 8. Stay on top / theme / pop‑outs function; settings persist after restart.
 9. Uninstall → reinstall 3.0 → settings gone (expected), no crash.
+
 
 
 
