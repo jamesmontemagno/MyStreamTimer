@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, 'winui-*' ]
     paths-ignore: [ '**.md', 'MyStreamTimer.MacSwift/**', 'MyStreamTimer.StreamDeck/**', 'legacy/**' ]
   pull_request:
     paths-ignore: [ '**.md', 'MyStreamTimer.MacSwift/**', 'MyStreamTimer.StreamDeck/**', 'legacy/**' ]
@@ -60,3 +60,4 @@ jobs:
         with:
           name: msix-${{ matrix.platform }}
           path: artifacts/*.msix
+

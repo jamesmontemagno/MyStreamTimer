@@ -76,6 +76,10 @@ jobs:
     needs: package
     runs-on: windows-latest
     environment: release
+    env:
+      SIGNING_PFX_BASE64: ${{ secrets.SIGNING_PFX_BASE64 }}
+      SIGNING_PFX_PASSWORD: ${{ secrets.SIGNING_PFX_PASSWORD }}
+      MSSTORE_TENANT: ${{ secrets.STORE_TENANT_ID }}
     steps:
       - uses: actions/checkout@v4
       - uses: microsoft/setup-WinAppCli@v1
@@ -98,29 +102,30 @@ jobs:
       # Sideload builds are signed with the publisher certificate (CN=Refractored LLC). Store submissions are
       # re-signed by the Store, so the unsigned bundle is what gets uploaded to Partner Center.
       - name: Sign (sideload)
-        if: ${{ secrets.SIGNING_PFX_BASE64 != '' }}
+        if: env.SIGNING_PFX_BASE64 != ''
         shell: pwsh
         run: |
-          [IO.File]::WriteAllBytes('signing.pfx', [Convert]::FromBase64String('${{ secrets.SIGNING_PFX_BASE64 }}'))
+          [IO.File]::WriteAllBytes('signing.pfx', [Convert]::FromBase64String($env:SIGNING_PFX_BASE64))
           Copy-Item "bundle/MyStreamTimer_${{ steps.bundle.outputs.version }}.msixbundle" "bundle/MyStreamTimer_${{ steps.bundle.outputs.version }}_sideload.msixbundle"
-          winapp sign "bundle/MyStreamTimer_${{ steps.bundle.outputs.version }}_sideload.msixbundle" --cert signing.pfx --password '${{ secrets.SIGNING_PFX_PASSWORD }}' --timestamp http://timestamp.digicert.com --quiet
+          winapp sign "bundle/MyStreamTimer_${{ steps.bundle.outputs.version }}_sideload.msixbundle" --cert signing.pfx --password $env:SIGNING_PFX_PASSWORD --timestamp http://timestamp.digicert.com --quiet
           Remove-Item signing.pfx
 
       - name: Upload to Microsoft Store (flight)
-        if: ${{ secrets.STORE_TENANT_ID != '' }}
+        if: env.MSSTORE_TENANT != ''
         uses: microsoft/setup-msstore-cli@v1
       - name: Store publish
-        if: ${{ secrets.STORE_TENANT_ID != '' }}
+        if: env.MSSTORE_TENANT != ''
         shell: pwsh
         env:
           MSSTORE_TENANT: ${{ secrets.STORE_TENANT_ID }}
           MSSTORE_SELLER: ${{ secrets.STORE_SELLER_ID }}
           MSSTORE_CLIENT: ${{ secrets.STORE_CLIENT_ID }}
           MSSTORE_SECRET: ${{ secrets.STORE_CLIENT_SECRET }}
+          STORE_FLIGHT_ID: ${{ vars.STORE_FLIGHT_ID }}
         run: |
           msstore reconfigure --tenantId $env:MSSTORE_TENANT --sellerId $env:MSSTORE_SELLER --clientId $env:MSSTORE_CLIENT --clientSecret $env:MSSTORE_SECRET
           # 9N5NXX3WK7K7 = My Stream Timer. Flight id is configured in Partner Center; omit --flightId for production.
-          msstore publish "bundle/MyStreamTimer_${{ steps.bundle.outputs.version }}.msixbundle" --appId 9N5NXX3WK7K7 ${{ vars.STORE_FLIGHT_ID != '' && format('--flightId {0}', vars.STORE_FLIGHT_ID) || '' }}
+          msstore publish "bundle/MyStreamTimer_${{ steps.bundle.outputs.version }}.msixbundle" --appId 9N5NXX3WK7K7 $(if ($env:STORE_FLIGHT_ID) { "--flightId $env:STORE_FLIGHT_ID" })
 
       - name: GitHub Release
         uses: softprops/action-gh-release@v2
@@ -129,3 +134,4 @@ jobs:
             bundle/*.msixbundle
           generate_release_notes: true
           draft: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
