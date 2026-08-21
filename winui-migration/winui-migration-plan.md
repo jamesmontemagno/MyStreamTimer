@@ -7,7 +7,7 @@
 
 ## ▶ Resume here (last updated 2026‑08‑20 late, branch `winui-rewrite`, draft PR [#82](https://github.com/jamesmontemagno/MyStreamTimer/pull/82))
 
-**Where we are:** Phases 0–5 complete. Gates for 4/5 mostly run (a11y audit ✅, dark ✅, welcome‑back‑on‑upgrade ✅). Code review round 1 done and fixed (P8‑1). CI green (tests + x64/ARM64 Release builds with Store identity). A signed x64 `.msix` with the **Store identity** can be produced locally (`artifacts/`, git‑ignored).
+**Where we are:** Phases 0–5 complete. **Manual shipping steps are consolidated in [`winui-left-todo.md`](winui-left-todo.md).** Gates for 4/5 mostly run (a11y audit ✅, dark ✅, welcome‑back‑on‑upgrade ✅). Code review round 1 done and fixed (P8‑1). CI green (tests + x64/ARM64 Release builds with Store identity). A signed x64 `.msix` with the **Store identity** can be produced locally (`artifacts/`, git‑ignored).
 
 **How to run:** `cd src\MyStreamTimer.WinUI` → `& "$env:USERPROFILE\.copilot\installed-plugins\win-dev-skills\winui\skills\winui-dev-workflow\BuildAndRun.ps1"` (Debug = Dev identity, protocol `mystreamtimer-dev://`). Tests: `dotnet test tests\MyStreamTimer.Core.Tests -c Release`. UI smoke + a11y audit: `.\winui-migration\ui-smoke.ps1` (app running). Solution: `MyStreamTimer.slnx`.
 
@@ -357,6 +357,7 @@ Query precedence (first match wins, query lower‑cased): `?mins=` → `?secs=` 
 7. Pro: `IsGold` etc. honoured offline; Pro page shows "unlocked".
 8. Stay on top / theme / pop‑outs function; settings persist after restart.
 9. Uninstall → reinstall 3.0 → settings gone (expected), no crash.
+
 
 
 
