@@ -50,7 +50,7 @@ jobs:
           dotnet-version: 10.0.x
       - uses: microsoft/setup-WinAppCli@v0.2
       - name: Restore
-        run: dotnet restore src/MyStreamTimer.WinUI/MyStreamTimer.WinUI.csproj -p:Platform=${{ matrix.platform }} -r ${{ matrix.rid }}
+        run: dotnet restore src/MyStreamTimer.WinUI/MyStreamTimer.WinUI.csproj -p:Platform=${{ matrix.platform }} -r ${{ matrix.rid }} -p:PublishReadyToRun=true
       - name: Build
         run: dotnet build src/MyStreamTimer.WinUI/MyStreamTimer.WinUI.csproj -c Release -p:Platform=${{ matrix.platform }} -r ${{ matrix.rid }} --no-restore
       - name: Dev certificate
@@ -64,6 +64,7 @@ jobs:
         with:
           name: msix-${{ matrix.platform }}
           path: artifacts/*.msix
+
 
 
 

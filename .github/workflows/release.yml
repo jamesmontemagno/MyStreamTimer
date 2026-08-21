@@ -61,7 +61,9 @@ jobs:
           (Get-Content $m -Raw) -replace 'Version="\d+\.\d+\.\d+\.\d+"', 'Version="${{ steps.ver.outputs.version }}"' | Set-Content $m -Encoding utf8
 
       - name: Build (Release, Store identity)
-        run: dotnet build ${{ env.PROJECT }} -c Release -p:Platform=${{ matrix.platform }} -r ${{ matrix.rid }} -p:UseDevIdentity=false
+        run: |
+          dotnet restore ${{ env.PROJECT }} -p:Platform=${{ matrix.platform }} -r ${{ matrix.rid }} -p:PublishReadyToRun=true
+          dotnet build ${{ env.PROJECT }} -c Release -p:Platform=${{ matrix.platform }} -r ${{ matrix.rid }} -p:UseDevIdentity=false --no-restore
 
       - name: Package
         shell: pwsh
