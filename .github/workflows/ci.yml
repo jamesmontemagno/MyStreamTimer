@@ -53,11 +53,12 @@ jobs:
         run: dotnet restore src/MyStreamTimer.WinUI/MyStreamTimer.WinUI.csproj -p:Platform=${{ matrix.platform }} -r ${{ matrix.rid }} -p:PublishReadyToRun=true
       - name: Build
         run: dotnet build src/MyStreamTimer.WinUI/MyStreamTimer.WinUI.csproj -c Release -p:Platform=${{ matrix.platform }} -r ${{ matrix.rid }} --no-restore
-      - name: Dev certificate
-        run: winapp cert generate --manifest src/MyStreamTimer.WinUI --output devcert.pfx --if-exists skip --quiet
       - name: Package (dev-signed)
         run: |
           $out = Get-ChildItem -Directory -Path src/MyStreamTimer.WinUI/bin -Recurse | Where-Object { $_.FullName -match 'Release' -and (Test-Path (Join-Path $_.FullName 'MyStreamTimer.exe')) } | Select-Object -First 1
+          # generate the cert from the *built* manifest so the subject matches the package publisher
+          winapp cert generate --manifest (Join-Path $out.FullName 'appxmanifest.xml') --output devcert.pfx --if-exists skip --quiet
+          New-Item -ItemType Directory -Force artifacts | Out-Null
           winapp package $out.FullName --cert devcert.pfx --output artifacts/MyStreamTimer-${{ matrix.platform }}.msix --quiet
         shell: pwsh
       - uses: actions/upload-artifact@v4

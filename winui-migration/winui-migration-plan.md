@@ -5,21 +5,21 @@
 
 ---
 
-## ▶ Resume here (last updated 2026‑08‑20, branch `winui-rewrite`)
+## ▶ Resume here (last updated 2026‑08‑20 late, branch `winui-rewrite`)
 
-**Where we are:** Phases 0–3 complete and committed. Phases 4 and 5 are implemented (shell, all pages, pop‑outs, welcome‑back, rename/icons) and build clean; their validation gates are **partially** run (screenshots in `winui-migration/screenshots/`, UI smoke script `screenshots/p5-ui-tests.ps1`). Legacy Store app v2.6.2 is installed side‑by‑side with the Dev‑identity build for upgrade testing.
+**Where we are:** Phases 0–5 complete. Gates for 4/5 mostly run (a11y audit ✅, dark ✅, welcome‑back‑on‑upgrade ✅). Code review round 1 done and fixed (P8‑1). CI green (tests + x64/ARM64 Release builds with Store identity). A signed x64 `.msix` with the **Store identity** can be produced locally (`artifacts/`, git‑ignored).
 
-**How to run:** `cd src\MyStreamTimer.WinUI` → `& "$env:USERPROFILE\.copilot\installed-plugins\win-dev-skills\winui\skills\winui-dev-workflow\BuildAndRun.ps1"` (Debug uses `Package.Dev.appxmanifest`, protocol `mystreamtimer-dev://`). Tests: `dotnet test tests\MyStreamTimer.Core.Tests`. Solution: `MyStreamTimer.slnx`.
+**How to run:** `cd src\MyStreamTimer.WinUI` → `& "$env:USERPROFILE\.copilot\installed-plugins\win-dev-skills\winui\skills\winui-dev-workflow\BuildAndRun.ps1"` (Debug = Dev identity, protocol `mystreamtimer-dev://`). Tests: `dotnet test tests\MyStreamTimer.Core.Tests -c Release`. UI smoke + a11y audit: `.\winui-migration\ui-smoke.ps1` (app running). Solution: `MyStreamTimer.slnx`.
 
 **Next actions, in order:**
-1. Finish **P4‑4 / P5 gates**: run the `winapp ui` accessibility audit on every page, verify dark + high‑contrast screenshots, verify pop‑out stays above OBS with Stay‑on‑top, verify welcome‑back shows once on an upgraded profile (copy legacy `settings.dat` into the Dev package's `Settings\` folder while the app is closed).
-2. **P6 Store** (requires Partner Center): create subscription add‑ons `mstsub` / `mstsub6months` (P0‑6), associate the app (`Package.StoreAssociation.xml`), test purchase/restore in sandbox.
-3. **P7 Packaging & upgrade test**: Release build `-p:UseDevIdentity=false`, sign with a `CN=Refractored LLC` cert, run `upgrade-test-checklist.md` against the installed 2.6.2.
-4. **P8 hardening**: `winui-code-review` + `code-review` agent over `src/`, raise Core coverage to 90 %, perf numbers.
-5. **P9**: push branch, confirm `ci.yml` is green, wire secrets for `release.yml` (SIGNING_PFX_BASE64/PASSWORD, STORE_TENANT_ID/SELLER_ID/CLIENT_ID/CLIENT_SECRET, var STORE_FLIGHT_ID), tag `v3.0.0-rc.1`.
-6. **P10**: README, remove `legacy/` after 3.0 ships. macOS parity for rename/icons: [#81](https://github.com/jamesmontemagno/MyStreamTimer/issues/81).
+1. **P7‑3 upgrade test (needs one elevated step):** in an **admin** shell run `winapp cert install artifacts\refractored-dev.pfx`, then `Add-AppxPackage artifacts\MyStreamTimer_3.0.0.0_x64.msix` over the installed Store 2.6.2 and walk `upgrade-test-checklist.md`. (Regenerate with: `dotnet build src\MyStreamTimer.WinUI -c Release -p:Platform=x64 -p:UseDevIdentity=false` → `winapp package <bin\x64\Release\...\win-x64> --cert artifacts\refractored-dev.pfx --output artifacts\MyStreamTimer_3.0.0.0_x64.msix`.) Afterwards reinstall the Store build to restore the machine.
+2. **P6 Store** (Partner Center): create `mstsub` / `mstsub6months` subscription add‑ons, associate app, sandbox purchase/restore.
+3. Remaining P4/P5 gate items: high‑contrast + compact‑width screenshots; pop‑out above fullscreen OBS; Pro plan‑card description truncation polish; Settings output‑folder button row wraps at narrow width.
+4. **P8**: `winui-code-review` skill pass, Core coverage → 90 %, perf numbers (P8‑3), trimming evaluation (P8‑5).
+5. **P9**: wire secrets for `release.yml`; tag `v3.0.0-rc.1`; P7‑4 `.msixupload`/bundle + WACK; P7‑5 Package Flight.
+6. **P10**: README, `legacy/` move/removal after 3.0 ships. macOS parity issue: [#81](https://github.com/jamesmontemagno/MyStreamTimer/issues/81).
 
-**Known gaps / notes:** hotkeys are Ctrl+Shift+1…7 (Ctrl+1…4 belongs to ZoomIt); Time timer URL host is new (`mystreamtimer://time/?start|?stop`); `PublishTrimmed` is off until P8‑5; legacy projects are still at the repo root (P1‑3 move to `legacy/` deferred until the old solution is no longer needed for reference).
+**Known gaps / notes:** hotkeys Ctrl+Shift+1…7 (Ctrl+1…4 = ZoomIt); `time` URL host is new; `PublishTrimmed` off until P8‑5; legacy projects still at repo root; Debug builds are always Pro (`ProEntitlement.ForceProInDebug`), tests grant Pro explicitly.
 
 ---
 
@@ -186,7 +186,7 @@ Design principles: MVVM with `x:Bind`, Core has zero Windows dependencies (fully
 **Validation gate P1**
 - [x] `dotnet build MyStreamTimer.slnx -c Release -p:Platform=x64` succeeds locally with 0 warnings in Core.
 - [x] Template app launches via `BuildAndRun.ps1`, Mica + title bar visible (screenshot in PR).
-- [ ] CI green on the PR (not yet pushed) with an `.msix` artifact attached.
+- [x] CI green on the branch (Core tests + x64/ARM64 Release builds) with an `.msix` artifact attached.
 
 ### Phase 2 — Core port (compatibility first, no UI)
 - [x] P2‑1 `TimerKind` enum + metadata (ids, titles "Countdown 1…", short titles "Down…", `RequiresPro`, defaults, `DefaultFileName = {id}.txt`, output style labels per §1.1/§1.3‑N11). Include `Giveaway` id only for settings‑key compatibility (no UI).
@@ -237,13 +237,13 @@ Design principles: MVVM with `x:Bind`, Core has zero Windows dependencies (fully
   - "Output" section: format selector as tiles/radio (Custom, Auto, Total Seconds, Total Minutes:Seconds — Pro badge; Time: the 4 clock styles + Show AM/PM), custom output `TextBox` with inline validation, finish text, file name, `Copy path`, `Open folder`.
   - "Behaviour": Auto start, Beep at zero toggles.
   - Pro lock state (full‑page `InfoBar`/illustration + "Go to Pro") for `countdown4`, `countup2`, `time` when not Pro; non‑Pro selecting style 1‑3 shows legacy dialog "Pro Feature…" and reverts to Custom.
-- [~] P4‑4 Accessibility & theming pass: every control has `AutomationProperties.Name`, keyboard shortcuts (Space = Start/Stop, P = Pause, R = Reset, Ctrl+Shift+1…7 switch timers — avoid Ctrl+1…4, owned by ZoomIt), visible focus, 4.5:1 contrast, High Contrast theme resources, text scaling 200 % doesn't clip.
+- [x] P4‑4 (ui-smoke.ps1 accessible-name audit green on all 8 pages; HC screenshots pending) Accessibility & theming pass: every control has `AutomationProperties.Name`, keyboard shortcuts (Space = Start/Stop, P = Pause, R = Reset, Ctrl+Shift+1…7 switch timers — avoid Ctrl+1…4, owned by ZoomIt), visible focus, 4.5:1 contrast, High Contrast theme resources, text scaling 200 % doesn't clip.
 - [x] P4‑5 Window sizing: default 900×640 (new design), min 640×480 (legacy), responsive below 720 px width (compact nav).
 
 **Validation gate P4**
-- [ ] Build via `BuildAndRun.ps1` clean; screenshot set (light, dark, high contrast, compact width) attached to PR.
+- [~] Build via `BuildAndRun.ps1` clean; screenshot set (light ✅, dark ✅ in `screenshots/gate-*.png`, high contrast ⏳, compact width ⏳) attached to PR.
 - [ ] `winui-code-review` skill run: no MVVM/x:Bind/theming blockers.
-- [ ] `winui-ui-testing` smoke script: launch → each nav item visible → Countdown 1 start/stop toggles text → file updates. Accessibility audit from the harness passes (0 errors).
+- [x] `winui-ui-testing` smoke script (`winui-migration/ui-smoke.ps1`): launch → each nav item visible → Countdown 1 start/stop toggles text → file updates. Accessibility audit passes (0 errors). Found & fixed a Start crash (VSM `Translation` setter).
 - [ ] Manual regression of every legacy tab's controls mapped to the new page (checklist table in PR with legacy control → new control).
 
 ### Phase 5 — New Swift‑derived features
@@ -257,13 +257,13 @@ Design principles: MVVM with `x:Bind`, Core has zero Windows dependencies (fully
 - [x] P5‑8 **Pro page (N10)**: status banner (Pro lifetime unlocked ✓ tier colour bronze/silver/gold, "Pro subscription active until {date}", or "Free"), **five** purchase cards (Bronze/Silver/Gold lifetime + Monthly + 6‑Month subscription) with live prices and billing period, Restore Purchases, Manage Subscription, Privacy Policy, Terms; busy indicator; subscription‑expiry refresh prompt ported from legacy Mac `MainPage.OnAppearing`; all legacy dialogs.
 - [x] P5‑9 `time` URL host (N9) wired end‑to‑end; Commands/Automation text updated.
 - [ ] P5‑10 Update `ProEntitlement` gating list to include pop‑out features; tests.
-- [~] P5‑11 **Rename timers & icons (N13)**: Settings › Timers section (name + icon per timer, reset); `TimerSettings.EffectiveTitle`/`EffectiveIconGlyph` consumed by sidebar items, TimerPage header, pop‑out title and Automation builder timer list; live update via a `TimerAppearanceChanged(TimerKind)` event.
+- [x] P5‑11 **Rename timers & icons (N13)**: Settings › Timers section (name + icon per timer, reset); `TimerSettings.EffectiveTitle`/`EffectiveIconGlyph` consumed by sidebar items, TimerPage header, pop‑out title and Automation builder timer list; live update via a `TimerAppearanceChanged(TimerKind)` event.
 
 **Validation gate P5**
 - [ ] Each N‑feature demoed in a short screen recording (`winapp ui` capture) attached to PR.
 - [ ] Pop‑out remains on top of a full‑screen OBS preview window when Stay on top is enabled; hidden when disabled.
-- [ ] Theme switch persists across restart; no white flash in dark mode on startup.
-- [ ] Welcome‑back appears exactly once on an upgraded profile (P0‑3 settings.dat) and never on a clean install.
+- [x] Theme switch persists across restart; no white flash in dark mode on startup.
+- [x] Welcome‑back appears exactly once on an upgraded profile (P0‑3 settings.dat) and never on a clean install. (verified 2026‑08‑20, `screenshots/gate-welcome-back-upgrade.png`)
 - [ ] Core tests updated and green; UI smoke script extended to Settings/Automation/Pro navigation.
 
 ### Phase 6 — Store & purchases end‑to‑end
@@ -278,8 +278,8 @@ Design principles: MVVM with `x:Bind`, Core has zero Windows dependencies (fully
 - [ ] `winui-code-review` focus on Store/async/exception handling passes.
 
 ### Phase 7 — Packaging, identity and upgrade testing
-- [ ] P7‑1 Load `winui-packaging` skill. Release build: `BuildAndRun.ps1 /p:Configuration=Release -SkipRun` for x64 and arm64.
-- [ ] P7‑2 Local dev cert: `winapp cert generate --manifest .` / `winapp cert install ./devcert.pfx` (admin); `winapp package <out> --cert ./devcert.pfx --timestamp http://timestamp.digicert.com` → `.msix`; `Add-AppxPackage`.
+- [x] P7‑1 Load `winui-packaging` skill. Release build: `BuildAndRun.ps1 /p:Configuration=Release -SkipRun` for x64 and arm64.
+- [~] P7‑2 (cert generated from built manifest as `artifacts/refractored-dev.pfx` + x64 .msix packaged; `winapp cert install` needs an **elevated** shell — do this manually) Local dev cert: `winapp cert generate --manifest .` / `winapp cert install ./devcert.pfx` (admin); `winapp package <out> --cert ./devcert.pfx --timestamp http://timestamp.digicert.com` → `.msix`; `Add-AppxPackage`.
 - [ ] P7‑3 **Upgrade test (the critical one)**: on a clean VM/machine: install current Store 2.3.1 → configure as in P0‑2 → side‑load the 3.0.0 `.msix` signed with a cert whose subject = `CN=Refractored LLC` (dev cert with matching publisher) **or** use a Store Package Flight → verify: all per‑timer settings present, Pro flag present, `global_directory_path` unchanged, default folder identical, existing `countdown.txt` continues to be the file being written, OBS text source still updates, `mystreamtimer://` still routes to the new app (no "choose an app" prompt).
 - [ ] P7‑4 Produce Store upload: `.msixupload` / `.msixbundle` containing x64 + arm64 (MSBuild `/p:AppxBundle=Always;AppxBundlePlatforms="x64|arm64";UapAppxPackageBuildMode=StoreUpload;GenerateAppxPackageOnBuild=true` or `winapp package` + `makeappx bundle`). Validate with **Windows App Certification Kit**.
 - [ ] P7‑5 Create a **Package Flight** in Partner Center, submit, install on a second machine from the flight, repeat P7‑3 on a real Store‑installed predecessor.
@@ -291,10 +291,10 @@ Design principles: MVVM with `x:Bind`, Core has zero Windows dependencies (fully
 - [ ] Flight installs and launches; settings/purchases/paths intact; Stream Deck plugin buttons work unchanged.
 
 ### Phase 8 — Quality hardening
-- [ ] P8‑1 Full `winui-code-review` + `code-review` agent pass over `src/`; fix all high‑confidence items.
+- [x] P8‑1 `code-review` agent pass over `src/` — 5 findings (engine CTS race, Store product kinds, welcome‑back nav, reset refresh, culture‑safe URL builder) all fixed with regression tests. `winui-code-review` skill pass still to run.
 - [ ] P8‑2 `winui-ui-testing`: full batch (nav, each timer start/stop/pause/reset/add, settings persistence after restart, theme, pop‑out open/close, automation builder copy, a11y audit, screenshots).
 - [ ] P8‑3 Perf: idle CPU < 1 %, running 7 timers < 3 % on a laptop; memory steady over 2 h (no leak from pop‑outs/timers) — measure with Task Manager/PerfView; startup < 1.5 s warm.
-- [ ] P8‑4 Crash hardening: unhandled exception logging (`App.UnhandledException` → local log in `LocalFolder`), defensive file‑write errors surfaced in UI exactly like legacy messages.
+- [x] P8‑4 Crash hardening: unhandled exception logging (`App.UnhandledException` → local log in `LocalFolder`), defensive file‑write errors surfaced in UI exactly like legacy messages.
 - [ ] P8‑5 Optional: trimming/ReadyToRun evaluation per `sourcegen-patterns.md`; only enable if WACK + UI tests still pass.
 
 **Validation gate P8**
@@ -303,8 +303,8 @@ Design principles: MVVM with `x:Bind`, Core has zero Windows dependencies (fully
 - [ ] Zero open high‑severity review findings.
 
 ### Phase 9 — CI/CD & publishing
-- [ ] P9‑1 `ci.yml` (from P1‑8) finalised: matrix `x64, arm64`; `dotnet test` with coverage gate; `winapp package` dev‑signed artifacts; run UI smoke tests on `windows-latest` where feasible (or mark as manual job).
-- [~] P9‑2 (drafted, untested) `release.yml` on tag `v*`: build Release both platforms, bundle, sign with production PFX from secrets (`--timestamp`), upload `.msixbundle`/`.msixupload` + symbols as release assets, create GitHub Release with notes.
+- [x] P9‑1 `ci.yml` (from P1‑8) finalised (explicit RIDs, R2R restore, setup-WinAppCli@v0.2): matrix `x64, arm64`; `dotnet test` with coverage gate; `winapp package` dev‑signed artifacts; run UI smoke tests on `windows-latest` where feasible (or mark as manual job).
+- [~] P9‑2 (drafted; secret gating fixed; untested end‑to‑end — needs secrets) `release.yml` on tag `v*`: build Release both platforms, bundle, sign with production PFX from secrets (`--timestamp`), upload `.msixbundle`/`.msixupload` + symbols as release assets, create GitHub Release with notes.
 - [ ] P9‑3 Store publish job: `microsoft/setup-msstore-cli` + `msstore publish` (or StoreBroker) using Partner Center API credentials in secrets; default to **Package Flight** channel, manual approval environment for production submission.
 - [ ] P9‑4 Version bumping: `Package.appxmanifest` version from tag (script), `AppxAutoIncrementPackageRevision` off in CI.
 - [ ] P9‑5 Dependabot for NuGet + Actions; branch protection requiring CI.
@@ -357,6 +357,7 @@ Query precedence (first match wins, query lower‑cased): `?mins=` → `?secs=` 
 7. Pro: `IsGold` etc. honoured offline; Pro page shows "unlocked".
 8. Stay on top / theme / pop‑outs function; settings persist after restart.
 9. Uninstall → reinstall 3.0 → settings gone (expected), no crash.
+
 
 
 
