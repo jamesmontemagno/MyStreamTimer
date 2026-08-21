@@ -12,14 +12,14 @@
 **How to run:** `cd src\MyStreamTimer.WinUI` → `& "$env:USERPROFILE\.copilot\installed-plugins\win-dev-skills\winui\skills\winui-dev-workflow\BuildAndRun.ps1"` (Debug = Dev identity, protocol `mystreamtimer-dev://`). Tests: `dotnet test tests\MyStreamTimer.Core.Tests -c Release`. UI smoke + a11y audit: `.\winui-migration\ui-smoke.ps1` (app running). Solution: `MyStreamTimer.slnx`.
 
 **Next actions, in order:**
-1. **P7‑3 upgrade test (needs one elevated step):** in an **admin** shell run `winapp cert install artifacts\refractored-dev.pfx`, then `Add-AppxPackage artifacts\MyStreamTimer_3.0.0.0_x64.msix` over the installed Store 2.6.2 and walk `upgrade-test-checklist.md`. (Regenerate with: `dotnet build src\MyStreamTimer.WinUI -c Release -p:Platform=x64 -p:UseDevIdentity=false` → `winapp package <bin\x64\Release\...\win-x64> --cert artifacts\refractored-dev.pfx --output artifacts\MyStreamTimer_3.0.0.0_x64.msix`.) Afterwards reinstall the Store build to restore the machine.
+1. **P7‑3/P7‑4 (one elevated step):** from an **admin** PowerShell run `.\winui-migration\Run-UpgradeTest.ps1` — trusts the dev cert, runs **WACK** (`artifacts\wack.xml`), installs 3.0 over the Store 2.6.2 in place — then walk `upgrade-test-checklist.md`; finish with `-Restore`. A Store‑uploadable `artifacts\MyStreamTimer_3.0.0.0.msixbundle` (x64+ARM64, unsigned) is already built. (Regenerate with: `dotnet build src\MyStreamTimer.WinUI -c Release -p:Platform=x64 -p:UseDevIdentity=false` → `winapp package <bin\x64\Release\...\win-x64> --cert artifacts\refractored-dev.pfx --output artifacts\MyStreamTimer_3.0.0.0_x64.msix`.) Afterwards reinstall the Store build to restore the machine.
 2. **P6 Store** (Partner Center): create `mstsub` / `mstsub6months` subscription add‑ons, associate app, sandbox purchase/restore.
 3. ~~Polish: Pro plan‑card truncation; Settings folder button row~~ (done).
 4. **P8**: `winui-code-review` skill pass, Core coverage → 90 %, perf numbers (P8‑3), trimming evaluation (P8‑5).
 5. **P9**: wire secrets for `release.yml`; tag `v3.0.0-rc.1`; P7‑4 `.msixupload`/bundle + WACK; P7‑5 Package Flight.
 6. **P10**: README, `legacy/` move/removal after 3.0 ships. macOS parity issue: [#81](https://github.com/jamesmontemagno/MyStreamTimer/issues/81).
 
-**Known gaps / notes:** hotkeys Ctrl+Shift+1…7 (Ctrl+1…4 = ZoomIt); `time` URL host is new; `PublishTrimmed` off until P8‑5; legacy projects still at repo root; Debug builds are always Pro (`ProEntitlement.ForceProInDebug`), tests grant Pro explicitly.
+**Known gaps / notes:** hotkeys Ctrl+Shift+1…7 (Ctrl+1…4 = ZoomIt); `time` URL host is new; `PublishTrimmed` off until P8‑5; legacy Xamarin/UWP/Mac projects now under `legacy/` (old `.sln`s updated, kept read‑only until 3.0 ships — P10‑3 deletes them); Debug builds are always Pro (`ProEntitlement.ForceProInDebug`), tests grant Pro explicitly.
 
 ---
 
@@ -176,7 +176,7 @@ Design principles: MVVM with `x:Bind`, Core has zero Windows dependencies (fully
 ### Phase 1 — Solution scaffolding & build pipeline skeleton
 - [x] P1‑1 `dotnet new winui-mvvm -n MyStreamTimer.WinUI -o src/MyStreamTimer.WinUI` (latest WindowsAppSDK + CommunityToolkit.Mvvm; Mica + TitleBar + Frame navigation come with the template).
 - [x] P1‑2 `dotnet new classlib -n MyStreamTimer.Core -o src/MyStreamTimer.Core -f net10.0`; `dotnet new xunit -n MyStreamTimer.Core.Tests -o tests/MyStreamTimer.Core.Tests`; add project references; create `MyStreamTimer.sln` (`dotnet new sln`, `dotnet sln add …`). Keep `MyStreamTimer.All.sln` for legacy until Phase 10.
-- [ ] P1‑3 (deferred, see Resume notes) Move legacy projects to `legacy/` (git mv), fix `MyStreamTimer.All.sln` paths. Do **not** delete yet.
+- [x] P1‑3 Move legacy projects to `legacy/` (git mv), fix `MyStreamTimer.All.sln` paths. Do **not** delete yet.
 - [x] P1‑4 `Directory.Build.props`: `Nullable` enable, `ImplicitUsings`, `LangVersion latest`, `TreatWarningsAsErrors` for Core, analyzers (`Microsoft.WindowsAppSDK.Analyzers` from the winui-dev-workflow skill), `.editorconfig` already present (spaces, `var` everywhere, expression bodies).
 - [x] P1‑5 `Package.appxmanifest`: set Identity `23875RefractoredLLC.MyStreamTimer` / `CN=Refractored LLC` / `3.0.0.0`; `DisplayName`/`PublisherDisplayName`/`Description`/`BackgroundColor #169dcf` from legacy; `TargetDeviceFamily Windows.Desktop MinVersion 10.0.17763.0`; capabilities `internetClient` + `rescap:runFullTrust`; `uap:Protocol Name="mystreamtimer"` with display name/logo; copy tile/splash/store assets from `legacy/MyStreamTimer.UWP/Assets` (regenerate missing scales from `Art/Art1024.png`).
 - [x] P1‑6 Platforms: `x64;arm64` (+ `x86` optional). Never AnyCPU.
@@ -357,6 +357,7 @@ Query precedence (first match wins, query lower‑cased): `?mins=` → `?secs=` 
 7. Pro: `IsGold` etc. honoured offline; Pro page shows "unlocked".
 8. Stay on top / theme / pop‑outs function; settings persist after restart.
 9. Uninstall → reinstall 3.0 → settings gone (expected), no crash.
+
 
 
 
