@@ -49,6 +49,8 @@ public class TimerEngineTests
         var clock = new FakeClock();
         var files = new FakeFiles();
         var platform = new FakePlatform();
+        // CI runs tests in Release where DEBUG-forced Pro is off; grant Pro so Pro styles/kinds behave as configured.
+        global.IsGold = true;
         var engine = new TimerEngine(settings, global, new ProEntitlement(global), files, platform, clock);
         return (engine, clock, files, platform, settings);
     }
@@ -238,4 +240,5 @@ public class TimerEngineTests
         e.StartStop();
     }
 }
+
 
