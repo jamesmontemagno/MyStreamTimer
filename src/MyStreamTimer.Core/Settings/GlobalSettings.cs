@@ -57,8 +57,8 @@ public sealed class GlobalSettings
         set => store.Set(nameof(ProPriceDate), value);
     }
 
-    /// <summary>Windows default was <c>true</c> (macOS was false).</summary>
-    public bool StayOnTop { get => store.GetBool(nameof(StayOnTop), true); set => store.Set(nameof(StayOnTop), value); }
+    /// <summary>Legacy Windows default was <c>true</c>; 3.0 defaults to <c>false</c> (matches macOS). Users who stored a value keep it.</summary>
+    public bool StayOnTop { get => store.GetBool(nameof(StayOnTop), false); set => store.Set(nameof(StayOnTop), value); }
 
     public bool FirstRun { get => store.GetBool(nameof(FirstRun), true); set => store.Set(nameof(FirstRun), value); }
 
@@ -77,3 +77,4 @@ public sealed class GlobalSettings
     public string LastSelectedPage { get => store.GetString(nameof(LastSelectedPage), string.Empty); set => store.Set(nameof(LastSelectedPage), value); }
     public string MainWindowBounds { get => store.GetString(nameof(MainWindowBounds), string.Empty); set => store.Set(nameof(MainWindowBounds), value); }
 }
+

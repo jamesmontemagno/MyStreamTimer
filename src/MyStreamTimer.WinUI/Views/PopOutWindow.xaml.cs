@@ -198,10 +198,35 @@ public sealed partial class PopOutWindow : Window
         }
     }
 
+    private void OnRootPointerEntered(object sender, PointerRoutedEventArgs e)
+    {
+        HoverChrome.Opacity = 1;
+        HoverChrome.IsHitTestVisible = true;
+    }
+
+    private void OnRootPointerExited(object sender, PointerRoutedEventArgs e)
+    {
+        // PointerExited also fires when moving onto the close button; it stays inside Root's bounds so re-check.
+        var pos = e.GetCurrentPoint(Root).Position;
+        if (pos.X >= 0 && pos.Y >= 0 && pos.X < Root.ActualWidth && pos.Y < Root.ActualHeight)
+        {
+            return;
+        }
+
+        HoverChrome.Opacity = 0;
+        HoverChrome.IsHitTestVisible = false;
+    }
+
     private void OnRootPointerPressed(object sender, PointerRoutedEventArgs e)
     {
         var point = e.GetCurrentPoint(Root);
         if (!point.Properties.IsLeftButtonPressed)
+        {
+            return;
+        }
+
+        // The close button handles its own click; don't start a drag from it.
+        if (e.OriginalSource is DependencyObject source && IsInside(source, CloseButton))
         {
             return;
         }
@@ -228,6 +253,21 @@ public sealed partial class PopOutWindow : Window
     }
 
     private void OnCopyPathClick(object sender, RoutedEventArgs e) => _clipboard.SetText(ViewModel.FilePath);
+
+    private static bool IsInside(DependencyObject? node, DependencyObject ancestor)
+    {
+        while (node is not null)
+        {
+            if (ReferenceEquals(node, ancestor))
+            {
+                return true;
+            }
+
+            node = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetParent(node);
+        }
+
+        return false;
+    }
 
     private async void OnOpenFolderClick(object sender, RoutedEventArgs e) => await _launcher.OpenFolderAsync(ViewModel.FolderPath);
 

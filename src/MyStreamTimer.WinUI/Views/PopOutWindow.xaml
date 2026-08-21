@@ -14,6 +14,8 @@
         Background="{x:Bind ViewModel.Background, Mode=OneWay}"
         IsTabStop="True"
         KeyDown="OnRootKeyDown"
+        PointerEntered="OnRootPointerEntered"
+        PointerExited="OnRootPointerExited"
         PointerPressed="OnRootPointerPressed"
         UseSystemFocusVisuals="False">
 
@@ -79,6 +81,45 @@
                 TextTrimming="None"
                 TextWrapping="Wrap" />
         </Viewbox>
+
+        <!--  Hover chrome: grab bar + close. Fades in on pointer-over so the overlay stays clean for capture.  -->
+        <Grid
+            x:Name="HoverChrome"
+            VerticalAlignment="Top"
+            IsHitTestVisible="False"
+            Opacity="0">
+            <Grid.OpacityTransition>
+                <ScalarTransition Duration="0:0:0.15" />
+            </Grid.OpacityTransition>
+            <Border
+                x:Name="GrabBar"
+                Height="28"
+                Background="{ThemeResource LayerOnAcrylicFillColorDefaultBrush}"
+                ToolTipService.ToolTip="Drag to move">
+                <FontIcon
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    FontSize="14"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Glyph="&#xE76F;" />
+            </Border>
+            <Button
+                x:Name="CloseButton"
+                Width="36"
+                Height="28"
+                Padding="0"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Top"
+                AutomationProperties.AutomationId="PopOutCloseButton"
+                AutomationProperties.Name="Close pop-out"
+                Background="Transparent"
+                BorderThickness="0"
+                Click="OnCloseClick"
+                CornerRadius="0"
+                ToolTipService.ToolTip="Close (Esc)">
+                <FontIcon FontSize="10" Glyph="&#xE8BB;" />
+            </Button>
+        </Grid>
     </Grid>
 </Window>
 

@@ -385,26 +385,32 @@
                     <controls:SettingsCard
                         AutomationProperties.Name="Preview"
                         ContentAlignment="Vertical"
+                        HorizontalContentAlignment="Stretch"
                         Description="This is how the pop-out window will look."
                         Header="Preview"
                         Visibility="{x:Bind local:SettingsPage.BoolToVisibility(ViewModel.IsPro), Mode=OneWay}">
                         <Border
                             Height="120"
-                            MaxWidth="400"
                             Margin="0,8,0,0"
-                            HorizontalAlignment="Left"
+                            HorizontalAlignment="Stretch"
                             Background="{x:Bind ViewModel.BackgroundColorBrush, Mode=OneWay}"
                             BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                             BorderThickness="1"
                             CornerRadius="{StaticResource OverlayCornerRadius}">
-                            <Viewbox Margin="12" StretchDirection="DownOnly">
+                            <Viewbox
+                                Margin="12"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                StretchDirection="DownOnly">
                                 <TextBlock
                                     AutomationProperties.AutomationId="PopOutPreviewText"
+                                    HorizontalAlignment="Center"
                                     FontFamily="{x:Bind ViewModel.PreviewFontFamily, Mode=OneWay}"
                                     FontSize="{x:Bind ViewModel.PopOutFontSize, Mode=OneWay}"
                                     FontWeight="SemiBold"
                                     Foreground="{x:Bind ViewModel.TextColorBrush, Mode=OneWay}"
-                                    Text="12:34" />
+                                    Text="12:34"
+                                    TextAlignment="Center" />
                             </Viewbox>
                         </Border>
                     </controls:SettingsCard>
@@ -428,3 +434,4 @@
         </StackPanel>
     </ScrollViewer>
 </Page>
+

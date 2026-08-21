@@ -23,7 +23,7 @@
     <!-- Hero preview: large monospaced tabular numerals. -->
     <Style x:Key="HeroTextStyle" TargetType="TextBlock">
         <Setter Property="FontFamily" Value="Cascadia Mono, Consolas, Segoe UI" />
-        <Setter Property="FontSize" Value="56" />
+        <Setter Property="FontSize" Value="40" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="TextWrapping" Value="Wrap" />
         <Setter Property="IsTextSelectionEnabled" Value="True" />
@@ -61,3 +61,4 @@
         <Setter Property="MinHeight" Value="36" />
     </Style>
 </ResourceDictionary>
+

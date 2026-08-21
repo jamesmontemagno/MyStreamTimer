@@ -57,7 +57,7 @@ public class LegacySettingsTests
         var store = new InMemorySettingsStore();
         var global = new GlobalSettings(store, @"C:\default\MyStreamTimer");
         Assert.Equal(@"C:\default\MyStreamTimer", global.DirectoryPath);
-        Assert.True(global.StayOnTop);
+        Assert.False(global.StayOnTop); // 3.0 default; legacy fixture above still reads stored true
         Assert.True(global.CheckSubStatus);
         Assert.False(global.IsSubValid);
 

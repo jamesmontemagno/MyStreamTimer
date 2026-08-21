@@ -81,8 +81,8 @@
                     </VisualState.StateTriggers>
                     <VisualState.Setters>
                         <Setter Target="ContentPanel.Padding" Value="20,16,20,24" />
-                        <Setter Target="HeroText.FontSize" Value="40" />
-                        <Setter Target="HeroPreviewText.FontSize" Value="40" />
+                        <Setter Target="HeroText.FontSize" Value="30" />
+                        <Setter Target="HeroPreviewText.FontSize" Value="30" />
                     </VisualState.Setters>
                 </VisualState>
             </VisualStateGroup>
@@ -553,4 +553,5 @@
         </TeachingTip>
     </Grid>
 </Page>
+
 
