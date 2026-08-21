@@ -26,13 +26,19 @@
         </Style>
 
         <Style x:Key="DashboardActionButtonStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
-            <Setter Property="MinWidth" Value="72" />
+            <Setter Property="MinWidth" Value="0" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
             <Setter Property="MinHeight" Value="32" />
+        <Setter Property="Padding" Value="10,5" />
         </Style>
 
         <Style x:Key="DashboardPrimaryActionButtonStyle" TargetType="Button" BasedOn="{StaticResource AccentButtonStyle}">
-            <Setter Property="MinWidth" Value="72" />
+            <Setter Property="MinWidth" Value="0" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
             <Setter Property="MinHeight" Value="32" />
+        <Setter Property="Padding" Value="10,5" />
         </Style>
 
         <Style x:Key="DashboardIconButtonStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
@@ -171,14 +177,17 @@
                     <!-- Row 3: actions -->
                     <Grid Grid.Row="2" ColumnSpacing="8">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" MinWidth="0" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
 
                         <Button
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Center"
+                            MinWidth="0"
                             AutomationProperties.AutomationId="{x:Bind local:DashboardPage.AutomationId(Kind, 'StartStop')}"
                             AutomationProperties.Name="{x:Bind local:DashboardPage.ActionName(StartStopLabel, Title), Mode=OneWay}"
                             Command="{x:Bind StartStopCommand}"
@@ -415,7 +424,7 @@
                         <UniformGridLayout
                             ItemsStretch="Fill"
                             MinColumnSpacing="12"
-                            MinItemWidth="300"
+                            MinItemWidth="280"
                             MinRowSpacing="12" />
                     </ItemsRepeater.Layout>
                 </ItemsRepeater>
@@ -423,3 +432,5 @@
         </ScrollViewer>
     </Grid>
 </Page>
+
+

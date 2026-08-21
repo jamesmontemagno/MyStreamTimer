@@ -3,7 +3,7 @@
 **Silhouette:** Settings / developer-tool hybrid → `NavigationView` (Left, compact-collapsible) + card content. Reference: Windows Settings, Dev Home. Hero-style timer preview inside each timer page.
 
 ## Window
-- Main: default **900 × 640** DIP, minimum **640 × 480** (legacy min). Mica backdrop (`MicaBackdrop`, fallback `DesktopAcrylicBackdrop`), `ExtendsContentIntoTitleBar`, `TitleBar` control with app icon + "My Stream Timer" + (optional) running-timer pill.
+- Main: default **940 × 620** DIP (fits two dashboard columns with the nav pane open), centred on the work area and capped to 85 % of it; minimum **640 × 480** (legacy min). Restored bounds are clamped to the current display. Mica backdrop (`MicaBackdrop`, fallback `DesktopAcrylicBackdrop`), `ExtendsContentIntoTitleBar`, `TitleBar` control with app icon + "My Stream Timer" + (optional) running-timer pill.
 - Pop-out (per timer): default **400 × 160**, no title bar/border (`OverlappedPresenter.SetBorderAndTitleBar(false,false)`), `IsAlwaysOnTop` follows *Stay on top*, drag by content, remembers bounds, ESC/double-click closes, right-click `MenuFlyout` (Close, Reset size/position, Copy file path).
 - Responsive: `< 720` px → `PaneDisplayMode=LeftCompact`; timer page two-column sections collapse to one column `< 640`.
 
@@ -63,4 +63,5 @@ App icon, name, version (`x:Bind`), OSS blurb, link buttons (GitHub, X/Twitter, 
 - `ContentDialog` only for: destructive confirms (Reset all settings), blocking errors (invalid directory), welcome-back sheet.
 - Everything else: `Flyout` / `MenuFlyout` / `TeachingTip` / inline `InfoBar`.
 - Toast-style confirmations (copied/saved) → `TeachingTip` auto-dismiss 2 s or transient `InfoBar`.
+
 

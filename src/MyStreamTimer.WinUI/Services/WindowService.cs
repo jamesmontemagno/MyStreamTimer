@@ -18,8 +18,9 @@ namespace MyStreamTimer.WinUI.Services;
 /// </summary>
 public sealed class WindowService
 {
-    public const int DefaultWidth = 900;
-    public const int DefaultHeight = 640;
+    // 2 dashboard columns (2×300 + 12 gap) + page padding 72 + open nav pane 248 = 932 DIP.
+    public const int DefaultWidth = 940;
+    public const int DefaultHeight = 620;
     public const int MinWidth = 640;
     public const int MinHeight = 480;
 
@@ -63,8 +64,7 @@ public sealed class WindowService
 
         if (!TryRestoreBounds(window))
         {
-            var scale = GetScale(window);
-            window.AppWindow.Resize(new SizeInt32((int)(DefaultWidth * scale), (int)(DefaultHeight * scale)));
+            ApplyDefaultBounds(window);
         }
 
         ApplyBackdrop(window);
@@ -175,6 +175,18 @@ public sealed class WindowService
 
     // ---------- bounds persistence ("x,y,w,h" in physical pixels) ----------
 
+    /// <summary>Default size (DIP, DPI-scaled), capped to 85 % of the work area and centred on the display.</summary>
+    private static void ApplyDefaultBounds(Window window)
+    {
+        var scale = GetScale(window);
+        var area = DisplayArea.GetFromWindowId(window.AppWindow.Id, DisplayAreaFallback.Primary).WorkArea;
+        var width = Math.Min((int)(DefaultWidth * scale), (int)(area.Width * 0.85));
+        var height = Math.Min((int)(DefaultHeight * scale), (int)(area.Height * 0.85));
+        var x = area.X + (area.Width - width) / 2;
+        var y = area.Y + (area.Height - height) / 2;
+        window.AppWindow.MoveAndResize(new RectInt32(x, y, width, height));
+    }
+
     private bool TryRestoreBounds(Window window)
     {
         var parts = _settings.MainWindowBounds.Split(',');
@@ -198,14 +210,20 @@ public sealed class WindowService
             return false;
         }
 
-        // Only restore if the saved rectangle is (mostly) visible on a current display.
+        // Only restore if the saved rectangle is (mostly) visible on a current display; clamp to its work area
+        // so a size saved on a bigger monitor never overflows the current one.
         var area = DisplayArea.GetFromRect(rect, DisplayAreaFallback.None);
         if (area is null)
         {
             return false;
         }
 
-        window.AppWindow.MoveAndResize(rect);
+        var work = area.WorkArea;
+        var w = Math.Min(rect.Width, work.Width);
+        var h = Math.Min(rect.Height, work.Height);
+        var x = Math.Clamp(rect.X, work.X, Math.Max(work.X, work.X + work.Width - w));
+        var y = Math.Clamp(rect.Y, work.Y, Math.Max(work.Y, work.Y + work.Height - h));
+        window.AppWindow.MoveAndResize(new RectInt32(x, y, w, h));
         return true;
     }
 
@@ -250,3 +268,4 @@ public sealed class WindowService
     [DllImport("user32.dll")]
     private static extern uint GetDpiForWindow(nint hWnd);
 }
+
