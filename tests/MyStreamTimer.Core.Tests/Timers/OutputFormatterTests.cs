@@ -82,3 +82,4 @@ public class OutputFormatterTests
         finally { Thread.CurrentThread.CurrentCulture = prev; }
     }
 }
+

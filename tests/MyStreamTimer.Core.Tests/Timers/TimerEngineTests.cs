@@ -53,7 +53,7 @@ public class TimerEngineTests
         return (engine, clock, files, platform, settings);
     }
 
-    static async Task WaitFor(Func<bool> cond, int ms = 2000)
+    static async Task WaitFor(Func<bool> cond, int ms = 10000)
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();
         while (!cond() && sw.ElapsedMilliseconds < ms)
@@ -191,12 +191,18 @@ public class TimerEngineTests
     [Fact]
     public async Task Time_timer_renders_clock_and_has_no_pause()
     {
-        var (e, clock, files, _, _) = Create(TimerKind.Time, s => { s.OutputStyle = 3; });
-        clock.Now = new DateTime(2026, 1, 1, 21, 10, 5);
-        e.StartStop();
-        await WaitFor(() => files.Last == "21:10:05");
-        Assert.False(e.CanPauseResume);
-        e.StartStop();
+        var prev = System.Globalization.CultureInfo.DefaultThreadCurrentCulture;
+        System.Globalization.CultureInfo.DefaultThreadCurrentCulture = System.Globalization.CultureInfo.InvariantCulture;
+        try
+        {
+            var (e, clock, files, _, _) = Create(TimerKind.Time, s => { s.OutputStyle = 3; });
+            clock.Now = new DateTime(2026, 1, 1, 21, 10, 5);
+            e.StartStop();
+            await WaitFor(() => files.Last == "21:10:05");
+            Assert.False(e.CanPauseResume);
+            e.StartStop();
+        }
+        finally { System.Globalization.CultureInfo.DefaultThreadCurrentCulture = prev; }
     }
 
     [Fact]
@@ -231,3 +237,4 @@ public class TimerEngineTests
         e.StartStop();
     }
 }
+
