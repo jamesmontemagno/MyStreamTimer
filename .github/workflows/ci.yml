@@ -38,7 +38,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ x64, ARM64 ]
+        include:
+          - platform: x64
+            rid: win-x64
+          - platform: ARM64
+            rid: win-arm64
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -46,9 +50,9 @@ jobs:
           dotnet-version: 10.0.x
       - uses: microsoft/setup-WinAppCli@v0.2
       - name: Restore
-        run: dotnet restore src/MyStreamTimer.WinUI/MyStreamTimer.WinUI.csproj -p:Platform=${{ matrix.platform }}
+        run: dotnet restore src/MyStreamTimer.WinUI/MyStreamTimer.WinUI.csproj -p:Platform=${{ matrix.platform }} -r ${{ matrix.rid }}
       - name: Build
-        run: dotnet build src/MyStreamTimer.WinUI/MyStreamTimer.WinUI.csproj -c Release -p:Platform=${{ matrix.platform }} --no-restore
+        run: dotnet build src/MyStreamTimer.WinUI/MyStreamTimer.WinUI.csproj -c Release -p:Platform=${{ matrix.platform }} -r ${{ matrix.rid }} --no-restore
       - name: Dev certificate
         run: winapp cert generate --manifest src/MyStreamTimer.WinUI --output devcert.pfx --if-exists skip --quiet
       - name: Package (dev-signed)
@@ -60,5 +64,6 @@ jobs:
         with:
           name: msix-${{ matrix.platform }}
           path: artifacts/*.msix
+
 
 
