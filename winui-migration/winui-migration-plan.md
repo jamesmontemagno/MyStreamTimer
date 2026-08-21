@@ -314,7 +314,7 @@ Design principles: MVVM with `x:Bind`, Core has zero Windows dependencies (fully
 - [ ] Flight install from the pipeline output passes the P7‑3 checklist.
 
 ### Phase 10 — Docs, cleanup, launch
-- [ ] P10‑1 README: replace App Center link (dead) with GitHub Releases + Store; document new features, automation grammar incl. `time`, troubleshooting (folder access, stay‑on‑top, pop‑outs), build instructions (`dotnet`, `winapp`, `BuildAndRun.ps1`).
+- [x] P10‑1 README: replace App Center link (dead) with GitHub Releases + Store; document new features, automation grammar incl. `time`, troubleshooting (folder access, stay‑on‑top, pop‑outs), build instructions (`dotnet`, `winapp`, `BuildAndRun.ps1`).
 - [ ] P10‑2 `winui-migration/` keeps this plan with all boxes checked + `design-spec.md` + `upgrade-test-checklist.md`.
 - [ ] P10‑3 Remove `legacy/` Xamarin/UWP projects and `MyStreamTimer.All.sln` once 3.0 is live for one release cycle (keep the Mac Swift and StreamDeck projects).
 - [ ] P10‑4 Stream Deck plugin: verify unchanged; optionally retarget to .NET 8 later (out of scope).
@@ -357,6 +357,7 @@ Query precedence (first match wins, query lower‑cased): `?mins=` → `?secs=` 
 7. Pro: `IsGold` etc. honoured offline; Pro page shows "unlocked".
 8. Stay on top / theme / pop‑outs function; settings persist after restart.
 9. Uninstall → reinstall 3.0 → settings gone (expected), no crash.
+
 
 
 

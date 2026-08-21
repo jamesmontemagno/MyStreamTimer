@@ -3,12 +3,25 @@ My Stream Timer is an easy to use countdown and count-up timer for streamers. Mu
 
 
 Download today on Windows or macOS:
-* Windows 10 via the [Microsoft Store](https://www.microsoft.com/p/my-stream-timer/9n5nxx3wk7k7?WT.mc_id=friends-0000-jamont)
-* macOS 10.10+ via the [App Store](https://itunes.apple.com/us/app/my-stream-timer/id1460539461?mt=12)
+* Windows 10 (1809+) / Windows 11 via the [Microsoft Store](https://www.microsoft.com/p/my-stream-timer/9n5nxx3wk7k7?WT.mc_id=friends-0000-jamont)
+* macOS via the [App Store](https://itunes.apple.com/us/app/my-stream-timer/id1460539461?mt=12)
 
 ![](Art/demo.png)
 
-Unable to download from the Microsoft Store on Windows? Download from [App Center](https://install.appcenter.ms/orgs/refractored-llc/apps/my-stream-timer/distribution_groups/public%20mystreamtimer)
+Unable to download from the Microsoft Store on Windows? Side‑loadable `.msixbundle` packages are attached to each [GitHub Release](https://github.com/jamesmontemagno/MyStreamTimer/releases).
+
+## What's new in 3.0 (Windows)
+
+My Stream Timer for Windows was rewritten from the ground up in **WinUI 3 / Windows App SDK** with a modern Fluent design. Everything you had configured before — timer settings, file names, output folder and Pro unlocks — carries over automatically.
+
+* Sidebar navigation, Mica, Light/Dark/System themes
+* **Rename timers and pick an icon** for each one (Settings › Timers)
+* **Pop‑out timer windows** (Pro) with custom font, size and colours — great on a second monitor or pinned over OBS
+* **Automation page** with a command builder that generates `mystreamtimer://` URLs for Stream Deck and scripts
+* Output folder management (choose, test access, open in Explorer), per‑timer **+1 / −1 minute**, keyboard shortcuts (Space start/stop, P pause, R reset, Ctrl+Shift+1…7 switch timers)
+* Pro **subscriptions** (monthly / 6 months) in addition to the lifetime tiers
+* New automation host: `mystreamtimer://time/?start` and `?stop` for the clock timer
+* Keeps your PC awake while a timer is running — no more "do not minimize" warning
 
 ## Integrating into OBS/SLOBS
 
@@ -43,8 +56,11 @@ Here are the list of commands:
 * mystreamtimer://countdown/?secs=90
 * mystreamtimer://countdown/?topofhour
 * mystreamtimer://countdown/?to=15:30
+* mystreamtimer://countdown/?addmins=1 · ?addsecs=30 · ?subtractmins=1 · ?subtractsecs=30
+* mystreamtimer://countdown/?pause · ?resume · ?reset · ?stop
+* mystreamtimer://time/?start · ?stop (clock timer, Pro)
 
-**countdown** can be replaced with: **countdown2**, **countdown3**, **countdown4** depending on which one you would like to start
+**countdown** can be replaced with: **countdown2**, **countdown3**, **countdown4**, **countup**, **countup2** depending on which one you would like to control. The Automation page in the app builds these URLs for you.
 
 ## Integrating into Deckboard (using an Extension App for Windows)
 If you do not own a Stream Deck but use other apps to control your stream, [Dara Oladapo](https://twitter.com/daraoladapo) created an extension app for Windows that he uses for Deckboard. You can check out the project [here](https://github.com/DaraOladapo/stream-deckboard) and web link [here](https://daraoladapo.github.io/stream-deckboard/).
@@ -52,6 +68,18 @@ If you do not own a Stream Deck but use other apps to control your stream, [Dara
 ## In Action
 
 View the walkthrough on [YouTube](https://youtu.be/j_GdGIdDRxI)
+
+## Building from source (Windows)
+
+Requires the .NET 10 SDK, the [WinApp CLI](https://aka.ms/winapp) and Developer Mode.
+
+```
+dotnet test tests\MyStreamTimer.Core.Tests
+dotnet build src\MyStreamTimer.WinUI\MyStreamTimer.WinUI.csproj -p:Platform=x64
+cd src\MyStreamTimer.WinUI && dotnet run
+```
+
+Debug builds install side‑by‑side with the Store app under a `*.Dev` identity (protocol `mystreamtimer-dev://`). Release builds use the Store identity. The migration plan, design spec and upgrade‑test checklist live in `winui-migration/`.
 
 ## Troubleshooting
 
@@ -64,5 +92,6 @@ In some instances My Stream Timer may need full file accessed based on your setu
 
 ### macOS: I dont' hear any "beeps"
 My Stream Timer uses the native device sound effects. This means you can make the beeps whatever you would like, but you have to turn them on. Head to **Preferences > Sound > Sound Effects**. Ensure that **Play user interface sound effects** is turned on and that it is set to playback through the speaker you would like to use.
+
 
 
