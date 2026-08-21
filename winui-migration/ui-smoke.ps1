@@ -5,7 +5,7 @@ param([int]$AppPid)
 $ErrorActionPreference = 'Stop'
 if (-not $AppPid) { $AppPid = (Get-Process MyStreamTimer | Select-Object -First 1).Id }
 # Target the main window explicitly so transient popups (tooltips/flyouts) never hijack the session.
-$hwnd = (winapp ui list-windows @T 2>$null | Select-String -Pattern 'HWND (\d+): "My Stream Timer"').Matches[0].Groups[1].Value
+$hwnd = (winapp ui list-windows -a $AppPid 2>$null | Select-String -Pattern 'HWND (\d+): "My Stream Timer"').Matches[0].Groups[1].Value
 if (-not $hwnd) { throw "Main window not found for PID $AppPid" }
 $T = @('-a', $AppPid, '-w', $hwnd)
 $shots = Join-Path $PSScriptRoot 'screenshots'
