@@ -25,7 +25,6 @@
                 <VisualState x:Name="HeroRunning">
                     <VisualState.Setters>
                         <Setter Target="HeroCard.BorderBrush" Value="{ThemeResource HeroCardBorderRunningBrush}" />
-                        <Setter Target="HeroCard.Translation" Value="0,0,24" />
                     </VisualState.Setters>
                 </VisualState>
                 <VisualState x:Name="HeroFinished">
@@ -554,3 +553,4 @@
         </TeachingTip>
     </Grid>
 </Page>
+

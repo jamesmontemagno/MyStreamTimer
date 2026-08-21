@@ -110,6 +110,9 @@ public sealed partial class TimerPage : Page
         VisualStateManager.GoToState(this, hero, useTransitions);
         VisualStateManager.GoToState(this, pill, useTransitions);
         VisualStateManager.GoToState(this, startStop, useTransitions);
+
+        // Elevation (ThemeShadow) cannot be set from a VisualState setter; lift the hero card while running.
+        HeroCard.Translation = vm.IsRunning ? new System.Numerics.Vector3(0, 0, 24) : System.Numerics.Vector3.Zero;
     }
 
     // ---------------- Time mode (Duration | Clock time) ----------------
