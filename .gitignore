@@ -296,3 +296,7 @@ __pycache__/
 *.xsd.cs
 **/*.DS_Store
 docs/en/ns-.xml
+TestResults/
+
+artifacts/
+

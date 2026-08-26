@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master, 'winui-*' ]
+    paths-ignore: [ '**.md', 'MyStreamTimer.MacSwift/**', 'MyStreamTimer.StreamDeck/**', 'legacy/**', '.github/workflows/windows-store-publish.yml', '.github/actions/**', 'scripts/**' ]
+  pull_request:
+    paths-ignore: [ '**.md', 'MyStreamTimer.MacSwift/**', 'MyStreamTimer.StreamDeck/**', 'legacy/**', '.github/workflows/windows-store-publish.yml', '.github/actions/**', 'scripts/**' ]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  core-tests:
+    name: Core tests
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+      - name: Restore
+        run: dotnet restore MyStreamTimer.slnx
+      - name: Test Core
+        run: dotnet test tests/MyStreamTimer.Core.Tests/MyStreamTimer.Core.Tests.csproj -c Release --no-restore --collect:"XPlat Code Coverage" --results-directory TestResults -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura
+      - name: Upload coverage
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage
+          path: TestResults/**/coverage.cobertura.xml
+
+  build-winui:
+    name: Build WinUI (${{ matrix.platform }})
+    runs-on: windows-latest
+    needs: core-tests
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: x64
+            rid: win-x64
+          - platform: ARM64
+            rid: win-arm64
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+      - uses: microsoft/setup-WinAppCli@v0.2
+      - name: Restore
+        run: dotnet restore src/MyStreamTimer.WinUI/MyStreamTimer.WinUI.csproj -p:Platform=${{ matrix.platform }} -r ${{ matrix.rid }} -p:PublishReadyToRun=true
+      - name: Build
+        run: dotnet build src/MyStreamTimer.WinUI/MyStreamTimer.WinUI.csproj -c Release -p:Platform=${{ matrix.platform }} -r ${{ matrix.rid }} --no-restore
+      - name: Package (dev-signed)
+        run: |
+          $out = Get-ChildItem -Directory -Path src/MyStreamTimer.WinUI/bin -Recurse | Where-Object { $_.FullName -match 'Release' -and (Test-Path (Join-Path $_.FullName 'MyStreamTimer.exe')) } | Select-Object -First 1
+          # generate the cert from the *built* manifest so the subject matches the package publisher
+          winapp cert generate --manifest (Join-Path $out.FullName 'appxmanifest.xml') --output devcert.pfx --if-exists skip --quiet
+          New-Item -ItemType Directory -Force artifacts | Out-Null
+          winapp package $out.FullName --cert devcert.pfx --output artifacts/MyStreamTimer-${{ matrix.platform }}.msix --quiet
+        shell: pwsh
+      - uses: actions/upload-artifact@v7
+        with:
+          name: msix-${{ matrix.platform }}
+          path: artifacts/*.msix
+
+
+
+

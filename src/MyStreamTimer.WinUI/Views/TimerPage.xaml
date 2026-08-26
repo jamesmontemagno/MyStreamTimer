@@ -1,0 +1,557 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Page
+    x:Class="MyStreamTimer.WinUI.Views.TimerPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:CommunityToolkit.WinUI.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:helpers="using:MyStreamTimer.WinUI.Helpers"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="using:CommunityToolkit.WinUI"
+    NavigationCacheMode="Required"
+    mc:Ignorable="d">
+
+    <Page.KeyboardAccelerators>
+        <KeyboardAccelerator Key="Space" Invoked="OnStartStopAccelerator" />
+        <KeyboardAccelerator Key="P" Invoked="OnPauseResumeAccelerator" />
+        <KeyboardAccelerator Key="R" Invoked="OnResetAccelerator" />
+    </Page.KeyboardAccelerators>
+
+    <Grid x:Name="RootGrid">
+        <VisualStateManager.VisualStateGroups>
+            <!-- Hero card chrome follows the timer state. -->
+            <VisualStateGroup x:Name="HeroStates">
+                <VisualState x:Name="HeroIdle" />
+                <VisualState x:Name="HeroRunning">
+                    <VisualState.Setters>
+                        <Setter Target="HeroCard.BorderBrush" Value="{ThemeResource HeroCardBorderRunningBrush}" />
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="HeroFinished">
+                    <VisualState.Setters>
+                        <Setter Target="HeroCard.BorderBrush" Value="{ThemeResource HeroCardBorderFinishedBrush}" />
+                        <Setter Target="HeroText.Foreground" Value="{ThemeResource SuccessTextBrush}" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+
+            <!-- Status pill colours. -->
+            <VisualStateGroup x:Name="PillStates">
+                <VisualState x:Name="PillIdle" />
+                <VisualState x:Name="PillRunning">
+                    <VisualState.Setters>
+                        <Setter Target="StatusPill.Background" Value="{ThemeResource StatusPillRunningBackgroundBrush}" />
+                        <Setter Target="StatusPillText.Foreground" Value="{ThemeResource StatusPillRunningForegroundBrush}" />
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="PillPaused">
+                    <VisualState.Setters>
+                        <Setter Target="StatusPill.Background" Value="{ThemeResource StatusPillPausedBackgroundBrush}" />
+                        <Setter Target="StatusPillText.Foreground" Value="{ThemeResource StatusPillPausedForegroundBrush}" />
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="PillFinished">
+                    <VisualState.Setters>
+                        <Setter Target="StatusPill.Background" Value="{ThemeResource StatusPillFinishedBackgroundBrush}" />
+                        <Setter Target="StatusPillText.Foreground" Value="{ThemeResource StatusPillFinishedForegroundBrush}" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+
+            <!-- Start is the accent call-to-action while idle; Stop is a regular button while running. -->
+            <VisualStateGroup x:Name="StartStopStates">
+                <VisualState x:Name="StartStopAccent" />
+                <VisualState x:Name="StartStopDefault">
+                    <VisualState.Setters>
+                        <Setter Target="StartStopButton.Style" Value="{StaticResource TimerActionButtonStyle}" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+
+            <!-- Stack the header vertically on narrow widths. -->
+            <VisualStateGroup x:Name="LayoutStates">
+                <VisualState x:Name="WideLayout">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="640" />
+                    </VisualState.StateTriggers>
+                </VisualState>
+                <VisualState x:Name="NarrowLayout">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="0" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="ContentPanel.Padding" Value="20,16,20,24" />
+                        <Setter Target="HeroText.FontSize" Value="30" />
+                        <Setter Target="HeroPreviewText.FontSize" Value="30" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+
+        <!-- Shadow receiver behind all content so the hero card's ThemeShadow has a surface to land on. -->
+        <Grid x:Name="ShadowReceiver" Background="Transparent" />
+
+        <ScrollViewer
+            x:Name="ContentScroller"
+            HorizontalScrollMode="Disabled"
+            VerticalScrollBarVisibility="Auto"
+            Visibility="{x:Bind helpers:Bind.ToVisibilityInverse(ViewModel.IsLocked), Mode=OneWay}">
+            <StackPanel
+                x:Name="ContentPanel"
+                MaxWidth="1000"
+                Padding="36,24,36,36"
+                HorizontalAlignment="Left"
+                Spacing="24">
+
+                <!-- ================= Header ================= -->
+                <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <FontIcon
+                        x:Name="TitleIcon"
+                        Margin="0,4,0,0"
+                        VerticalAlignment="Center"
+                        AutomationProperties.AccessibilityView="Raw"
+                        AutomationProperties.AutomationId="TimerTitleIcon"
+                        FontSize="24"
+                        Glyph="{x:Bind ViewModel.IconGlyph, Mode=OneWay}" />
+
+                    <TextBlock
+                        x:Name="TitleText"
+                        Grid.Column="1"
+                        AutomationProperties.AutomationId="TimerTitle"
+                        AutomationProperties.HeadingLevel="Level1"
+                        Style="{StaticResource TitleTextBlockStyle}"
+                        Text="{x:Bind ViewModel.Title, Mode=OneWay}"
+                        TextTrimming="CharacterEllipsis" />
+
+                    <Border
+                        x:Name="StatusPill"
+                        Grid.Column="2"
+                        Margin="0,6,0,0"
+                        AutomationProperties.AutomationId="StatusPill"
+                        Style="{StaticResource StatusPillStyle}">
+                        <TextBlock
+                            x:Name="StatusPillText"
+                            AutomationProperties.Name="Timer status"
+                            Style="{StaticResource StatusPillTextStyle}"
+                            Text="{x:Bind ViewModel.StatusText, Mode=OneWay}" />
+                    </Border>
+
+                    <CommandBar
+                        Grid.Column="4"
+                        VerticalAlignment="Center"
+                        AutomationProperties.AutomationId="TimerCommandBar"
+                        AutomationProperties.Name="Timer commands"
+                        Background="Transparent"
+                        DefaultLabelPosition="Right"
+                        IsOpen="False"
+                        OverflowButtonVisibility="Auto">
+                        <AppBarButton
+                            x:Name="PopOutButton"
+                            AutomationProperties.AutomationId="PopOutButton"
+                            AutomationProperties.Name="Pop-out timer window"
+                            Command="{x:Bind ViewModel.PopOutCommand, Mode=OneWay}"
+                            Icon="{ui:FontIcon Glyph=&#xE8A7;}"
+                            Label="Pop-out"
+                            ToolTipService.ToolTip="Open this timer in a floating window" />
+                        <AppBarButton
+                            AutomationProperties.AutomationId="OpenFolderButton"
+                            AutomationProperties.Name="Open output folder"
+                            Command="{x:Bind ViewModel.OpenFolderCommand, Mode=OneWay}"
+                            Icon="{ui:FontIcon Glyph=&#xE838;}"
+                            Label="Open folder"
+                            ToolTipService.ToolTip="Open the output folder in File Explorer" />
+                        <CommandBar.SecondaryCommands>
+                            <AppBarButton
+                                AutomationProperties.AutomationId="CopyFilePathMenuButton"
+                                AutomationProperties.Name="Copy file path"
+                                Command="{x:Bind ViewModel.CopyFilePathCommand, Mode=OneWay}"
+                                Icon="{ui:FontIcon Glyph=&#xE8C8;}"
+                                Label="Copy file path" />
+                            <AppBarButton
+                                AutomationProperties.AutomationId="CopyStartUrlMenuButton"
+                                AutomationProperties.Name="Copy start URL"
+                                Command="{x:Bind ViewModel.CopyStartUrlCommand, Mode=OneWay}"
+                                Icon="{ui:FontIcon Glyph=&#xE71B;}"
+                                Label="Copy start URL" />
+                        </CommandBar.SecondaryCommands>
+                    </CommandBar>
+                </Grid>
+
+                <!-- ================= Hero card ================= -->
+                <Border
+                    x:Name="HeroCard"
+                    MinHeight="180"
+                    Padding="32,28"
+                    AutomationProperties.AutomationId="HeroCard"
+                    BorderBrush="{ThemeResource HeroCardBorderBrush}"
+                    Style="{StaticResource CardStyle}">
+                    <Border.Shadow>
+                        <ThemeShadow x:Name="HeroShadow" />
+                    </Border.Shadow>
+                    <StackPanel Spacing="20">
+                        <Grid>
+                            <TextBlock
+                                x:Name="HeroText"
+                                AutomationProperties.AutomationId="HeroText"
+                                AutomationProperties.LiveSetting="Polite"
+                                AutomationProperties.Name="Timer text"
+                                Style="{StaticResource HeroTextStyle}"
+                                Text="{x:Bind ViewModel.LiveText, Mode=OneWay}"
+                                Visibility="{x:Bind helpers:Bind.ToVisibility(ViewModel.LiveText), Mode=OneWay}" />
+                            <TextBlock
+                                x:Name="HeroPreviewText"
+                                AutomationProperties.AutomationId="HeroPreviewText"
+                                AutomationProperties.Name="Timer preview"
+                                Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                Style="{StaticResource HeroTextStyle}"
+                                Text="{x:Bind ViewModel.PreviewText, Mode=OneWay}"
+                                Visibility="{x:Bind helpers:Bind.ToVisibilityInverse(ViewModel.LiveText), Mode=OneWay}" />
+                        </Grid>
+
+                        <InfoBar
+                            AutomationProperties.AutomationId="TimerErrorBar"
+                            IsClosable="False"
+                            IsOpen="{x:Bind ViewModel.HasError, Mode=OneWay}"
+                            Message="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
+                            Severity="Error"
+                            Title="Couldn't write the timer file" />
+
+                        <controls:WrapPanel
+                            x:Name="ActionPanel"
+                            HorizontalSpacing="8"
+                            VerticalSpacing="8">
+                            <Button
+                                x:Name="StartStopButton"
+                                AutomationProperties.AutomationId="StartStopButton"
+                                AutomationProperties.Name="{x:Bind ViewModel.StartStopLabel, Mode=OneWay}"
+                                Command="{x:Bind ViewModel.StartStopCommand, Mode=OneWay}"
+                                Content="{x:Bind ViewModel.StartStopLabel, Mode=OneWay}"
+                                Style="{StaticResource TimerPrimaryActionButtonStyle}"
+                                ToolTipService.ToolTip="Start or stop the timer (Space)" />
+                            <Button
+                                x:Name="PauseResumeButton"
+                                AutomationProperties.AutomationId="PauseResumeButton"
+                                AutomationProperties.Name="{x:Bind ViewModel.PauseResumeLabel, Mode=OneWay}"
+                                Command="{x:Bind ViewModel.PauseResumeCommand, Mode=OneWay}"
+                                Content="{x:Bind ViewModel.PauseResumeLabel, Mode=OneWay}"
+                                Style="{StaticResource TimerActionButtonStyle}"
+                                ToolTipService.ToolTip="Pause or resume the timer (P)"
+                                Visibility="{x:Bind helpers:Bind.ToVisibility(ViewModel.SupportsPauseResume), Mode=OneWay}" />
+                            <Button
+                                x:Name="SubtractMinuteButton"
+                                AutomationProperties.AutomationId="SubtractMinuteButton"
+                                AutomationProperties.Name="Subtract one minute"
+                                Command="{x:Bind ViewModel.SubtractMinuteCommand, Mode=OneWay}"
+                                Content="−1 min"
+                                Style="{StaticResource TimerActionButtonStyle}"
+                                Visibility="{x:Bind helpers:Bind.ToVisibility(ViewModel.IsNotTime), Mode=OneWay}" />
+                            <Button
+                                x:Name="AddMinuteButton"
+                                AutomationProperties.AutomationId="AddMinuteButton"
+                                AutomationProperties.Name="Add one minute"
+                                Command="{x:Bind ViewModel.AddMinuteCommand, Mode=OneWay}"
+                                Content="+1 min"
+                                Style="{StaticResource TimerActionButtonStyle}"
+                                Visibility="{x:Bind helpers:Bind.ToVisibility(ViewModel.IsNotTime), Mode=OneWay}" />
+                            <Button
+                                x:Name="ResetButton"
+                                AutomationProperties.AutomationId="ResetButton"
+                                AutomationProperties.Name="Reset timer"
+                                Command="{x:Bind ViewModel.ResetCommand, Mode=OneWay}"
+                                Content="Reset"
+                                Style="{StaticResource TimerActionButtonStyle}"
+                                ToolTipService.ToolTip="Restart from the configured duration (R)" />
+                        </controls:WrapPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- ================= Time (countdowns only) ================= -->
+                <StackPanel Spacing="8" Visibility="{x:Bind helpers:Bind.ToVisibility(ViewModel.IsCountdown), Mode=OneWay}">
+                    <TextBlock
+                        AutomationProperties.HeadingLevel="Level2"
+                        Style="{StaticResource SectionHeaderTextStyle}"
+                        Text="Time" />
+                    <Border Style="{StaticResource CardStyle}">
+                        <StackPanel Spacing="16">
+                            <SelectorBar
+                                x:Name="TimeModeSelector"
+                                AutomationProperties.AutomationId="TimeModeSelector"
+                                AutomationProperties.Name="Countdown mode"
+                                IsEnabled="{x:Bind ViewModel.CanEdit, Mode=OneWay}"
+                                SelectionChanged="OnTimeModeSelectionChanged">
+                                <SelectorBarItem
+                                    x:Name="DurationItem"
+                                    AutomationProperties.AutomationId="DurationModeItem"
+                                    AutomationProperties.Name="Duration"
+                                    Icon="{ui:FontIcon Glyph=&#xE916;}"
+                                    Text="Duration" />
+                                <SelectorBarItem
+                                    x:Name="ClockTimeItem"
+                                    AutomationProperties.AutomationId="ClockTimeModeItem"
+                                    AutomationProperties.Name="Clock time"
+                                    Icon="{ui:FontIcon Glyph=&#xE823;}"
+                                    Text="Clock time" />
+                            </SelectorBar>
+
+                            <StackPanel
+                                Orientation="Horizontal"
+                                Spacing="12"
+                                Visibility="{x:Bind helpers:Bind.ToVisibility(ViewModel.UseMinutes), Mode=OneWay}">
+                                <NumberBox
+                                    x:Name="MinutesBox"
+                                    MinWidth="180"
+                                    AutomationProperties.AutomationId="MinutesBox"
+                                    AutomationProperties.Name="Minutes"
+                                    Header="Minutes"
+                                    IsEnabled="{x:Bind ViewModel.CanEdit, Mode=OneWay}"
+                                    LargeChange="5"
+                                    Maximum="1000"
+                                    Minimum="0"
+                                    SmallChange="1"
+                                    SpinButtonPlacementMode="Inline"
+                                    ValidationMode="InvalidInputOverwritten"
+                                    Value="{x:Bind ViewModel.Minutes, Mode=TwoWay}" />
+                                <NumberBox
+                                    x:Name="SecondsBox"
+                                    MinWidth="180"
+                                    AutomationProperties.AutomationId="SecondsBox"
+                                    AutomationProperties.Name="Seconds"
+                                    Header="Seconds"
+                                    IsEnabled="{x:Bind ViewModel.CanEdit, Mode=OneWay}"
+                                    LargeChange="10"
+                                    Maximum="59"
+                                    Minimum="0"
+                                    SmallChange="1"
+                                    SpinButtonPlacementMode="Inline"
+                                    ValidationMode="InvalidInputOverwritten"
+                                    Value="{x:Bind ViewModel.Seconds, Mode=TwoWay}" />
+                            </StackPanel>
+
+                            <TimePicker
+                                x:Name="FinishAtPicker"
+                                AutomationProperties.AutomationId="FinishAtPicker"
+                                AutomationProperties.Name="Finish at"
+                                Header="Finish at"
+                                IsEnabled="{x:Bind ViewModel.CanEdit, Mode=OneWay}"
+                                Time="{x:Bind ViewModel.FinishAtTime, Mode=TwoWay}"
+                                Visibility="{x:Bind helpers:Bind.ToVisibility(ViewModel.UseClockTime), Mode=OneWay}" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- ================= Output ================= -->
+                <StackPanel Spacing="8">
+                    <TextBlock
+                        AutomationProperties.HeadingLevel="Level2"
+                        Style="{StaticResource SectionHeaderTextStyle}"
+                        Text="Output" />
+                    <controls:SettingsExpander
+                        x:Name="OutputExpander"
+                        AutomationProperties.AutomationId="OutputExpander"
+                        AutomationProperties.Name="Output format"
+                        Description="How the timer text is rendered into the output file"
+                        Header="Format"
+                        HeaderIcon="{ui:FontIcon Glyph=&#xE8D2;}"
+                        IsEnabled="{x:Bind ViewModel.CanEdit, Mode=OneWay}"
+                        IsExpanded="True">
+                        <ComboBox
+                            x:Name="FormatCombo"
+                            MinWidth="260"
+                            AutomationProperties.AutomationId="FormatCombo"
+                            AutomationProperties.Name="Output format"
+                            ItemsSource="{x:Bind ViewModel.OutputStyleOptions, Mode=OneWay}"
+                            SelectedIndex="{x:Bind ViewModel.OutputStyle, Mode=TwoWay}" />
+                        <controls:SettingsExpander.Items>
+                            <controls:SettingsCard
+                                AutomationProperties.AutomationId="CustomOutputCard"
+                                ContentAlignment="Vertical"
+                                Description="Use a .NET TimeSpan template — {0:hh\:mm\:ss} is the remaining time."
+                                Header="Custom output"
+                                Visibility="{x:Bind helpers:Bind.ToVisibility(ViewModel.IsCustomFormat), Mode=OneWay}">
+                                <StackPanel Spacing="8">
+                                    <TextBox
+                                        x:Name="OutputBox"
+                                        AutomationProperties.AutomationId="OutputBox"
+                                        AutomationProperties.Name="Custom output template"
+                                        FontFamily="Cascadia Mono, Consolas, Segoe UI"
+                                        PlaceholderText="Starting in {0:hh\:mm\:ss}"
+                                        Text="{x:Bind ViewModel.Output, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    <InfoBar
+                                        AutomationProperties.AutomationId="OutputValidationBar"
+                                        IsClosable="False"
+                                        IsOpen="{x:Bind ViewModel.HasValidationError, Mode=OneWay}"
+                                        Message="{x:Bind ViewModel.OutputValidationMessage, Mode=OneWay}"
+                                        Severity="Error"
+                                        Title="Invalid format" />
+                                </StackPanel>
+                            </controls:SettingsCard>
+
+                            <controls:SettingsCard
+                                AutomationProperties.AutomationId="FinishTextCard"
+                                Description="Written to the file when the countdown reaches zero"
+                                Header="Finish text"
+                                Visibility="{x:Bind helpers:Bind.ToVisibility(ViewModel.IsCountdown), Mode=OneWay}">
+                                <TextBox
+                                    x:Name="FinishBox"
+                                    MinWidth="260"
+                                    AutomationProperties.AutomationId="FinishBox"
+                                    AutomationProperties.Name="Finish text"
+                                    PlaceholderText="Let's do this!"
+                                    Text="{x:Bind ViewModel.Finish, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            </controls:SettingsCard>
+
+                            <controls:SettingsCard
+                                AutomationProperties.AutomationId="ShowAmPmCard"
+                                Description="Append AM or PM to the clock text"
+                                Header="Show AM/PM"
+                                Visibility="{x:Bind helpers:Bind.ToVisibility(ViewModel.IsTime), Mode=OneWay}">
+                                <ToggleSwitch
+                                    x:Name="ShowAmPmToggle"
+                                    AutomationProperties.AutomationId="ShowAmPmToggle"
+                                    AutomationProperties.Name="Show AM/PM"
+                                    IsOn="{x:Bind ViewModel.ShowAmPm, Mode=TwoWay}" />
+                            </controls:SettingsCard>
+
+                            <controls:SettingsCard
+                                AutomationProperties.AutomationId="FileNameCard"
+                                Description="Created in the output folder — add it as a Text (GDI+) source in OBS"
+                                Header="File name">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBox
+                                        x:Name="FileNameBox"
+                                        MinWidth="200"
+                                        AutomationProperties.AutomationId="FileNameBox"
+                                        AutomationProperties.Name="File name"
+                                        PlaceholderText="countdown.txt"
+                                        Text="{x:Bind ViewModel.FileName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    <Button
+                                        x:Name="CopyPathButton"
+                                        VerticalAlignment="Bottom"
+                                        AutomationProperties.AutomationId="CopyPathButton"
+                                        AutomationProperties.Name="Copy file path"
+                                        Command="{x:Bind ViewModel.CopyFilePathCommand, Mode=OneWay}"
+                                        ToolTipService.ToolTip="{x:Bind ViewModel.FilePath, Mode=OneWay}">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <FontIcon FontSize="14" Glyph="&#xE8C8;" />
+                                            <TextBlock Text="Copy path" />
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+                            </controls:SettingsCard>
+                        </controls:SettingsExpander.Items>
+                    </controls:SettingsExpander>
+                </StackPanel>
+
+                <!-- ================= Behavior ================= -->
+                <StackPanel Spacing="4">
+                    <TextBlock
+                        Margin="0,0,0,4"
+                        AutomationProperties.HeadingLevel="Level2"
+                        Style="{StaticResource SectionHeaderTextStyle}"
+                        Text="Behavior" />
+                    <controls:SettingsCard
+                        AutomationProperties.AutomationId="AutoStartCard"
+                        Description="Start this timer automatically when the app launches"
+                        Header="Auto start"
+                        HeaderIcon="{ui:FontIcon Glyph=&#xE768;}"
+                        IsEnabled="{x:Bind ViewModel.CanEdit, Mode=OneWay}">
+                        <ToggleSwitch
+                            x:Name="AutoStartToggle"
+                            AutomationProperties.AutomationId="AutoStartToggle"
+                            AutomationProperties.Name="Auto start"
+                            IsOn="{x:Bind ViewModel.AutoStart, Mode=TwoWay}" />
+                    </controls:SettingsCard>
+                    <controls:SettingsCard
+                        AutomationProperties.AutomationId="BeepCard"
+                        Description="Play a short beep when the timer reaches zero"
+                        Header="Beep at zero"
+                        HeaderIcon="{ui:FontIcon Glyph=&#xE995;}"
+                        IsEnabled="{x:Bind ViewModel.CanEdit, Mode=OneWay}"
+                        Visibility="{x:Bind helpers:Bind.ToVisibility(ViewModel.IsNotTime), Mode=OneWay}">
+                        <ToggleSwitch
+                            x:Name="BeepToggle"
+                            AutomationProperties.AutomationId="BeepToggle"
+                            AutomationProperties.Name="Beep at zero"
+                            IsOn="{x:Bind ViewModel.BeepAtZero, Mode=TwoWay}" />
+                    </controls:SettingsCard>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- ================= Locked (Pro) state ================= -->
+        <StackPanel
+            x:Name="LockedPanel"
+            MaxWidth="440"
+            Padding="36"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            AutomationProperties.AutomationId="LockedPanel"
+            Spacing="12"
+            Visibility="{x:Bind helpers:Bind.ToVisibility(ViewModel.IsLocked), Mode=OneWay}">
+            <FontIcon
+                Margin="0,0,0,8"
+                AutomationProperties.Name="Locked"
+                FontSize="56"
+                Foreground="{ThemeResource LockedIllustrationBrush}"
+                Glyph="&#xE72E;" />
+            <TextBlock
+                AutomationProperties.HeadingLevel="Level1"
+                HorizontalTextAlignment="Center"
+                Style="{StaticResource SubtitleTextBlockStyle}"
+                Text="{x:Bind ViewModel.LockedTitle, Mode=OneWay}" />
+            <TextBlock
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                HorizontalTextAlignment="Center"
+                Style="{StaticResource BodyTextBlockStyle}"
+                Text="Unlock Countdown 4, Count Up 2, Current Time, additional output formats and floating pop-out timers with My Stream Timer Pro. One purchase, every feature."
+                TextWrapping="Wrap" />
+            <Button
+                x:Name="SeeProButton"
+                Margin="0,12,0,0"
+                HorizontalAlignment="Center"
+                AutomationProperties.AutomationId="SeeProButton"
+                AutomationProperties.Name="See Pro options"
+                Click="OnSeeProClick"
+                Content="See Pro options"
+                Style="{StaticResource AccentButtonStyle}" />
+        </StackPanel>
+
+        <!-- ================= Transient feedback ================= -->
+        <TeachingTip
+            x:Name="CopiedTip"
+            Title="Path copied"
+            AutomationProperties.AutomationId="CopiedTip"
+            IsLightDismissEnabled="True"
+            PreferredPlacement="Top"
+            Subtitle="Paste it into OBS, Streamlabs or any text source.">
+            <TeachingTip.IconSource>
+                <FontIconSource Glyph="&#xE73E;" />
+            </TeachingTip.IconSource>
+        </TeachingTip>
+
+        <TeachingTip
+            x:Name="ProTip"
+            Title="Pro feature"
+            ActionButtonClick="OnProTipActionClick"
+            ActionButtonContent="See Pro options"
+            AutomationProperties.AutomationId="ProTip"
+            CloseButtonContent="Not now"
+            IsLightDismissEnabled="True"
+            PreferredPlacement="Bottom"
+            Subtitle="Head over to the Pro page to upgrade.">
+            <TeachingTip.IconSource>
+                <FontIconSource Glyph="&#xE735;" />
+            </TeachingTip.IconSource>
+        </TeachingTip>
+    </Grid>
+</Page>
+
+

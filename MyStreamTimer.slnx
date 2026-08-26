@@ -1,0 +1,32 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="ARM64" />
+  </Configurations>
+  <Folder Name="/src/">
+    <Project Path="src/MyStreamTimer.Core/MyStreamTimer.Core.csproj">
+      <Platform Solution="*|x64" Project="AnyCPU" />
+      <Platform Solution="*|ARM64" Project="AnyCPU" />
+    </Project>
+    <Project Path="src/MyStreamTimer.WinUI/MyStreamTimer.WinUI.csproj">
+      <Platform Solution="*|x64" Project="x64" />
+      <Platform Solution="*|ARM64" Project="ARM64" />
+    </Project>
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/MyStreamTimer.Core.Tests/MyStreamTimer.Core.Tests.csproj">
+      <Platform Solution="*|x64" Project="AnyCPU" />
+      <Platform Solution="*|ARM64" Project="AnyCPU" />
+    </Project>
+  </Folder>
+  <Folder Name="/docs/">
+    <File Path="README.md" />
+    <File Path="winui-migration/winui-migration-plan.md" />
+    <File Path="winui-migration/design-spec.md" />
+    <File Path="winui-migration/upgrade-test-checklist.md" />
+  </Folder>
+  <Folder Name="/.github/">
+    <File Path=".github/workflows/ci.yml" />
+    <File Path=".github/workflows/release.yml" />
+  </Folder>
+</Solution>

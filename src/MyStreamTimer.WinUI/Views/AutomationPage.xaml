@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="MyStreamTimer.WinUI.Views.AutomationPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="using:MyStreamTimer.WinUI.Views"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="using:MyStreamTimer.WinUI.ViewModels"
+    mc:Ignorable="d">
+
+    <Page.Resources>
+        <Style x:Key="CardStyle" TargetType="Border">
+            <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+            <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="{StaticResource OverlayCornerRadius}" />
+            <Setter Property="Padding" Value="16" />
+        </Style>
+        <Style x:Key="SectionHeaderStyle" BasedOn="{StaticResource BodyStrongTextBlockStyle}" TargetType="TextBlock">
+            <Setter Property="Margin" Value="1,24,0,8" />
+        </Style>
+        <Style x:Key="MonoTextStyle" BasedOn="{StaticResource BodyTextBlockStyle}" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Cascadia Mono, Consolas, Segoe UI" />
+            <Setter Property="IsTextSelectionEnabled" Value="True" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+    </Page.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel
+            MaxWidth="1000"
+            Padding="36,24,36,36"
+            HorizontalAlignment="Left"
+            Spacing="4">
+
+            <TextBlock
+                AutomationProperties.HeadingLevel="Level1"
+                Style="{StaticResource TitleTextBlockStyle}"
+                Text="Automation" />
+            <TextBlock
+                Margin="0,8,0,0"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                Style="{StaticResource BodyTextBlockStyle}"
+                TextWrapping="Wrap">
+                Control any timer from outside the app with a <Run FontFamily="Cascadia Mono, Consolas, Segoe UI">mystreamtimer://</Run>
+                URL. Open one from a Stream Deck button, a shortcut, a script or a browser and My Stream Timer will start, adjust or stop the
+                matching timer — even if the app isn't running yet.
+            </TextBlock>
+
+            <!--  ======================= Examples ======================= -->
+            <TextBlock Style="{StaticResource SectionHeaderStyle}" Text="Examples" />
+
+            <ItemsRepeater ItemsSource="{x:Bind ViewModel.Examples}">
+                <ItemsRepeater.Layout>
+                    <UniformGridLayout
+                        ItemsStretch="Fill"
+                        MinColumnSpacing="8"
+                        MinItemWidth="300"
+                        MinRowSpacing="8" />
+                </ItemsRepeater.Layout>
+                <ItemsRepeater.ItemTemplate>
+                    <DataTemplate x:DataType="vm:ExampleCommand">
+                        <Border Style="{StaticResource CardStyle}">
+                            <Grid ColumnSpacing="12" RowSpacing="4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind Title}" />
+                                <TextBlock
+                                    Grid.Row="1"
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Style="{StaticResource CaptionTextBlockStyle}"
+                                    Text="{x:Bind Description}"
+                                    TextWrapping="Wrap" />
+                                <TextBlock
+                                    Grid.Row="2"
+                                    Margin="0,4,0,0"
+                                    Style="{StaticResource MonoTextStyle}"
+                                    Text="{x:Bind Url}" />
+                                <Button
+                                    Grid.RowSpan="3"
+                                    Grid.Column="1"
+                                    VerticalAlignment="Top"
+                                    AutomationProperties.Name="{x:Bind AutomationName}"
+                                    Command="{x:Bind CopyCommand}"
+                                    CommandParameter="{x:Bind Url}"
+                                    ToolTipService.ToolTip="Copy URL">
+                                    <FontIcon FontSize="16" Glyph="&#xE8C8;" />
+                                    <Button.Flyout>
+                                        <Flyout Placement="Left">
+                                            <TextBlock Text="URL copied" />
+                                        </Flyout>
+                                    </Button.Flyout>
+                                </Button>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsRepeater.ItemTemplate>
+            </ItemsRepeater>
+
+            <!--  ======================= Command builder ======================= -->
+            <TextBlock Style="{StaticResource SectionHeaderStyle}" Text="Command builder" />
+
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel Spacing="16">
+                    <TextBlock
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Style="{StaticResource BodyTextBlockStyle}"
+                        Text="Pick a timer and an action to generate the exact URL, then copy it or try it right here."
+                        TextWrapping="Wrap" />
+
+                    <Grid ColumnSpacing="12" RowSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" MaxWidth="260" />
+                            <ColumnDefinition Width="*" MaxWidth="260" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ComboBox
+                            HorizontalAlignment="Stretch"
+                            AutomationProperties.AutomationId="BuilderTimerComboBox"
+                            AutomationProperties.Name="Timer"
+                            DisplayMemberPath="Title"
+                            Header="Timer"
+                            ItemsSource="{x:Bind ViewModel.Timers}"
+                            SelectedItem="{x:Bind ViewModel.SelectedTimer, Mode=TwoWay}" />
+                        <ComboBox
+                            Grid.Column="1"
+                            HorizontalAlignment="Stretch"
+                            AutomationProperties.AutomationId="BuilderActionComboBox"
+                            AutomationProperties.Name="Action"
+                            DisplayMemberPath="Label"
+                            Header="Action"
+                            ItemsSource="{x:Bind ViewModel.Actions}"
+                            SelectedItem="{x:Bind ViewModel.SelectedAction, Mode=TwoWay}" />
+                        <NumberBox
+                            Grid.Column="2"
+                            MinWidth="140"
+                            AutomationProperties.AutomationId="BuilderValueNumberBox"
+                            AutomationProperties.Name="{x:Bind ViewModel.NumberHeader, Mode=OneWay}"
+                            Header="{x:Bind ViewModel.NumberHeader, Mode=OneWay}"
+                            LargeChange="5"
+                            Minimum="0"
+                            SmallChange="1"
+                            SpinButtonPlacementMode="Compact"
+                            Visibility="{x:Bind local:AutomationPage.BoolToVisibility(ViewModel.IsNumberVisible), Mode=OneWay}"
+                            Value="{x:Bind ViewModel.Value, Mode=TwoWay}" />
+                        <TimePicker
+                            Grid.Column="2"
+                            AutomationProperties.AutomationId="BuilderTimePicker"
+                            AutomationProperties.Name="Time"
+                            ClockIdentifier="24HourClock"
+                            Header="Time"
+                            Time="{x:Bind ViewModel.ClockTime, Mode=TwoWay}"
+                            Visibility="{x:Bind local:AutomationPage.BoolToVisibility(ViewModel.IsTimeVisible), Mode=OneWay}" />
+                    </Grid>
+
+                    <TextBox
+                        x:Name="GeneratedUrlTextBox"
+                        AutomationProperties.AutomationId="GeneratedUrlTextBox"
+                        AutomationProperties.Name="Generated URL"
+                        FontFamily="Cascadia Mono, Consolas, Segoe UI"
+                        GotFocus="OnGeneratedUrlGotFocus"
+                        Header="Generated URL"
+                        IsReadOnly="True"
+                        Text="{x:Bind ViewModel.GeneratedUrl, Mode=OneWay}" />
+
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button
+                            AutomationProperties.AutomationId="CopyGeneratedUrlButton"
+                            AutomationProperties.Name="Copy generated URL"
+                            Command="{x:Bind ViewModel.CopyGeneratedCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon FontSize="16" Glyph="&#xE8C8;" />
+                                <TextBlock Text="Copy" />
+                            </StackPanel>
+                            <Button.Flyout>
+                                <Flyout Placement="Bottom">
+                                    <TextBlock Text="URL copied" />
+                                </Flyout>
+                            </Button.Flyout>
+                        </Button>
+                        <Button
+                            AutomationProperties.AutomationId="RunGeneratedUrlButton"
+                            AutomationProperties.Name="Run command"
+                            Command="{x:Bind ViewModel.RunCommand}"
+                            Style="{StaticResource AccentButtonStyle}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon FontSize="16" Glyph="&#xE768;" />
+                                <TextBlock Text="Run" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+
+                    <InfoBar
+                        AutomationProperties.AutomationId="RunStatusInfoBar"
+                        IsOpen="{x:Bind ViewModel.IsRunStatusOpen, Mode=TwoWay}"
+                        Message="{x:Bind ViewModel.RunStatusMessage, Mode=OneWay}"
+                        Severity="{x:Bind ViewModel.RunStatusSeverity, Mode=OneWay}" />
+                </StackPanel>
+            </Border>
+
+            <!--  ======================= Tips ======================= -->
+            <TextBlock Style="{StaticResource SectionHeaderStyle}" Text="Tips" />
+
+            <Expander
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Stretch"
+                AutomationProperties.AutomationId="StreamDeckTipsExpander"
+                AutomationProperties.Name="Stream Deck tips">
+                <Expander.Header>
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <FontIcon Glyph="&#xE7F4;" />
+                        <TextBlock Text="Stream Deck" />
+                    </StackPanel>
+                </Expander.Header>
+                <StackPanel Spacing="8">
+                    <TextBlock Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap">
+                        1. In the Stream Deck app, drag the <Run FontWeight="SemiBold">System › Website</Run> action onto a key.<LineBreak />
+                        2. Paste a <Run FontFamily="Cascadia Mono, Consolas, Segoe UI">mystreamtimer://</Run> URL into the URL field.<LineBreak />
+                        3. Turn off "Open in browser" if it's shown — the URL is handled by My Stream Timer directly.<LineBreak />
+                        4. Make one key per action: start, pause, +1 minute, reset…
+                    </TextBlock>
+                </StackPanel>
+            </Expander>
+
+            <Expander
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Stretch"
+                AutomationProperties.AutomationId="ObsTipsExpander"
+                AutomationProperties.Name="OBS tips">
+                <Expander.Header>
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <FontIcon Glyph="&#xE714;" />
+                        <TextBlock Text="OBS Studio / Streamlabs" />
+                    </StackPanel>
+                </Expander.Header>
+                <StackPanel Spacing="8">
+                    <TextBlock Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap">
+                        1. Add a <Run FontWeight="SemiBold">Text (GDI+)</Run> source to your scene.<LineBreak />
+                        2. Tick <Run FontWeight="SemiBold">Read from file</Run> and browse to the timer's output file (see Settings › Output folder).<LineBreak />
+                        3. The text updates every second while the timer runs. Style the font and colours in OBS.<LineBreak />
+                        4. Pair it with a <Run FontFamily="Cascadia Mono, Consolas, Segoe UI">mystreamtimer://</Run> hotkey or Stream Deck key for hands-free control.
+                    </TextBlock>
+                </StackPanel>
+            </Expander>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

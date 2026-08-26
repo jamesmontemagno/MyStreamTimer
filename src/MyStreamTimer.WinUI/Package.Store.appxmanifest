@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Microsoft Store flavour of Package.appxmanifest. The Identity below is the Partner Center-assigned identity for
+  My Stream Timer (Store ID 9N5NXX3WK7K7): Name + the Store publisher GUID hash to the live Package Family Name
+  23875RefractoredLLC.MyStreamTimer_jcspp7mzn01xr, so the upload is an in-place upgrade of the 2.6.x UWP app.
+  Selected by -p:MyStreamTimerStoreBuild=true (see MyStreamTimer.WinUI.csproj); keep everything else in sync with
+  Package.appxmanifest.
+-->
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap rescap">
+
+  <Identity
+    Name="23875RefractoredLLC.MyStreamTimer"
+    Publisher="CN=995C4AD9-3B22-4B61-B30F-3EAB23CDAEAE"
+    Version="3.0.0.0" />
+
+  <mp:PhoneIdentity PhoneProductId="fc2690a8-0f80-44cd-a516-0e3d2d7b7d7e" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
+
+  <Properties>
+    <DisplayName>My Stream Timer</DisplayName>
+    <PublisherDisplayName>Refractored LLC</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+  </Properties>
+
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.26226.0" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="x-generate"/>
+  </Resources>
+
+  <Applications>
+    <Application Id="App"
+      Executable="$targetnametoken$.exe"
+      EntryPoint="$targetentrypoint$">
+      <uap:VisualElements
+        DisplayName="My Stream Timer"
+        Description="My Stream Timer is an easy to use countdown and count-up timer for streamers. Multiple timers are available that write a file to disk to use with OBS, SLOBS, or your favorite streaming application. Have it auto start so it works with Stream Deck!"
+        BackgroundColor="#AE3EF7"
+        Square150x150Logo="Assets\Square150x150Logo.png"
+        Square44x44Logo="Assets\Square44x44Logo.png">
+        <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png" Square71x71Logo="Assets\SmallTile.png" Square310x310Logo="Assets\LargeTile.png" ShortName="My Stream Timer">
+          <uap:ShowNameOnTiles>
+            <uap:ShowOn Tile="square310x310Logo"/>
+          </uap:ShowNameOnTiles>
+        </uap:DefaultTile>
+        <uap:SplashScreen Image="Assets\SplashScreen.png" />
+      </uap:VisualElements>
+      <Extensions>
+        <uap:Extension Category="windows.protocol">
+          <uap:Protocol Name="mystreamtimer" DesiredView="useMinimum">
+            <uap:DisplayName>My Stream Timer</uap:DisplayName>
+            <uap:Logo>Assets\Art.png</uap:Logo>
+          </uap:Protocol>
+        </uap:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+
+  <Capabilities>
+    <Capability Name="internetClient" />
+    <rescap:Capability Name="runFullTrust" />
+  </Capabilities>
+</Package>
+

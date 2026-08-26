@@ -1,4 +1,4 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.28705.295
@@ -7,8 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MyStreamTimer.Shared", "MyS
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{F71BF0B2-E965-4E53-9E52-6C052E57354E}"
 	ProjectSection(SolutionItems) = preProject
-		.editorconfig = .editorconfig
-		nuget.config = nuget.config
+		..\.editorconfig = ..\.editorconfig
+		..\nuget.config = ..\nuget.config
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MyStreamTimer.UI", "MyStreamTimer.UI\MyStreamTimer.UI.csproj", "{AD504815-E24E-4215-AB35-EF8DA7353C1D}"
@@ -21,7 +21,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Cross-platform", "Cross-pla
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "StreamDeck", "StreamDeck", "{8A94E50A-3D99-4AD0-9A10-11CE6A80610D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MyStreamTimer.StreamDeck", "MyStreamTimer.StreamDeck\MyStreamTimer.StreamDeck.csproj", "{929CC523-7C5A-4C64-AE17-34858FF35556}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MyStreamTimer.StreamDeck", "..\MyStreamTimer.StreamDeck\MyStreamTimer.StreamDeck.csproj", "{929CC523-7C5A-4C64-AE17-34858FF35556}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -160,3 +160,4 @@ Global
 		SolutionGuid = {FFB6D563-B873-4A06-A534-A04A870FB58F}
 	EndGlobalSection
 EndGlobal
+
