@@ -9,7 +9,7 @@ Key facts you'll need repeatedly:
 | Item | Value |
 |---|---|
 | Store app | **My Stream Timer**, Store ID **9N5NXX3WK7K7** |
-| Package identity | `23875RefractoredLLC.MyStreamTimer`, Publisher `CN=Refractored LLC`, PFN `23875RefractoredLLC.MyStreamTimer_jcspp7mzn01xr` |
+| Package identity | `23875RefractoredLLC.MyStreamTimer`; **Store** Publisher `CN=995C4AD9-3B22-4B61-B30F-3EAB23CDAEAE` → PFN `23875RefractoredLLC.MyStreamTimer_jcspp7mzn01xr` (`Package.Store.appxmanifest`, `-p:MyStreamTimerStoreBuild=true`). Sideload/CI builds use `Package.appxmanifest` with `CN=Refractored LLC` (different PFN `…_xv92rx4s8jzv8`, **not** an in‑place upgrade of the Store app) |
 | Version | `3.0.0.0` (must be > the live `2.6.2.0`) |
 | Protocol | `mystreamtimer://` (Debug builds use `mystreamtimer-dev://` and a `*.Dev` identity) |
 | Add‑on IDs | sold: `mstgold` (Lifetime), `mstsub` (1 month), `mstsub6months` (6 months) · legacy (still honoured, not sold): `mstbronze`, `mstsilver` |
@@ -25,12 +25,14 @@ protocol handler.
 1. Make sure the Store build is installed (`winget install 9N5NXX3WK7K7 --source msstore`), launch it once, and set a
    few non‑default values (any timer: minutes, output text, file name, auto‑start). Start/stop a timer so the `*.txt`
    files exist.
-2. Build + package the Release x64 app with the **Store identity** (already done → `artifacts\`; regenerate if you
-   changed code):
+2. Build + package the Release x64 app with the **Store identity** (the PFN only matches the live app when the Store
+   flavour is built; a cert whose subject equals the Store publisher GUID is needed to sideload it):
    ```powershell
-   dotnet build src\MyStreamTimer.WinUI\MyStreamTimer.WinUI.csproj -c Release -p:Platform=x64 -r win-x64 -p:UseDevIdentity=false
+   dotnet build src\MyStreamTimer.WinUI\MyStreamTimer.WinUI.csproj -c Release -p:Platform=x64 -r win-x64 -p:MyStreamTimerStoreBuild=true -p:SelfContained=false -p:WindowsAppSDKSelfContained=false
+   winapp cert generate --manifest src\MyStreamTimer.WinUI\bin\x64\Release\net10.0-windows10.0.26100.0\win-x64\appxmanifest.xml --output artifacts\refractored-dev.pfx --if-exists skip
    winapp package src\MyStreamTimer.WinUI\bin\x64\Release\net10.0-windows10.0.26100.0\win-x64 --cert artifacts\refractored-dev.pfx --output artifacts\MyStreamTimer_3.0.0.0_x64.msix
    ```
+   (Delete an older `artifacts\refractored-dev.pfx` first if it was generated for `CN=Refractored LLC`.)
 3. **Admin** PowerShell:
    ```powershell
    .\winui-migration\Run-UpgradeTest.ps1          # trusts the dev cert, runs WACK (artifacts\wack.xml), installs 3.0 over 2.6.2
@@ -81,57 +83,67 @@ existing owners keep their licence and the app still honours them.
 
 ## 3. Partner Center — API access for CI publishing (≈15 min)
 
-Lets `release.yml` push packages to a flight automatically.
+Lets `windows-store-publish.yml` submit the `.msixupload` to Partner Center automatically (same flow as
+[tiny-clips](https://github.com/jamesmontemagno/tiny-clips/blob/main/.github/workflows/windows-store-publish.yml)).
 
-1. Partner Center → **Account settings → User management → Azure AD applications → Add Azure AD application**
-   (create a new one or pick an existing app registration). Role: **Manager** (needs submission rights).
-2. Note: **Tenant ID**, **Client ID**, and create a **Client secret** (copy it once). **Seller ID** is on
-   *Account settings → Legal info* (or the URL of Partner Center).
-3. (Optional but recommended) Create a **Package Flight**: *App → Package flights → New flight*, name
-   `3.0 Insiders`, add yourself/testers, note the **Flight ID** from the URL.
+1. Partner Center → **Account settings → User management → Microsoft Entra applications → Add Microsoft Entra
+   application** (create a new one or pick an existing app registration). Role: **Manager** (needs submission rights).
+   Registering the app only in the Entra portal is **not** enough — it must be associated here.
+2. Note: **Tenant ID**, **Client ID**, and create a **Client secret** (copy it once). **Seller ID** is the numeric id on
+   *Account settings → Account details* (not a GUID).
+3. Confirm the Store identity: *Product management → Product identity* must show Package/Identity/Name
+   `23875RefractoredLLC.MyStreamTimer`, Publisher `CN=995C4AD9-3B22-4B61-B30F-3EAB23CDAEAE` and PFN
+   `23875RefractoredLLC.MyStreamTimer_jcspp7mzn01xr` — that is what `src\MyStreamTimer.WinUI\Package.Store.appxmanifest`
+   declares (the PFN hash is derived from the GUID publisher, not from `CN=Refractored LLC`).
 
 ---
 
 ## 4. GitHub repository secrets & variables (≈10 min)
 
-`Settings → Secrets and variables → Actions`. Also create an **Environment** named `release`
-(`Settings → Environments → New environment`) — add yourself as a *required reviewer* so production publishes wait for
-a manual approval.
+Create an **Environment** named `microsoft-store` (`Settings → Environments → New environment`) and add yourself as a
+*required reviewer* so every Store submission waits for a manual approval. Put the secrets **on that environment**,
+and the product id as a **repository variable**.
 
 | Type | Name | Value |
 |---|---|---|
-| Secret | `STORE_TENANT_ID` | Azure AD tenant ID (from §3) |
-| Secret | `STORE_SELLER_ID` | Partner Center seller ID |
-| Secret | `STORE_CLIENT_ID` | Azure AD app (client) ID |
-| Secret | `STORE_CLIENT_SECRET` | the client secret |
-| Secret | `SIGNING_PFX_BASE64` | *(optional — only for side‑loadable GitHub Release assets)* base64 of a code‑signing PFX whose subject is **`CN=Refractored LLC`**. Store submissions are re‑signed by Microsoft, so this is **not** needed for the Store path. Create with `[Convert]::ToBase64String([IO.File]::ReadAllBytes('cert.pfx')) | Set-Clipboard` |
-| Secret | `SIGNING_PFX_PASSWORD` | its password |
-| **Variable** | `STORE_FLIGHT_ID` | Flight ID from §3 (leave empty/unset to publish straight to production) |
+| Environment secret | `PARTNER_CENTER_TENANT_ID` | Entra tenant ID (from §3) |
+| Environment secret | `PARTNER_CENTER_SELLER_ID` | Partner Center seller ID (numeric) |
+| Environment secret | `PARTNER_CENTER_CLIENT_ID` | Entra app (client) ID |
+| Environment secret | `PARTNER_CENTER_CLIENT_SECRET` | the client secret |
+| **Repository variable** | `MICROSOFT_STORE_PRODUCT_ID` | `9N5NXX3WK7K7` |
 
-Nothing else is required: `ci.yml` already runs on pushes/PRs with no secrets.
+Verify before tagging: *Actions → Windows Store Publish → Run workflow* with **diagnose_only = true**. The
+`diagnose-partner-center` action requests an Entra token and calls the submission API, and tells you exactly which of
+the four values is wrong (expired secret, wrong tenant, app not associated with Partner Center, …).
+
+Nothing else is required: `ci.yml` runs on pushes/PRs with no secrets. Store submissions are signed by Microsoft, so no
+signing certificate is involved.
 
 ---
 
 ## 5. Ship (≈ an afternoon incl. Store review)
 
 1. Review/merge PR #82 into `main` (CI must be green — it is).
-2. Tag and push:
+2. Dry run without publishing: *Actions → Windows Store Publish → Run workflow* with `tag = v3.0.0-windows`,
+   `publish = false`. Download the `windows-store-package` artifact and sanity‑check `MyStreamTimer-3.0.0.0.msixupload`
+   (optionally upload it by hand in Partner Center as a **Package Flight** to test the real Store signing/upgrade path on
+   a second machine that has the Store 2.6.2 — then walk the checklist from §1 step 4).
+3. Tag and push (Windows tags carry a `-windows` suffix; Mac uses `-mac`):
    ```powershell
    git checkout main; git pull
-   git tag v3.0.0-rc.1; git push origin v3.0.0-rc.1
+   .\scripts\create-release-tags.ps1 v3.0.0 -Windows -Push
    ```
-   `release.yml` will: test → build x64 + ARM64 (Store identity, version stamped from the tag) → bundle →
-   (sign if PFX secret present) → **publish to the flight** (if `STORE_FLIGHT_ID` set) → create a GitHub Release with the
-   `.msixbundle`. The `release` environment gate pauses before publishing; approve it in the Actions run.
-3. Install from the flight on a second machine that has the Store 2.6.2 → repeat the checklist from §1 step 4 (this
-   is the only end‑to‑end test of the real Store signing/upgrade path).
-4. Sandbox the purchases on that machine: Pro page shows prices for Lifetime / Monthly / 6 Months, **Subscribe** a
+   `windows-store-publish.yml` will: stamp `Package.Store.appxmanifest` from the tag (`v3.0.0-windows` → `3.0.0.0`,
+   `v3.0.0.1-windows` → `3.0.0.1`) → build the framework‑dependent x64 + ARM64 bundle
+   (`-p:MyStreamTimerStoreBuild=true … UapAppxPackageBuildMode=StoreUpload`) → upload the `.msixupload` artifact → wait
+   for the `microsoft-store` environment approval → diagnose credentials → `msstore publish <file> --appId 9N5NXX3WK7K7
+   --uploadTimeout 900`. Approve the gate in the Actions run; the submission then appears in Partner Center.
+4. In Partner Center finish the submission (release notes: README "What's new in 3.0" + "ARM32 no longer supported,
+   requires Windows 10 1809+"), and submit for certification.
+5. Sandbox the purchases once live/in flight: Pro page shows prices for Lifetime / Monthly / 6 Months, **Subscribe** a
    subscription, relaunch → "Pro subscription active until …"; **Restore purchases** on a clean profile.
-5. Production: either set `STORE_FLIGHT_ID` empty and tag `v3.0.0`, or in Partner Center *Promote* the flight
-   submission. Add release notes (use the README "What's new in 3.0" + "ARM32 no longer supported, requires Windows 10
-   1809+").
 6. After it's live: watch Partner Center **Health** (crashes) and **Reviews** for two weeks; hotfix = bump version,
-   tag `v3.0.1`.
+   `.\scripts\create-release-tags.ps1 v3.0.1 -Windows -Push`.
 
 ---
 
@@ -154,6 +166,6 @@ Nothing else is required: `ci.yml` already runs on pushes/PRs with no secrets.
 | Run Debug (Dev identity) | `cd src\MyStreamTimer.WinUI; dotnet run` or `& "$env:USERPROFILE\.copilot\installed-plugins\win-dev-skills\winui\skills\winui-dev-workflow\BuildAndRun.ps1"` |
 | Core tests | `dotnet test tests\MyStreamTimer.Core.Tests -c Release` |
 | UI smoke + a11y audit | `.\winui-migration\ui-smoke.ps1` (app running) |
-| Store bundle locally | build x64 + ARM64 Release (`-p:UseDevIdentity=false`), then `makeappx pack` each and `makeappx bundle` (recipe in plan P7‑4; last output: `artifacts\MyStreamTimer_3.0.0.0.msixbundle`) |
+| Store upload locally | `dotnet build src\MyStreamTimer.WinUI -c Release -p:Platform=x64 -p:MyStreamTimerStoreBuild=true -p:SelfContained=false -p:WindowsAppSDKSelfContained=false -p:GenerateAppxPackageOnBuild=true -p:AppxPackageDir=artifacts\store\ -p:AppxBundle=Always -p:AppxBundlePlatforms="x64|ARM64" -p:UapAppxPackageBuildMode=StoreUpload -p:AppxPackageSigningEnabled=false -p:AppxSymbolPackageEnabled=false` → `artifacts\store\*.msixupload` (same command as the workflow) |
 | Dump a legacy `settings.dat` | `dotnet run --project eng\SettingsDump -- <settings.dat>` |
 | Regenerate icons from the Mac asset | `dotnet run --project eng\IconGen -- <glyph.png> src\MyStreamTimer.WinUI\Assets Art` |

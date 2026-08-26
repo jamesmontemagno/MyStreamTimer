@@ -7,6 +7,9 @@
     <AssemblyName>MyStreamTimer</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Platforms>x64;ARM64</Platforms>
+    <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' and '$(Platform)' == 'x64'">win-x64</RuntimeIdentifier>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' and '$(Platform)' == 'ARM64'">win-arm64</RuntimeIdentifier>
     <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant())</RuntimeIdentifier>
     <PublishProfile Condition="Exists('Properties\PublishProfiles\win-$(Platform).pubxml')">win-$(Platform).pubxml</PublishProfile>
     <UseWinUI>true</UseWinUI>
@@ -17,6 +20,26 @@
     <!-- Custom Program.Main for single-instance redirection (see Program.cs / ActivationService). -->
     <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <!--
+      Build flavor switch:
+      - false (default): direct/sideload distribution (Package.appxmanifest, Publisher CN=Refractored LLC)
+      - true: Microsoft Store distribution (Package.Store.appxmanifest, Partner Center identity)
+    -->
+    <MyStreamTimerStoreBuild Condition="'$(MyStreamTimerStoreBuild)' == ''">false</MyStreamTimerStoreBuild>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(MyStreamTimerStoreBuild)' == 'true'">
+    <DefineConstants>$(DefineConstants);MYSTREAMTIMER_STORE_BUILD</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(MyStreamTimerStoreBuild)' == 'true'">
+    <!-- Keep the Store-assigned identity separate from the direct/sideload package identity. -->
+    <AppxManifest Remove="Package.appxmanifest" />
+    <AppxManifest Include="Package.Store.appxmanifest" />
+    <None Remove="Package.Store.appxmanifest" />
+  </ItemGroup>
 
   <ItemGroup>
     <Content Include="Assets\**\*.png;Assets\**\*.ico" />
@@ -76,7 +99,7 @@
     MSIX is a true in-place upgrade of the Store app (required for settings continuity).
     Set -p:UseDevIdentity=false to test the upgrade path locally.
   -->
-  <ItemGroup Condition="'$(Configuration)' == 'Debug' and '$(UseDevIdentity)' != 'false'">
+  <ItemGroup Condition="'$(Configuration)' == 'Debug' and '$(UseDevIdentity)' != 'false' and '$(MyStreamTimerStoreBuild)' != 'true'">
     <AppxManifest Remove="Package.appxmanifest" />
     <AppxManifest Include="Package.Dev.appxmanifest" />
     <None Remove="Package.Dev.appxmanifest" />

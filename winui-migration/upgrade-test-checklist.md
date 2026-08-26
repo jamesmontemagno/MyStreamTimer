@@ -20,7 +20,7 @@ Run on **two machines** (Windows 10 1809+ and Windows 11). Record results in the
 | Time (Pro) | — | — | — | — | `clock.txt` | on | — | H:mm:ss | AM/PM on |
 
 ## Upgrade
-- [ ] Install the 3.0 package **with the Store identity** (Package Flight, or `Add-AppxPackage` of a Release build signed with a `CN=Refractored LLC` cert, `-p:UseDevIdentity=false`). The install must be reported as an *update* (same PFN), not a second app.
+- [ ] Install the 3.0 package **with the Store identity** (Package Flight, or `Add-AppxPackage` of a Release build made with `-p:MyStreamTimerStoreBuild=true` and signed with a cert whose subject is the Store publisher `CN=995C4AD9-3B22-4B61-B30F-3EAB23CDAEAE`). The install must be reported as an *update* (same PFN), not a second app.
 - [ ] Launch → no crash; welcome‑back dialog shown **once**; not shown again on next launch.
 
 ## Verify

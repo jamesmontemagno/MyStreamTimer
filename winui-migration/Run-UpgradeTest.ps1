@@ -22,7 +22,7 @@ if ($Restore) {
 $cert = Join-Path $root 'artifacts\refractored-dev.pfx'
 $msix = Join-Path $root 'artifacts\MyStreamTimer_3.0.0.0_x64.msix'
 $unsigned = Join-Path $root 'artifacts\bundle\MyStreamTimer_3.0.0.0_x64.msix'
-foreach ($f in $cert, $msix) { if (-not (Test-Path $f)) { throw "Missing $f — build Release x64 (-p:UseDevIdentity=false) and run 'winapp package ... --cert artifacts\refractored-dev.pfx' first (see plan Resume section)." } }
+foreach ($f in $cert, $msix) { if (-not (Test-Path $f)) { throw "Missing $f — build Release x64 (-p:MyStreamTimerStoreBuild=true) and run 'winapp package ... --cert artifacts\refractored-dev.pfx' first (see plan Resume section)." } }
 
 Write-Host "`n[1/3] Trusting dev certificate" -ForegroundColor Cyan
 winapp cert install $cert

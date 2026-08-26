@@ -8,7 +8,7 @@ Download today on Windows or macOS:
 
 ![](Art/demo.png)
 
-Unable to download from the Microsoft Store on Windows? Side‑loadable `.msixbundle` packages are attached to each [GitHub Release](https://github.com/jamesmontemagno/MyStreamTimer/releases).
+The Windows app is distributed exclusively through the Microsoft Store (Pro features use Store licensing). Releases are submitted automatically by the [Windows Store Publish](.github/workflows/windows-store-publish.yml) workflow when a `vX.Y.Z-windows` tag is pushed.
 
 ## What's new in 3.0 (Windows)
 
