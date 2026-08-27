@@ -50,17 +50,28 @@ describe("settings", () => {
     expect(
       normalizeStartSettings({
         target: "time",
-        startMode: "current-time",
+        startMode: "duration",
         amount: "invalid",
         clockTime: "25:00",
       }),
-    ).toMatchObject({ amount: 5, clockTime: "12:00" });
+    ).toMatchObject({
+      startMode: "current-time",
+      amount: 5,
+      clockTime: "12:00",
+    });
+    expect(
+      normalizeStartSettings({
+        target: "countup",
+        startMode: "top-of-hour",
+        amount: 3,
+      }),
+    ).toMatchObject({ startMode: "duration", amount: 3 });
     expect(() =>
       normalizeStartSettings({
-        target: "time",
-        startMode: "duration",
+        target: "countdown",
+        startMode: "current-time",
       }),
-    ).toThrow("Current Time only supports Start.");
+    ).toThrow("Select a valid start mode.");
     expect(() =>
       normalizeStartSettings({
         target: "countdown",

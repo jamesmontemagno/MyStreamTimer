@@ -14,29 +14,22 @@ function setSelectValue(element, value) {
 
 function updateFields() {
   const targetValue = target.value ?? "countdown";
-  const modeValue = startMode.value ?? "duration";
   const isTime = targetValue === "time";
-  const isCountUp = targetValue === "countup" || targetValue === "countup2";
+  const isCountdown = targetValue.startsWith("countdown");
 
-  if (isTime) {
-    setSelectValue(startMode, "current-time");
-  } else if (
-    isCountUp &&
-    (modeValue === "clock-time" ||
-      modeValue === "top-of-hour" ||
-      modeValue === "current-time")
-  ) {
-    setSelectValue(startMode, "duration");
-  } else if (modeValue === "current-time") {
+  // Start mode only applies to countdowns; count-ups always use a duration.
+  if (!isCountdown) {
     setSelectValue(startMode, "duration");
   }
 
-  const effectiveMode = startMode.value ?? "duration";
+  const effectiveMode = isCountdown
+    ? (startMode.value ?? "duration")
+    : "duration";
   const usesDuration = !isTime && effectiveMode === "duration";
-  setVisible("#mode-item", !isTime);
+  setVisible("#mode-item", isCountdown);
   setVisible("#amount-item", usesDuration);
   setVisible("#unit-item", usesDuration);
-  setVisible("#clock-item", !isTime && effectiveMode === "clock-time");
+  setVisible("#clock-item", isCountdown && effectiveMode === "clock-time");
 }
 
 Promise.all([

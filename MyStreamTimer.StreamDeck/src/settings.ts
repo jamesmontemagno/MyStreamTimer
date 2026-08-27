@@ -10,6 +10,7 @@ import type {
 import {
   buildControlUrl,
   buildStartUrl,
+  isCountdownTarget,
   isTimerTarget,
 } from "./timer-commands";
 
@@ -92,7 +93,14 @@ export function normalizeStartSettings(
   settings: StartTimerSettings,
 ): NormalizedStartTimerSettings {
   const target = normalizeTarget(settings.target);
-  const startMode = normalizeStartMode(settings.startMode);
+  // Start mode only applies to countdowns: count-ups always take a duration
+  // and Current Time simply starts, so stored modes for those are ignored.
+  const startMode: StartMode =
+    target === "time"
+      ? "current-time"
+      : isCountdownTarget(target)
+        ? normalizeStartMode(settings.startMode)
+        : "duration";
   const usesDuration = startMode === "duration";
   const amount = usesDuration ? normalizeAmount(settings.amount, 5) : 5;
   const unit = usesDuration ? normalizeUnit(settings.unit) : "minutes";
@@ -232,8 +240,7 @@ function normalizeStartMode(value: StartMode | undefined): StartMode {
   if (
     value === "duration" ||
     value === "clock-time" ||
-    value === "top-of-hour" ||
-    value === "current-time"
+    value === "top-of-hour"
   ) {
     return value;
   }

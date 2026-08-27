@@ -61,6 +61,10 @@ export function isTimerTarget(value: unknown): value is TimerTarget {
   );
 }
 
+export function isCountdownTarget(target: TimerTarget): boolean {
+  return countdownTargets.has(target);
+}
+
 export function buildStartUrl(command: StartCommand): string {
   if (!isTimerTarget(command.target)) {
     throw new Error("Select a valid timer.");
