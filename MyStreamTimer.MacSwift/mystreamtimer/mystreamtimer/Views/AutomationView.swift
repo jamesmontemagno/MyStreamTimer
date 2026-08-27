@@ -174,7 +174,7 @@ private struct AutomationTimerLabel: View {
     @ObservedObject var controller: TimerController
 
     var body: some View {
-        Text(controller.effectiveTitle)
+        Label(controller.effectiveTitle, systemImage: controller.effectiveSystemImage)
     }
 }
 

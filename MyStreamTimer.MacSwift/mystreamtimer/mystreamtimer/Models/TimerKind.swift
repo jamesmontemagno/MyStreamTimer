@@ -81,10 +81,12 @@ enum TimerKind: String, CaseIterable, Identifiable, Codable {
         return trimmedName.isEmpty ? title : trimmedName
     }
 
-    func effectiveSystemImage(iconGlyph: String) -> String {
-        let trimmedIcon = iconGlyph.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmedIcon.isEmpty ? systemImage : trimmedIcon
-    }
+func effectiveSystemImage(iconGlyph: String) -> String {
+    let trimmedIcon = iconGlyph.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmedIcon.isEmpty else { return systemImage }
+
+    return Self.iconChoices.contains(where: { $0.systemName == trimmedIcon }) ? trimmedIcon : systemImage
+}
 
     static let iconChoices = [
         TimerIconChoice(systemName: "timer", label: "Stopwatch"),
