@@ -90,8 +90,11 @@ struct TimerSidebarRow: View {
 
     var body: some View {
         HStack {
+            Image(systemName: controller.effectiveSystemImage)
+                .frame(width: 18)
+
             VStack(alignment: .leading, spacing: 2) {
-                Text(controller.kind.title)
+                Text(controller.effectiveTitle)
                 Text(controller.fileName)
                     .font(.caption)
                     .foregroundStyle(.secondary)

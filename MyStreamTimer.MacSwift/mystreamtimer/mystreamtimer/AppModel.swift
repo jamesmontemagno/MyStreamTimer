@@ -224,7 +224,7 @@ final class AppModel: ObservableObject {
             selectedItem = .pro
             showAlert(
                 title: "Pro Feature",
-                message: "\(command.kind.title) requires Pro."
+                message: "\(controller(for: command.kind).effectiveTitle) requires Pro."
             )
             return
         }

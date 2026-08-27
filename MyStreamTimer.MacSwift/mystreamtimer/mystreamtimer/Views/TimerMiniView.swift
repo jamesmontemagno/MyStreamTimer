@@ -34,5 +34,6 @@ private struct TimerMiniContent: View {
             .padding(20)
             .frame(minWidth: 360)
             .background(backgroundColor)
+            .navigationTitle(controller.effectiveTitle)
     }
 }

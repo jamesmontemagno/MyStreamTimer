@@ -118,7 +118,7 @@ struct AutomationComposerView: View {
             HStack(spacing: 12) {
                 Picker("Timer", selection: $selectedTimer) {
                     ForEach(TimerKind.allCases) { timer in
-                        Text(timer.title).tag(timer)
+                        Text(appModel.controller(for: timer).effectiveTitle).tag(timer)
                     }
                 }
 
