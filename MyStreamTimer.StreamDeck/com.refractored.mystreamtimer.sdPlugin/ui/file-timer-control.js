@@ -10,15 +10,16 @@ SDPIComponents.streamDeckClient.sendToPropertyInspector.subscribe((event) => {
   }
 });
 
+// Assigning value emits sdpi-components' "valuechange" and persists the setting.
 function setOperation(value) {
   if (operation.value !== value) {
     operation.value = value;
-    operation.dispatchEvent(new Event("change", { bubbles: true }));
   }
 }
 
 function updateFields() {
-  const isCurrentTime = displayFormat.value === "current-time";
+  const isCurrentTime = (displayFormat.value ?? "countdown") === "current-time";
+  const operationValue = operation.value ?? "pause";
   for (const option of operation.querySelectorAll("option")) {
     const isCurrentTimeOperation =
       option.value === "start" || option.value === "stop";
@@ -30,11 +31,11 @@ function updateFields() {
 
   if (
     isCurrentTime &&
-    operation.value !== "start" &&
-    operation.value !== "stop"
+    operationValue !== "start" &&
+    operationValue !== "stop"
   ) {
     setOperation("stop");
-  } else if (!isCurrentTime && operation.value === "start") {
+  } else if (!isCurrentTime && operationValue === "start") {
     setOperation("stop");
   }
 }
@@ -54,8 +55,11 @@ async function copyOutputFilePath() {
 }
 
 customElements.whenDefined("sdpi-select").then(() => {
-  displayFormat.addEventListener("change", updateFields);
-  operation.addEventListener("change", updateFields);
+  displayFormat.addEventListener("valuechange", updateFields);
+  operation.addEventListener("valuechange", updateFields);
   copyOutputPath.addEventListener("click", copyOutputFilePath);
   updateFields();
+  SDPIComponents.streamDeckClient.send("sendToPlugin", {
+    event: "request-file-output-path",
+  });
 });

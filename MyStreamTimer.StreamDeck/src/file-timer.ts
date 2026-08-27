@@ -44,6 +44,11 @@ export class FileTimerManager {
     if (existing) {
       existing.cancelled = true;
       await existing.writeChain;
+      // A different key may have owned the old session; restore its label so it
+      // does not keep showing the last frozen time.
+      if (existing.output !== output) {
+        await existing.output.setTitle(existing.idleTitle);
+      }
     }
 
     await mkdir(settings.outputDirectory, { recursive: true });
@@ -83,6 +88,7 @@ export class FileTimerManager {
   async control(
     settings: NormalizedFileTimerControlSettings,
     output: FileTimerOutput,
+    idleTitle: string = fileTimerIdleTitle(settings.displayFormat),
   ): Promise<void> {
     const outputKey = normalizeOutputPath(getFileOutputPath(settings));
     const session = this.sessions.get(outputKey);
@@ -101,7 +107,7 @@ export class FileTimerManager {
           amount: 5,
           unit: "minutes",
         },
-        fileTimerIdleTitle("current-time"),
+        idleTitle,
         output,
       );
       return;
@@ -234,7 +240,12 @@ export function formatFileTimerText(
   if (displayFormat === "current-time") {
     return formatCurrentTime(new Date(now));
   }
-  return formatDuration(milliseconds);
+  // Remaining time rounds up so a countdown never shows 0:00 early; elapsed
+  // time rounds down so a count-up never runs a second ahead.
+  return formatDuration(
+    milliseconds,
+    displayFormat === "countdown" ? "ceil" : "floor",
+  );
 }
 
 export function fileTimerIdleTitle(
@@ -248,8 +259,16 @@ export function fileTimerIdleTitle(
   return `File\n${displayFormat === "countup" ? "Count Up" : "Time"}`;
 }
 
-export function formatDuration(milliseconds: number): string {
-  const totalSeconds = Math.max(0, Math.ceil(milliseconds / 1000));
+export function formatDuration(
+  milliseconds: number,
+  rounding: "ceil" | "floor" = "ceil",
+): string {
+  const totalSeconds = Math.max(
+    0,
+    rounding === "ceil"
+      ? Math.ceil(milliseconds / 1000)
+      : Math.floor(milliseconds / 1000),
+  );
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;

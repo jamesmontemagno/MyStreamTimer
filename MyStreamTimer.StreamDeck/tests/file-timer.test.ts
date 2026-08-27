@@ -36,6 +36,13 @@ describe("file timer formatting", () => {
       ),
     ).toBe("03:04:05");
   });
+
+  it("rounds countdown remaining time up and count-up elapsed time down", () => {
+    expect(formatFileTimerText("countdown", 1, 0)).toBe("0:01");
+    expect(formatFileTimerText("countup", 1, 0)).toBe("0:00");
+    expect(formatFileTimerText("countup", 1_999, 0)).toBe("0:01");
+    expect(formatDuration(1_999, "floor")).toBe("0:01");
+  });
 });
 
 describe("FileTimerManager", () => {
@@ -182,6 +189,61 @@ describe("FileTimerManager", () => {
           new FakeOutput(),
         ),
       ).rejects.toThrow("running a countdown timer");
+    } finally {
+      await rm(directory, { force: true, recursive: true });
+    }
+  });
+
+  it("restores the previous key's idle title when another key restarts the timer", async () => {
+    const directory = await createTestDirectory();
+    const manager = new FileTimerManager(() => undefined);
+    const firstKey = new FakeOutput();
+    const secondKey = new FakeOutput();
+    const settings = normalizeFileStartSettings({
+      displayFormat: "countup",
+      outputDirectory: directory,
+      fileName: "shared.txt",
+    });
+
+    try {
+      await manager.start(settings, "File\nCount Up", firstKey);
+      await manager.start(settings, "File\nCount Up", secondKey);
+      expect(firstKey.titles.at(-1)).toBe("File\nCount Up");
+      expect(manager.isRunning(join(directory, "shared.txt"))).toBe(true);
+      await manager.control(
+        normalizeFileControlSettings({
+          displayFormat: "countup",
+          operation: "stop",
+          outputDirectory: directory,
+          fileName: "shared.txt",
+        }),
+        new FakeOutput(),
+      );
+    } finally {
+      await rm(directory, { force: true, recursive: true });
+    }
+  });
+
+  it("uses the control key's own idle title when it starts current time", async () => {
+    const directory = await createTestDirectory();
+    const manager = new FileTimerManager(() => undefined);
+    const controlKey = new FakeOutput();
+    const control = (operation: "start" | "stop") =>
+      manager.control(
+        normalizeFileControlSettings({
+          displayFormat: "current-time",
+          operation,
+          outputDirectory: directory,
+          fileName: "time.txt",
+        }),
+        controlKey,
+        `File\n${operation === "start" ? "Start" : "Stop"}`,
+      );
+
+    try {
+      await control("start");
+      await control("stop");
+      expect(controlKey.titles.at(-1)).toBe("File\nStart");
     } finally {
       await rm(directory, { force: true, recursive: true });
     }

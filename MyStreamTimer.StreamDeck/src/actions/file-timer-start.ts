@@ -2,6 +2,7 @@ import streamDeck, {
   action,
   type DidReceiveSettingsEvent,
   type KeyDownEvent,
+  type SendToPluginEvent,
   SingletonAction,
   type WillAppearEvent,
 } from "@elgato/streamdeck";
@@ -13,6 +14,11 @@ import {
   normalizeFileStartSettings,
   type FileTimerStartSettings,
 } from "../settings";
+import {
+  isOutputPathRequest,
+  type PluginMessage,
+  sendOutputPath,
+} from "./file-output-path";
 
 const logger = streamDeck.logger.createScope("FileTimerStart");
 
@@ -28,6 +34,18 @@ export class FileTimerStartAction extends SingletonAction<FileTimerStartSettings
     ev: DidReceiveSettingsEvent<FileTimerStartSettings>,
   ): Promise<void> {
     return this.updateSettings(ev);
+  }
+
+  override async onSendToPlugin(
+    ev: SendToPluginEvent<PluginMessage, FileTimerStartSettings>,
+  ): Promise<void> {
+    if (isOutputPathRequest(ev.payload)) {
+      await sendOutputPath(
+        logger,
+        await ev.action.getSettings(),
+        normalizeFileStartSettings,
+      );
+    }
   }
 
   override async onKeyDown(
@@ -55,16 +73,11 @@ export class FileTimerStartAction extends SingletonAction<FileTimerStartSettings
     ev: DidReceiveSettingsEvent<FileTimerStartSettings>,
   ): Promise<void> {
     await this.updateTitle(ev);
-    try {
-      await streamDeck.ui.sendToPropertyInspector({
-        event: "file-output-path",
-        path: getFileOutputPath(
-          normalizeFileStartSettings(ev.payload.settings),
-        ),
-      });
-    } catch (error) {
-      logger.warn("Unable to resolve file output path.", error);
-    }
+    await sendOutputPath(
+      logger,
+      ev.payload.settings,
+      normalizeFileStartSettings,
+    );
   }
 
   private async updateTitle(

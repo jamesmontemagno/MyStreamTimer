@@ -2,16 +2,21 @@ import streamDeck, {
   action,
   type DidReceiveSettingsEvent,
   type KeyDownEvent,
+  type SendToPluginEvent,
   SingletonAction,
   type WillAppearEvent,
 } from "@elgato/streamdeck";
 
 import { fileTimers } from "../file-timer-service";
 import {
-  getFileOutputPath,
   normalizeFileControlSettings,
   type FileTimerControlSettings,
 } from "../settings";
+import {
+  isOutputPathRequest,
+  type PluginMessage,
+  sendOutputPath,
+} from "./file-output-path";
 
 const logger = streamDeck.logger.createScope("FileTimerControl");
 
@@ -29,12 +34,24 @@ export class FileTimerControlAction extends SingletonAction<FileTimerControlSett
     return this.updateSettings(ev);
   }
 
+  override async onSendToPlugin(
+    ev: SendToPluginEvent<PluginMessage, FileTimerControlSettings>,
+  ): Promise<void> {
+    if (isOutputPathRequest(ev.payload)) {
+      await sendOutputPath(
+        logger,
+        await ev.action.getSettings(),
+        normalizeFileControlSettings,
+      );
+    }
+  }
+
   override async onKeyDown(
     ev: KeyDownEvent<FileTimerControlSettings>,
   ): Promise<void> {
     try {
       const settings = normalizeFileControlSettings(ev.payload.settings);
-      await fileTimers.control(settings, ev.action);
+      await fileTimers.control(settings, ev.action, controlTitle(settings));
       await ev.action.showOk();
     } catch (error) {
       logger.error("Unable to control file timer.", error);
@@ -46,16 +63,11 @@ export class FileTimerControlAction extends SingletonAction<FileTimerControlSett
     ev: DidReceiveSettingsEvent<FileTimerControlSettings>,
   ): Promise<void> {
     await this.updateTitle(ev);
-    try {
-      await streamDeck.ui.sendToPropertyInspector({
-        event: "file-output-path",
-        path: getFileOutputPath(
-          normalizeFileControlSettings(ev.payload.settings),
-        ),
-      });
-    } catch (error) {
-      logger.warn("Unable to resolve file output path.", error);
-    }
+    await sendOutputPath(
+      logger,
+      ev.payload.settings,
+      normalizeFileControlSettings,
+    );
   }
 
   private async updateTitle(
@@ -65,12 +77,16 @@ export class FileTimerControlAction extends SingletonAction<FileTimerControlSett
   ): Promise<void> {
     try {
       const settings = normalizeFileControlSettings(ev.payload.settings);
-      await ev.action.setTitle(`File\n${capitalize(settings.operation)}`);
+      await ev.action.setTitle(controlTitle(settings));
     } catch (error) {
       logger.warn("Invalid File Timer Control settings.", error);
       await ev.action.setTitle("Configure");
     }
   }
+}
+
+function controlTitle(settings: { operation: string }): string {
+  return `File\n${capitalize(settings.operation)}`;
 }
 
 function capitalize(value: string): string {

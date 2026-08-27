@@ -5,29 +5,31 @@ function setVisible(id, visible) {
   document.querySelector(id).style.display = visible ? "" : "none";
 }
 
+// Assigning value emits sdpi-components' "valuechange" and persists the setting.
 function setOperation(value) {
   if (operation.value !== value) {
     operation.value = value;
-    operation.dispatchEvent(new Event("change", { bubbles: true }));
   }
 }
 
 function updateFields() {
-  const isTime = target.value === "time";
-  if (isTime && operation.value !== "start" && operation.value !== "stop") {
+  const isTime = (target.value ?? "countdown") === "time";
+  const operationValue = operation.value ?? "pause";
+  if (isTime && operationValue !== "start" && operationValue !== "stop") {
     setOperation("stop");
-  } else if (!isTime && operation.value === "start") {
+  } else if (!isTime && operationValue === "start") {
     setOperation("stop");
   }
 
+  const effectiveOperation = operation.value ?? "pause";
   const usesAmount =
-    operation.value === "add" || operation.value === "subtract";
+    effectiveOperation === "add" || effectiveOperation === "subtract";
   setVisible("#amount-item", usesAmount);
   setVisible("#unit-item", usesAmount);
 }
 
 customElements.whenDefined("sdpi-select").then(() => {
-  target.addEventListener("change", updateFields);
-  operation.addEventListener("change", updateFields);
+  target.addEventListener("valuechange", updateFields);
+  operation.addEventListener("valuechange", updateFields);
   updateFields();
 });

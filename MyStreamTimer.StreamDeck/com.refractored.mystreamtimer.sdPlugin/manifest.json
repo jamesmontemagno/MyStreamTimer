@@ -7,14 +7,14 @@
     {
       "Name": "Stream Timer Start",
       "UUID": "com.refractored.mystreamtimer.start-timer",
-      "Icon": "imgs/actions/start/icon",
+      "Icon": "imgs/actions/stream-start/icon",
       "Tooltip": "Start a My Stream Timer app timer.",
       "PropertyInspectorPath": "ui/start-timer.html",
       "Controllers": ["Keypad"],
       "SupportedInMultiActions": true,
       "States": [
         {
-          "Image": "imgs/actions/start/key",
+          "Image": "imgs/actions/stream-start/key",
           "TitleAlignment": "middle",
           "FontSize": 11
         }
@@ -23,14 +23,14 @@
     {
       "Name": "Stream Timer Control",
       "UUID": "com.refractored.mystreamtimer.control-timer",
-      "Icon": "imgs/actions/control/icon",
+      "Icon": "imgs/actions/stream-control/icon",
       "Tooltip": "Pause, resume, adjust, reset, or stop a My Stream Timer timer.",
       "PropertyInspectorPath": "ui/control-timer.html",
       "Controllers": ["Keypad"],
       "SupportedInMultiActions": true,
       "States": [
         {
-          "Image": "imgs/actions/control/key",
+          "Image": "imgs/actions/stream-control/key",
           "TitleAlignment": "middle",
           "FontSize": 11
         }
@@ -39,14 +39,14 @@
     {
       "Name": "File Timer Start",
       "UUID": "com.refractored.mystreamtimer.file-timer-start",
-      "Icon": "imgs/actions/start/icon",
+      "Icon": "imgs/actions/file-start/icon",
       "Tooltip": "Start or restart a timer that writes to a text file.",
       "PropertyInspectorPath": "ui/file-timer-start.html",
       "Controllers": ["Keypad"],
       "SupportedInMultiActions": true,
       "States": [
         {
-          "Image": "imgs/actions/start/key",
+          "Image": "imgs/actions/file-start/key",
           "TitleAlignment": "middle",
           "FontSize": 11
         }
@@ -55,14 +55,14 @@
     {
       "Name": "File Timer Control",
       "UUID": "com.refractored.mystreamtimer.file-timer-control",
-      "Icon": "imgs/actions/control/icon",
+      "Icon": "imgs/actions/file-control/icon",
       "Tooltip": "Pause, resume, reset, or stop a file timer.",
       "PropertyInspectorPath": "ui/file-timer-control.html",
       "Controllers": ["Keypad"],
       "SupportedInMultiActions": true,
       "States": [
         {
-          "Image": "imgs/actions/control/key",
+          "Image": "imgs/actions/file-control/key",
           "TitleAlignment": "middle",
           "FontSize": 11
         }

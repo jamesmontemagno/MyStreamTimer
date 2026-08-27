@@ -14,7 +14,7 @@ function setVisible(id, visible) {
 }
 
 function updateFields() {
-  const usesDuration = displayFormat.value === "countdown";
+  const usesDuration = (displayFormat.value ?? "countdown") === "countdown";
   setVisible("#amount-item", usesDuration);
   setVisible("#unit-item", usesDuration);
 }
@@ -34,7 +34,10 @@ async function copyOutputFilePath() {
 }
 
 customElements.whenDefined("sdpi-select").then(() => {
-  displayFormat.addEventListener("change", updateFields);
+  displayFormat.addEventListener("valuechange", updateFields);
   copyOutputPath.addEventListener("click", copyOutputFilePath);
   updateFields();
+  SDPIComponents.streamDeckClient.send("sendToPlugin", {
+    event: "request-file-output-path",
+  });
 });
