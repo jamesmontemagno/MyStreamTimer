@@ -118,7 +118,8 @@ struct AutomationComposerView: View {
             HStack(spacing: 12) {
                 Picker("Timer", selection: $selectedTimer) {
                     ForEach(TimerKind.allCases) { timer in
-                        Text(appModel.controller(for: timer).effectiveTitle).tag(timer)
+                        AutomationTimerLabel(controller: appModel.controller(for: timer))
+                            .tag(timer)
                     }
                 }
 
@@ -166,6 +167,14 @@ struct AutomationComposerView: View {
         .onChange(of: selectedAction) { _, newValue in
             commandValue = newValue.defaultValue
         }
+    }
+}
+
+private struct AutomationTimerLabel: View {
+    @ObservedObject var controller: TimerController
+
+    var body: some View {
+        Text(controller.effectiveTitle)
     }
 }
 
