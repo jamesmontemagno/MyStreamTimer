@@ -1,0 +1,106 @@
+name: macOS Build
+
+# PR / push gate for the native SwiftUI macOS app in MyStreamTimer.MacSwift.
+# Always runs so the required status checks always report; the build itself is
+# skipped when no macOS files changed.
+
+on:
+  pull_request:
+    branches: [ main, master ]
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: macos-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PROJECT: MyStreamTimer.MacSwift/mystreamtimer/mystreamtimer.xcodeproj
+  SCHEME: mystreamtimer
+
+jobs:
+  changes:
+    name: Detect macOS changes
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      mac: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.mac }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+      - name: Filter changed files
+        id: filter
+        uses: dorny/paths-filter@v4
+        with:
+          base: ${{ github.ref }}
+          filters: |
+            mac:
+              - 'MyStreamTimer.MacSwift/**'
+              - '.github/workflows/macos-build.yml'
+
+  build:
+    name: Build (macOS)
+    needs: changes
+    if: ${{ needs.changes.outputs.mac == 'true' }}
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '26.2'
+
+      - name: Cache DerivedData
+        uses: actions/cache@v5
+        with:
+          path: ~/Library/Developer/Xcode/DerivedData
+          key: ${{ runner.os }}-deriveddata-${{ hashFiles('**/*.xcodeproj/project.pbxproj') }}
+          restore-keys: |
+            ${{ runner.os }}-deriveddata-
+
+      - name: Resolve Swift packages
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project "$PROJECT" \
+            -scheme "$SCHEME"
+
+      - name: Build
+        run: |
+          xcodebuild build \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -configuration Debug \
+            -destination 'platform=macOS' \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Run unit tests
+        run: |
+          xcodebuild test \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -configuration Debug \
+            -destination 'platform=macOS' \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+
+  no-macos-changes:
+    name: Build skipped (no macOS changes)
+    needs: changes
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report successful skip
+        if: ${{ needs.changes.outputs.mac != 'true' }}
+        run: echo "No macOS files changed; skipping the macOS build."
+      - name: Report macOS checks ran
+        if: ${{ needs.changes.outputs.mac == 'true' }}
+        run: echo "macOS files changed; the macOS build and tests ran."
