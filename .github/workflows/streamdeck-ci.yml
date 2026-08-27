@@ -1,0 +1,82 @@
+name: Stream Deck Build
+
+on:
+  pull_request:
+    branches: [main, master]
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: streamdeck-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: Detect Stream Deck changes
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      plugin: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.plugin }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+      - id: filter
+        uses: dorny/paths-filter@v4
+        with:
+          base: ${{ github.ref }}
+          filters: |
+            plugin:
+              - 'MyStreamTimer.StreamDeck/**'
+              - 'scripts/create-release-tags.ps1'
+              - 'README.md'
+              - '.github/workflows/streamdeck-ci.yml'
+              - '.github/workflows/streamdeck-release.yml'
+
+  quality:
+    name: Test, validate, and package
+    needs: changes
+    if: ${{ needs.changes.outputs.plugin == 'true' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: MyStreamTimer.StreamDeck
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: MyStreamTimer.StreamDeck/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:coverage
+      - run: npm run build
+      - run: npm run validate
+      - run: npm run pack
+      - uses: actions/upload-artifact@v7
+        with:
+          name: streamdeck-plugin
+          path: MyStreamTimer.StreamDeck/dist/*.streamDeckPlugin
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v7
+        with:
+          name: streamdeck-coverage
+          path: MyStreamTimer.StreamDeck/coverage
+          if-no-files-found: error
+
+  no-plugin-changes:
+    name: Build skipped (no Stream Deck changes)
+    needs: changes
+    runs-on: ubuntu-latest
+    steps:
+      - if: ${{ needs.changes.outputs.plugin != 'true' }}
+        run: echo "No Stream Deck files changed; skipping plugin checks."
+      - if: ${{ needs.changes.outputs.plugin == 'true' }}
+        run: echo "Stream Deck files changed; plugin checks ran."

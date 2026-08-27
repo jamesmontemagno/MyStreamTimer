@@ -1,0 +1,57 @@
+<!doctype html>
+<html>
+  <head lang="en">
+    <title>Stream Deck Start Settings</title>
+    <meta charset="utf-8" />
+    <script src="sdpi-components.js"></script>
+  </head>
+  <body>
+    <sdpi-item label="Display Format">
+      <sdpi-select
+        id="display-format"
+        setting="displayFormat"
+        default="countdown"
+      >
+        <option value="countdown">Countdown</option>
+        <option value="countup">Count Up</option>
+        <option value="current-time">Current Time</option>
+      </sdpi-select>
+    </sdpi-item>
+    <sdpi-item id="amount-item" label="Duration">
+      <sdpi-textfield
+        setting="amount"
+        type="number"
+        min="0.01"
+        default="5"
+      ></sdpi-textfield>
+    </sdpi-item>
+    <sdpi-item id="unit-item" label="Unit">
+      <sdpi-select setting="unit" default="minutes">
+        <option value="minutes">Minutes</option>
+        <option value="seconds">Seconds</option>
+      </sdpi-select>
+    </sdpi-item>
+    <sdpi-item label="Output Folder">
+      <sdpi-textfield
+        setting="outputDirectory"
+        placeholder="Defaults to Documents/MyStreamTimerStreamDeck"
+      ></sdpi-textfield>
+    </sdpi-item>
+    <sdpi-item label="File Name">
+      <sdpi-textfield
+        setting="fileName"
+        default="countdown.txt"
+      ></sdpi-textfield>
+    </sdpi-item>
+    <sdpi-item>
+      <sdpi-button id="copy-output-path">Copy output file path</sdpi-button>
+    </sdpi-item>
+    <sdpi-item>
+      <sdpi-alert type="info"
+        >Pressing this action starts or restarts the timer for this output
+        file.</sdpi-alert
+      >
+    </sdpi-item>
+    <script src="file-timer-start.js"></script>
+  </body>
+</html>

@@ -5,6 +5,7 @@ param(
 
     [switch]$Mac,
     [switch]$Windows,
+    [switch]$StreamDeck,
     [switch]$Push
 )
 
@@ -15,8 +16,8 @@ if ($Version -notmatch '^v\d+\.\d+\.\d+(\.\d+)?$') {
     throw "Version must match v<major>.<minor>.<patch> or v<major>.<minor>.<patch>.<revision> (example: v3.0.0 or v3.0.0.1)."
 }
 
-if (-not $Mac -and -not $Windows) {
-    throw "Select at least one platform with -Mac and/or -Windows."
+if (-not $Mac -and -not $Windows -and -not $StreamDeck) {
+    throw "Select at least one platform with -Mac, -Windows, and/or -StreamDeck."
 }
 
 $selectedTags = @()
@@ -25,6 +26,9 @@ if ($Mac) {
 }
 if ($Windows) {
     $selectedTags += "$Version-windows"
+}
+if ($StreamDeck) {
+    $selectedTags += "$Version-streamdeck"
 }
 
 git rev-parse --is-inside-work-tree *> $null
@@ -56,7 +60,7 @@ foreach ($tag in $selectedTags) {
 }
 
 foreach ($tag in $selectedTags) {
-    $label = if ($tag -like "*-windows") { "Windows" } elseif ($tag -like "*-mac") { "macOS" } else { "Release" }
+    $label = if ($tag -like "*-windows") { "Windows" } elseif ($tag -like "*-mac") { "macOS" } elseif ($tag -like "*-streamdeck") { "Stream Deck" } else { "Release" }
     if ($PSCmdlet.ShouldProcess($tag, "Create annotated $label tag")) {
         git tag -a $tag -m "Release $tag"
     }

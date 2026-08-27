@@ -52,6 +52,9 @@ dlldata.c
 project.lock.json
 project.fragment.lock.json
 artifacts/
+MyStreamTimer.StreamDeck/coverage/
+MyStreamTimer.StreamDeck/dist/
+MyStreamTimer.StreamDeck/com.refractored.mystreamtimer.sdPlugin/logs/
 **/Properties/launchSettings.json
 
 *_i.c
@@ -299,4 +302,3 @@ docs/en/ns-.xml
 TestResults/
 
 artifacts/
-
