@@ -1,0 +1,66 @@
+{
+  "$schema": "https://schemas.elgato.com/streamdeck/plugins/manifest.json",
+  "Name": "My Stream Timer",
+  "Version": "2.0.0.0",
+  "Author": "Refractored LLC",
+  "Actions": [
+    {
+      "Name": "Start Timer",
+      "UUID": "com.refractored.mystreamtimer.start-timer",
+      "Icon": "imgs/actions/timer/icon",
+      "Tooltip": "Start My Stream Timer or an independent file countdown.",
+      "PropertyInspectorPath": "ui/start-timer.html",
+      "Controllers": ["Keypad"],
+      "SupportedInMultiActions": true,
+      "States": [
+        {
+          "Image": "imgs/actions/timer/key",
+          "TitleAlignment": "middle",
+          "FontSize": 11
+        }
+      ]
+    },
+    {
+      "Name": "Control Timer",
+      "UUID": "com.refractored.mystreamtimer.control-timer",
+      "Icon": "imgs/actions/timer/icon",
+      "Tooltip": "Pause, resume, adjust, reset, or stop a My Stream Timer timer.",
+      "PropertyInspectorPath": "ui/control-timer.html",
+      "Controllers": ["Keypad"],
+      "SupportedInMultiActions": true,
+      "States": [
+        {
+          "Image": "imgs/actions/timer/key",
+          "TitleAlignment": "middle",
+          "FontSize": 11
+        }
+      ]
+    }
+  ],
+  "Category": "My Stream Timer",
+  "CategoryIcon": "imgs/plugin/category-icon",
+  "CodePath": "bin/plugin.js",
+  "Description": "Start and control My Stream Timer countdowns, count-ups, and current-time output.",
+  "Icon": "imgs/plugin/marketplace",
+  "SDKVersion": 3,
+  "Software": {
+    "MinimumVersion": "7.1"
+  },
+  "OS": [
+    {
+      "Platform": "mac",
+      "MinimumVersion": "12"
+    },
+    {
+      "Platform": "windows",
+      "MinimumVersion": "10"
+    }
+  ],
+  "Nodejs": {
+    "Version": "24",
+    "Debug": "enabled"
+  },
+  "SupportURL": "https://github.com/jamesmontemagno/MyStreamTimer/issues",
+  "URL": "https://www.mystreamtimer.com",
+  "UUID": "com.refractored.mystreamtimer"
+}

@@ -1,0 +1,52 @@
+<!doctype html>
+<html>
+  <head lang="en">
+    <title>Control Timer Settings</title>
+    <meta charset="utf-8" />
+    <script src="sdpi-components.js"></script>
+  </head>
+  <body>
+    <sdpi-item label="Timer">
+      <sdpi-select id="target" setting="target" default="countdown">
+        <option value="countdown">Countdown 1</option>
+        <option value="countdown2">Countdown 2</option>
+        <option value="countdown3">Countdown 3</option>
+        <option value="countdown4">Countdown 4</option>
+        <option value="countup">Count Up 1</option>
+        <option value="countup2">Count Up 2</option>
+        <option value="time">Current Time</option>
+      </sdpi-select>
+    </sdpi-item>
+    <sdpi-item label="Operation">
+      <sdpi-select id="operation" setting="operation" default="pause">
+        <option value="add">Add</option>
+        <option value="subtract">Subtract</option>
+        <option value="pause">Pause</option>
+        <option value="resume">Resume</option>
+        <option value="reset">Reset</option>
+        <option value="stop">Stop</option>
+        <option value="start">Start Current Time</option>
+      </sdpi-select>
+    </sdpi-item>
+    <sdpi-item id="amount-item" label="Amount">
+      <sdpi-textfield
+        setting="amount"
+        type="number"
+        min="0.01"
+        default="1"
+      ></sdpi-textfield>
+    </sdpi-item>
+    <sdpi-item id="unit-item" label="Unit">
+      <sdpi-select setting="unit" default="minutes">
+        <option value="minutes">Minutes</option>
+        <option value="seconds">Seconds</option>
+      </sdpi-select>
+    </sdpi-item>
+    <sdpi-item>
+      <sdpi-alert type="info"
+        >Amount and unit apply only to Add and Subtract.</sdpi-alert
+      >
+    </sdpi-item>
+    <script src="control-timer.js"></script>
+  </body>
+</html>

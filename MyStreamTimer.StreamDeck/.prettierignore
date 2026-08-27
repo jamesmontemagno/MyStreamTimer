@@ -1,0 +1,5 @@
+com.refractored.mystreamtimer.sdPlugin/bin
+com.refractored.mystreamtimer.sdPlugin/ui/sdpi-components.js
+coverage
+dist
+package-lock.json

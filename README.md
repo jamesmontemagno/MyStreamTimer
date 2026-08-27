@@ -37,7 +37,11 @@ If you are on macOS when you set click "Browse" in OBS/SLOBS the file picker wil
 
 ## Integrating into Stream Deck
 
-You can integrate a **Website** command under **System** to launch My Stream Timer and start a countdown from a specific amount of time. You don't need to browse for a file location at all as you can input a protocol url:
+The official My Stream Timer plugin is in [`MyStreamTimer.StreamDeck`](MyStreamTimer.StreamDeck). It provides configurable actions for every countdown, count-up, and Current Time output, including start, add/subtract, pause, resume, reset, and stop. A Start Timer action can also run an independent countdown that writes directly to a text file without launching the app.
+
+Plugin releases are attached to GitHub tags such as `v2.0.0-streamdeck`. Existing buttons from the legacy plugin must be removed and re-added because version 2 uses new plugin and action identifiers.
+
+You can also integrate a **Website** command under **System** using a protocol URL:
 
 * Count down from X minutes: mystreamtimer://countdown/?mins=6
 * Count down to specific time (24 hour clock): mystreamtimer://countdown/?to=15:30
@@ -92,6 +96,5 @@ In some instances My Stream Timer may need full file accessed based on your setu
 
 ### macOS: I dont' hear any "beeps"
 My Stream Timer uses the native device sound effects. This means you can make the beeps whatever you would like, but you have to turn them on. Head to **Preferences > Sound > Sound Effects**. Ensure that **Play user interface sound effects** is turned on and that it is set to playback through the speaker you would like to use.
-
 
 
