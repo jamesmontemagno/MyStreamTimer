@@ -2,8 +2,11 @@ name: Windows Build
 
 # PR / push gate for the Windows (WinUI 3) app. The workflow always runs so the
 # required status checks always report; the `changes` job decides whether the
-# build and tests actually execute or are skipped (a skipped job still satisfies
-# a required check, which keeps docs-only PRs mergeable).
+# build and tests actually execute. The build/test jobs always start (so the
+# matrix-expanded check names like "Build (Windows, x64)" are reported even on
+# docs-only PRs) but every step is conditional, so a skip costs only a runner
+# spin-up. A job-level `if` would prevent matrix expansion and leave the
+# required checks "expected" forever.
 
 on:
   pull_request:
@@ -52,29 +55,34 @@ jobs:
   test:
     name: Core tests
     needs: changes
-    if: ${{ needs.changes.outputs.windows == 'true' }}
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
+        if: ${{ needs.changes.outputs.windows == 'true' }}
       - uses: actions/setup-dotnet@v5
+        if: ${{ needs.changes.outputs.windows == 'true' }}
         with:
           dotnet-version: 10.0.x
       - name: Restore
+        if: ${{ needs.changes.outputs.windows == 'true' }}
         run: dotnet restore MyStreamTimer.slnx
       - name: Test Core
+        if: ${{ needs.changes.outputs.windows == 'true' }}
         run: dotnet test tests/MyStreamTimer.Core.Tests/MyStreamTimer.Core.Tests.csproj -c Release --no-restore --collect:"XPlat Code Coverage" --results-directory TestResults -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura
       - name: Upload coverage
-        if: always()
+        if: ${{ always() && needs.changes.outputs.windows == 'true' }}
         uses: actions/upload-artifact@v7
         with:
           name: coverage
           path: TestResults/**/coverage.cobertura.xml
           if-no-files-found: ignore
+      - name: Skipped
+        if: ${{ needs.changes.outputs.windows != 'true' }}
+        run: echo "No Windows files changed; Core tests skipped."
 
   build:
     name: Build (Windows, ${{ matrix.platform }})
     needs: changes
-    if: ${{ needs.changes.outputs.windows == 'true' }}
     runs-on: windows-latest
     strategy:
       fail-fast: false
@@ -86,15 +94,21 @@ jobs:
             rid: win-arm64
     steps:
       - uses: actions/checkout@v7
+        if: ${{ needs.changes.outputs.windows == 'true' }}
       - uses: actions/setup-dotnet@v5
+        if: ${{ needs.changes.outputs.windows == 'true' }}
         with:
           dotnet-version: 10.0.x
       - uses: microsoft/setup-WinAppCli@v0.2
+        if: ${{ needs.changes.outputs.windows == 'true' }}
       - name: Restore
+        if: ${{ needs.changes.outputs.windows == 'true' }}
         run: dotnet restore src/MyStreamTimer.WinUI/MyStreamTimer.WinUI.csproj -p:Platform=${{ matrix.platform }} -r ${{ matrix.rid }} -p:PublishReadyToRun=true
       - name: Build
+        if: ${{ needs.changes.outputs.windows == 'true' }}
         run: dotnet build src/MyStreamTimer.WinUI/MyStreamTimer.WinUI.csproj -c Release -p:Platform=${{ matrix.platform }} -r ${{ matrix.rid }} --no-restore
       - name: Package (dev-signed)
+        if: ${{ needs.changes.outputs.windows == 'true' }}
         shell: pwsh
         run: |
           $out = Get-ChildItem -Directory -Path src/MyStreamTimer.WinUI/bin -Recurse | Where-Object { $_.FullName -match 'Release' -and (Test-Path (Join-Path $_.FullName 'MyStreamTimer.exe')) } | Select-Object -First 1
@@ -104,9 +118,13 @@ jobs:
           New-Item -ItemType Directory -Force artifacts | Out-Null
           winapp package $out.FullName --cert devcert.pfx --output artifacts/MyStreamTimer-${{ matrix.platform }}.msix --quiet
       - uses: actions/upload-artifact@v7
+        if: ${{ needs.changes.outputs.windows == 'true' }}
         with:
           name: msix-${{ matrix.platform }}
           path: artifacts/*.msix
+      - name: Skipped
+        if: ${{ needs.changes.outputs.windows != 'true' }}
+        run: echo "No Windows files changed; build skipped."
 
   no-windows-changes:
     name: Build skipped (no Windows changes)

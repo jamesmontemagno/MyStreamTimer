@@ -1,0 +1,101 @@
+name: Stream Deck Release
+
+on:
+  push:
+    tags:
+      - 'v*-streamdeck'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing Stream Deck release tag, for example v2.0.0-streamdeck
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: streamdeck-release
+  cancel-in-progress: false
+
+jobs:
+  package:
+    name: Package Stream Deck plugin
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      version: ${{ steps.version.outputs.version }}
+    defaults:
+      run:
+        working-directory: MyStreamTimer.StreamDeck
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+      - id: version
+        name: Parse release version
+        shell: bash
+        run: |
+          tag="${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}"
+          if [[ ! "$tag" =~ ^v([0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?)-streamdeck$ ]]; then
+            echo "Tag must match v<major>.<minor>.<patch>[.<build>]-streamdeck. Got '$tag'." >&2
+            exit 1
+          fi
+
+          version="${BASH_REMATCH[1]}"
+          if [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            version="$version.0"
+          fi
+
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: MyStreamTimer.StreamDeck/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: npm run validate
+      - name: Package versioned installer
+        run: npx streamdeck pack com.refractored.mystreamtimer.sdPlugin --output dist --force --no-update-check --no-file-list --version "${{ steps.version.outputs.version }}"
+      - name: Create checksum
+        run: |
+          cd dist
+          sha256sum *.streamDeckPlugin > SHA256SUMS.txt
+      - uses: actions/upload-artifact@v7
+        with:
+          name: streamdeck-release-${{ steps.version.outputs.version }}
+          path: |
+            MyStreamTimer.StreamDeck/dist/*.streamDeckPlugin
+            MyStreamTimer.StreamDeck/dist/SHA256SUMS.txt
+          if-no-files-found: error
+
+  release:
+    name: Publish GitHub Release
+    needs: package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: streamdeck-release-${{ needs.package.outputs.version }}
+          path: dist
+      - name: Publish release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.package.outputs.tag }}
+          VERSION: ${{ needs.package.outputs.version }}
+        run: |
+          gh release create "$TAG" \
+            dist/*.streamDeckPlugin \
+            dist/SHA256SUMS.txt \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "My Stream Timer for Stream Deck $VERSION" \
+            --generate-notes \
+            --notes "Install the attached .streamDeckPlugin file, smoke-test it on Windows and macOS, then upload the same package to Elgato Maker Console for Marketplace review. Version 2 is a clean break from the legacy plugin, so existing actions must be re-added."

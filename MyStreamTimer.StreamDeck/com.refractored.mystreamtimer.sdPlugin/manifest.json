@@ -1,0 +1,98 @@
+{
+  "$schema": "https://schemas.elgato.com/streamdeck/plugins/manifest.json",
+  "Name": "My Stream Timer",
+  "Version": "2.0.0.0",
+  "Author": "Refractored LLC",
+  "Actions": [
+    {
+      "Name": "App Timer Start",
+      "UUID": "com.refractored.mystreamtimer.start-timer",
+      "Icon": "imgs/actions/stream-start/icon",
+      "Tooltip": "Start a My Stream Timer app timer.",
+      "PropertyInspectorPath": "ui/start-timer.html",
+      "Controllers": ["Keypad"],
+      "SupportedInMultiActions": true,
+      "States": [
+        {
+          "Image": "imgs/actions/stream-start/key",
+          "TitleAlignment": "middle",
+          "FontSize": 11
+        }
+      ]
+    },
+    {
+      "Name": "App Timer Control",
+      "UUID": "com.refractored.mystreamtimer.control-timer",
+      "Icon": "imgs/actions/stream-control/icon",
+      "Tooltip": "Pause, resume, adjust, reset, or stop a My Stream Timer timer.",
+      "PropertyInspectorPath": "ui/control-timer.html",
+      "Controllers": ["Keypad"],
+      "SupportedInMultiActions": true,
+      "States": [
+        {
+          "Image": "imgs/actions/stream-control/key",
+          "TitleAlignment": "middle",
+          "FontSize": 11
+        }
+      ]
+    },
+    {
+      "Name": "Stream Deck Start",
+      "UUID": "com.refractored.mystreamtimer.file-timer-start",
+      "Icon": "imgs/actions/file-start/icon",
+      "Tooltip": "Start or restart a timer that writes to a text file.",
+      "PropertyInspectorPath": "ui/file-timer-start.html",
+      "Controllers": ["Keypad"],
+      "SupportedInMultiActions": true,
+      "States": [
+        {
+          "Image": "imgs/actions/file-start/key",
+          "TitleAlignment": "middle",
+          "FontSize": 11
+        }
+      ]
+    },
+    {
+      "Name": "Stream Deck Control",
+      "UUID": "com.refractored.mystreamtimer.file-timer-control",
+      "Icon": "imgs/actions/file-control/icon",
+      "Tooltip": "Pause, resume, reset, or stop a file timer.",
+      "PropertyInspectorPath": "ui/file-timer-control.html",
+      "Controllers": ["Keypad"],
+      "SupportedInMultiActions": true,
+      "States": [
+        {
+          "Image": "imgs/actions/file-control/key",
+          "TitleAlignment": "middle",
+          "FontSize": 11
+        }
+      ]
+    }
+  ],
+  "Category": "My Stream Timer",
+  "CategoryIcon": "imgs/plugin/category-icon",
+  "CodePath": "bin/plugin.js",
+  "Description": "Start and control My Stream Timer app timers or independent file timers.",
+  "Icon": "imgs/plugin/marketplace",
+  "SDKVersion": 3,
+  "Software": {
+    "MinimumVersion": "7.1"
+  },
+  "OS": [
+    {
+      "Platform": "mac",
+      "MinimumVersion": "12"
+    },
+    {
+      "Platform": "windows",
+      "MinimumVersion": "10"
+    }
+  ],
+  "Nodejs": {
+    "Version": "24",
+    "Debug": "enabled"
+  },
+  "SupportURL": "https://github.com/jamesmontemagno/MyStreamTimer/issues",
+  "URL": "https://www.mystreamtimer.com",
+  "UUID": "com.refractored.mystreamtimer"
+}

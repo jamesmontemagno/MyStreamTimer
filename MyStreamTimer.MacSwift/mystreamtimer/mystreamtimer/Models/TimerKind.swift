@@ -290,6 +290,12 @@ struct URLCommand {
             return
         }
 
+        if kind == .time, contains("start") {
+            self.action = .start
+            self.minutes = 0
+            return
+        }
+
         return nil
     }
 
