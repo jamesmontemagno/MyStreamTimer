@@ -20,7 +20,7 @@ import {
   sendOutputPath,
 } from "./file-output-path";
 
-const logger = streamDeck.logger.createScope("FileTimerStart");
+const logger = streamDeck.logger.createScope("StreamDeckStart");
 
 @action({ UUID: "com.refractored.mystreamtimer.file-timer-start" })
 export class FileTimerStartAction extends SingletonAction<FileTimerStartSettings> {
@@ -98,7 +98,7 @@ export class FileTimerStartAction extends SingletonAction<FileTimerStartSettings
         );
       }
     } catch (error) {
-      logger.warn("Invalid File Timer Start settings.", error);
+      logger.warn("Invalid Stream Deck Start settings.", error);
       await ev.action.setTitle("Configure");
     }
   }

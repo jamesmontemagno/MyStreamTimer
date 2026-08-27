@@ -12,7 +12,7 @@ import {
 } from "../settings";
 import { buildControlUrl, timerLabel } from "../timer-commands";
 
-const logger = streamDeck.logger.createScope("ControlTimer");
+const logger = streamDeck.logger.createScope("AppTimerControl");
 
 @action({ UUID: "com.refractored.mystreamtimer.control-timer" })
 export class ControlTimerAction extends SingletonAction<ControlTimerSettings> {
@@ -54,7 +54,7 @@ export class ControlTimerAction extends SingletonAction<ControlTimerSettings> {
           : capitalize(settings.operation);
       await ev.action.setTitle(`${timerLabel(settings.target)}\n${operation}`);
     } catch (error) {
-      logger.warn("Invalid Control Timer settings.", error);
+      logger.warn("Invalid App Timer Control settings.", error);
       await ev.action.setTitle("Configure");
     }
   }

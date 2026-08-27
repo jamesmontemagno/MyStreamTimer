@@ -124,7 +124,7 @@ export function buildControlUrl(command: ControlCommand): string {
 
   if (command.operation === "start") {
     throw new Error(
-      "Use the Start Timer action to start a countdown or count-up.",
+      "Use the App Timer Start action to start a countdown or count-up.",
     );
   }
 

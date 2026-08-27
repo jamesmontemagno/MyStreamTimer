@@ -164,7 +164,7 @@ export function normalizeFileControlSettings(
       throw new Error("Current Time file timers only support Start and Stop.");
     }
   } else if (operation === "start") {
-    throw new Error("Use the File Timer Start action to start this timer.");
+    throw new Error("Use the Stream Deck Start action to start this timer.");
   }
 
   return {

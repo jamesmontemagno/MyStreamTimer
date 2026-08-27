@@ -9,7 +9,7 @@ import streamDeck, {
 import { normalizeStartSettings, type StartTimerSettings } from "../settings";
 import { buildStartUrl, timerLabel } from "../timer-commands";
 
-const logger = streamDeck.logger.createScope("StreamTimerStart");
+const logger = streamDeck.logger.createScope("AppTimerStart");
 
 @action({ UUID: "com.refractored.mystreamtimer.start-timer" })
 export class StartTimerAction extends SingletonAction<StartTimerSettings> {
@@ -62,7 +62,7 @@ export class StartTimerAction extends SingletonAction<StartTimerSettings> {
               : formatDuration(settings.amount, settings.unit);
       await ev.action.setTitle(`${timerLabel(settings.target)}\n${mode}`);
     } catch (error) {
-      logger.warn("Invalid Start Timer settings.", error);
+      logger.warn("Invalid App Timer Start settings.", error);
       await ev.action.setTitle("Configure");
     }
   }

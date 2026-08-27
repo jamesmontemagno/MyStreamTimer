@@ -18,7 +18,7 @@ import {
   sendOutputPath,
 } from "./file-output-path";
 
-const logger = streamDeck.logger.createScope("FileTimerControl");
+const logger = streamDeck.logger.createScope("StreamDeckControl");
 
 @action({ UUID: "com.refractored.mystreamtimer.file-timer-control" })
 export class FileTimerControlAction extends SingletonAction<FileTimerControlSettings> {
@@ -79,7 +79,7 @@ export class FileTimerControlAction extends SingletonAction<FileTimerControlSett
       const settings = normalizeFileControlSettings(ev.payload.settings);
       await ev.action.setTitle(controlTitle(settings));
     } catch (error) {
-      logger.warn("Invalid File Timer Control settings.", error);
+      logger.warn("Invalid Stream Deck Control settings.", error);
       await ev.action.setTitle("Configure");
     }
   }

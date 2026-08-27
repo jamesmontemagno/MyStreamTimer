@@ -5,7 +5,7 @@
   "Author": "Refractored LLC",
   "Actions": [
     {
-      "Name": "Stream Timer Start",
+      "Name": "App Timer Start",
       "UUID": "com.refractored.mystreamtimer.start-timer",
       "Icon": "imgs/actions/stream-start/icon",
       "Tooltip": "Start a My Stream Timer app timer.",
@@ -21,7 +21,7 @@
       ]
     },
     {
-      "Name": "Stream Timer Control",
+      "Name": "App Timer Control",
       "UUID": "com.refractored.mystreamtimer.control-timer",
       "Icon": "imgs/actions/stream-control/icon",
       "Tooltip": "Pause, resume, adjust, reset, or stop a My Stream Timer timer.",
@@ -37,7 +37,7 @@
       ]
     },
     {
-      "Name": "File Timer Start",
+      "Name": "Stream Deck Start",
       "UUID": "com.refractored.mystreamtimer.file-timer-start",
       "Icon": "imgs/actions/file-start/icon",
       "Tooltip": "Start or restart a timer that writes to a text file.",
@@ -53,7 +53,7 @@
       ]
     },
     {
-      "Name": "File Timer Control",
+      "Name": "Stream Deck Control",
       "UUID": "com.refractored.mystreamtimer.file-timer-control",
       "Icon": "imgs/actions/file-control/icon",
       "Tooltip": "Pause, resume, reset, or stop a file timer.",

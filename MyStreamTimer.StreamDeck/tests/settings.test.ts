@@ -109,7 +109,7 @@ describe("settings", () => {
     ).toThrow("Current Time only supports Start and Stop.");
     expect(() =>
       normalizeControlSettings({ target: "countdown", operation: "start" }),
-    ).toThrow("Use the Start Timer action");
+    ).toThrow("Use the App Timer Start action");
     expect(() =>
       normalizeControlSettings({
         target: "countdown",
@@ -139,7 +139,7 @@ describe("settings", () => {
         displayFormat: "countup",
         operation: "start",
       }),
-    ).toThrow("Use the File Timer Start action");
+    ).toThrow("Use the Stream Deck Start action");
     expect(() =>
       normalizeFileControlSettings({
         displayFormat: "countdown",
