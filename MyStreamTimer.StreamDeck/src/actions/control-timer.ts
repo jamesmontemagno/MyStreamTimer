@@ -6,6 +6,7 @@ import streamDeck, {
   type WillAppearEvent,
 } from "@elgato/streamdeck";
 
+import { openTimerUrl } from "../launch-url";
 import {
   normalizeControlSettings,
   type ControlTimerSettings,
@@ -33,7 +34,7 @@ export class ControlTimerAction extends SingletonAction<ControlTimerSettings> {
   ): Promise<void> {
     try {
       const settings = normalizeControlSettings(ev.payload.settings);
-      await streamDeck.system.openUrl(buildControlUrl(settings));
+      await openTimerUrl(buildControlUrl(settings));
       await ev.action.showOk();
     } catch (error) {
       logger.error("Unable to control timer.", error);

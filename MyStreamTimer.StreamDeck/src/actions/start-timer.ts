@@ -6,6 +6,7 @@ import streamDeck, {
   type WillAppearEvent,
 } from "@elgato/streamdeck";
 
+import { openTimerUrl } from "../launch-url";
 import { normalizeStartSettings, type StartTimerSettings } from "../settings";
 import { buildStartUrl, timerLabel } from "../timer-commands";
 
@@ -37,7 +38,7 @@ export class StartTimerAction extends SingletonAction<StartTimerSettings> {
         unit: settings.unit,
         clockTime: settings.clockTime,
       });
-      await streamDeck.system.openUrl(url);
+      await openTimerUrl(url);
       await ev.action.showOk();
     } catch (error) {
       logger.error("Unable to start timer.", error);
