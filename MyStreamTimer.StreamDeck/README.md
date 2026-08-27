@@ -47,15 +47,18 @@ Deck CLI does not currently provide a documented Marketplace publish command.
 
 ## Actions
 
-- **Start Timer** controls any Countdown, Count Up, or Current Time output through the
-  `mystreamtimer://` protocol. It can instead run a self-contained countdown and write its value to
-  a configurable text file.
-- **Control Timer** supports add/subtract minutes or seconds, pause, resume, reset, and stop.
-  Current Time supports start and stop.
+- **Stream Timer Start** controls any Countdown, Count Up, or Current Time output through the
+  `mystreamtimer://` protocol.
+- **Stream Timer Control** supports add/subtract minutes or seconds, pause, resume, reset, and
+  stop. Current Time supports start and stop.
+- **File Timer Start** starts or restarts a Countdown, Count Up, or Current Time text-file timer.
+- **File Timer Control** controls the matching file timer by its configured output folder and file
+  name. Countdown and Count Up support pause, resume, reset, and stop; Current Time supports start
+  and stop.
 
-Plugin-native output defaults to `Documents/MyStreamTimerStreamDeck/countdown.txt`. Runtime files
-are written outside the packaged plugin so the installer remains compatible with Marketplace DRM
-integrity checks.
+File timer output defaults to `Documents/MyStreamTimerStreamDeck/countdown.txt`. The inspector's
+**Copy output file path** control copies the precise resolved path. Runtime files are written outside
+the packaged plugin so the installer remains compatible with Marketplace DRM integrity checks.
 
 ## Release
 
@@ -68,7 +71,7 @@ Create and push a release tag from the repository root:
 After the GitHub Release is created:
 
 1. Install the attached `.streamDeckPlugin` on Windows and macOS.
-2. Verify app-backed and plugin-native actions.
+2. Verify Stream Timer and File Timer actions.
 3. Upload the same installer to Maker Console without selecting automatic publication.
 4. Download and test the DRM-processed build, then submit it for Marketplace review.
 

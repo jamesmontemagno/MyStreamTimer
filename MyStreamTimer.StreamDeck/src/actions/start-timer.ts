@@ -6,14 +6,10 @@ import streamDeck, {
   type WillAppearEvent,
 } from "@elgato/streamdeck";
 
-import { NativeCountdownManager } from "../native-countdown";
 import { normalizeStartSettings, type StartTimerSettings } from "../settings";
 import { buildStartUrl, timerLabel } from "../timer-commands";
 
-const logger = streamDeck.logger.createScope("StartTimer");
-const nativeCountdowns = new NativeCountdownManager((error) => {
-  logger.error("Native countdown failed while writing output.", error);
-});
+const logger = streamDeck.logger.createScope("StreamTimerStart");
 
 @action({ UUID: "com.refractored.mystreamtimer.start-timer" })
 export class StartTimerAction extends SingletonAction<StartTimerSettings> {
@@ -26,7 +22,7 @@ export class StartTimerAction extends SingletonAction<StartTimerSettings> {
   override onDidReceiveSettings(
     ev: DidReceiveSettingsEvent<StartTimerSettings>,
   ): Promise<void> {
-    return this.updateTitle(ev);
+    return this.updateSettings(ev);
   }
 
   override async onKeyDown(
@@ -34,28 +30,14 @@ export class StartTimerAction extends SingletonAction<StartTimerSettings> {
   ): Promise<void> {
     try {
       const settings = normalizeStartSettings(ev.payload.settings);
-      if (settings.backend === "native") {
-        const durationSeconds =
-          settings.amount * (settings.unit === "seconds" ? 1 : 60);
-        await nativeCountdowns.toggle(
-          ev.action.id,
-          durationSeconds,
-          settings.outputDirectory,
-          settings.fileName,
-          nativeIdleTitle(settings.amount, settings.unit),
-          ev.action,
-        );
-      } else {
-        const url = buildStartUrl({
-          target: settings.target,
-          mode: settings.startMode,
-          amount: settings.amount,
-          unit: settings.unit,
-          clockTime: settings.clockTime,
-        });
-        await streamDeck.system.openUrl(url);
-      }
-
+      const url = buildStartUrl({
+        target: settings.target,
+        mode: settings.startMode,
+        amount: settings.amount,
+        unit: settings.unit,
+        clockTime: settings.clockTime,
+      });
+      await streamDeck.system.openUrl(url);
       await ev.action.showOk();
     } catch (error) {
       logger.error("Unable to start timer.", error);
@@ -70,15 +52,6 @@ export class StartTimerAction extends SingletonAction<StartTimerSettings> {
   ): Promise<void> {
     try {
       const settings = normalizeStartSettings(ev.payload.settings);
-      if (settings.backend === "native") {
-        if (!nativeCountdowns.isRunning(ev.action.id)) {
-          await ev.action.setTitle(
-            nativeIdleTitle(settings.amount, settings.unit),
-          );
-        }
-        return;
-      }
-
       const mode =
         settings.target === "time"
           ? "Start"
@@ -93,12 +66,14 @@ export class StartTimerAction extends SingletonAction<StartTimerSettings> {
       await ev.action.setTitle("Configure");
     }
   }
+
+  private async updateSettings(
+    ev: DidReceiveSettingsEvent<StartTimerSettings>,
+  ): Promise<void> {
+    await this.updateTitle(ev);
+  }
 }
 
 function formatDuration(amount: number, unit: "minutes" | "seconds"): string {
   return `${amount}${unit === "seconds" ? " sec" : " min"}`;
-}
-
-function nativeIdleTitle(amount: number, unit: "minutes" | "seconds"): string {
-  return `File\n${formatDuration(amount, unit)}`;
 }

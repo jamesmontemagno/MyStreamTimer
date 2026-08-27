@@ -1,4 +1,3 @@
-const backend = document.querySelector("#backend");
 const target = document.querySelector("#target");
 const startMode = document.querySelector("#start-mode");
 
@@ -14,13 +13,10 @@ function setSelectValue(element, value) {
 }
 
 function updateFields() {
-  const isNative = backend.value === "native";
   const isTime = target.value === "time";
   const isCountUp = target.value === "countup" || target.value === "countup2";
 
-  if (isNative) {
-    setSelectValue(startMode, "duration");
-  } else if (isTime) {
+  if (isTime) {
     setSelectValue(startMode, "current-time");
   } else if (
     isCountUp &&
@@ -33,25 +29,17 @@ function updateFields() {
     setSelectValue(startMode, "duration");
   }
 
-  const usesDuration = isNative || (!isTime && startMode.value === "duration");
-  setVisible("#target-item", !isNative);
-  setVisible("#mode-item", !isNative && !isTime);
+  const usesDuration = !isTime && startMode.value === "duration";
+  setVisible("#mode-item", !isTime);
   setVisible("#amount-item", usesDuration);
   setVisible("#unit-item", usesDuration);
-  setVisible(
-    "#clock-item",
-    !isNative && !isTime && startMode.value === "clock-time",
-  );
-  setVisible("#output-item", isNative);
-  setVisible("#file-item", isNative);
-  setVisible("#file-help", isNative);
+  setVisible("#clock-item", !isTime && startMode.value === "clock-time");
 }
 
 Promise.all([
   customElements.whenDefined("sdpi-select"),
   customElements.whenDefined("sdpi-textfield"),
 ]).then(() => {
-  backend.addEventListener("change", updateFields);
   target.addEventListener("change", updateFields);
   startMode.addEventListener("change", updateFields);
   updateFields();

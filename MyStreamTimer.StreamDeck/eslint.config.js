@@ -19,6 +19,8 @@ export default [
         customElements: "readonly",
         document: "readonly",
         Event: "readonly",
+        navigator: "readonly",
+        SDPIComponents: "readonly",
       },
     },
   },

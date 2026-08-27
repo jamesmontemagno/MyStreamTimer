@@ -1,4 +1,4 @@
-import { basename, join } from "node:path";
+import { basename, join, resolve } from "node:path";
 import { homedir } from "node:os";
 
 import type {
@@ -7,18 +7,36 @@ import type {
   StartMode,
   TimerTarget,
 } from "./timer-commands";
-import { isTimerTarget } from "./timer-commands";
+import {
+  buildControlUrl,
+  buildStartUrl,
+  isTimerTarget,
+} from "./timer-commands";
 
-export type ExecutionBackend = "app" | "native";
+export type FileTimerFormat = "countdown" | "countup" | "current-time";
+export type FileTimerOperation =
+  "pause" | "resume" | "reset" | "stop" | "start";
+
+const defaultOutputDirectory = join(
+  homedir(),
+  "Documents",
+  "MyStreamTimerStreamDeck",
+);
 
 export interface StartTimerSettings {
   [key: string]: string | number | undefined;
-  backend?: ExecutionBackend;
   target?: TimerTarget;
   startMode?: StartMode;
   amount?: number | string;
   unit?: DurationUnit;
   clockTime?: string;
+}
+
+export interface FileTimerStartSettings {
+  [key: string]: string | number | undefined;
+  displayFormat?: FileTimerFormat;
+  amount?: number | string;
+  unit?: DurationUnit;
   outputDirectory?: string;
   fileName?: string;
 }
@@ -31,15 +49,31 @@ export interface ControlTimerSettings {
   unit?: DurationUnit;
 }
 
+export interface FileTimerControlSettings {
+  [key: string]: string | undefined;
+  displayFormat?: FileTimerFormat;
+  operation?: FileTimerOperation;
+  outputDirectory?: string;
+  fileName?: string;
+}
+
 export interface NormalizedStartTimerSettings {
-  backend: ExecutionBackend;
   target: TimerTarget;
   startMode: StartMode;
   amount: number;
   unit: DurationUnit;
   clockTime: string;
+}
+
+interface NormalizedFileOutputSettings {
   outputDirectory: string;
   fileName: string;
+}
+
+export interface NormalizedFileTimerStartSettings extends NormalizedFileOutputSettings {
+  displayFormat: FileTimerFormat;
+  amount: number;
+  unit: DurationUnit;
 }
 
 export interface NormalizedControlTimerSettings {
@@ -49,32 +83,101 @@ export interface NormalizedControlTimerSettings {
   unit: DurationUnit;
 }
 
+export interface NormalizedFileTimerControlSettings extends NormalizedFileOutputSettings {
+  displayFormat: FileTimerFormat;
+  operation: FileTimerOperation;
+}
+
 export function normalizeStartSettings(
   settings: StartTimerSettings,
 ): NormalizedStartTimerSettings {
-  return {
-    backend: normalizeBackend(settings.backend),
-    target: normalizeTarget(settings.target),
-    startMode: normalizeStartMode(settings.startMode),
-    amount: normalizeAmount(settings.amount, 5),
-    unit: normalizeUnit(settings.unit),
-    clockTime: settings.clockTime?.trim() || "12:00",
-    outputDirectory:
-      settings.outputDirectory?.trim() ||
-      join(homedir(), "Documents", "MyStreamTimerStreamDeck"),
-    fileName: normalizeFileName(settings.fileName),
+  const target = normalizeTarget(settings.target);
+  const startMode = normalizeStartMode(settings.startMode);
+  const usesDuration = startMode === "duration";
+  const amount = usesDuration ? normalizeAmount(settings.amount, 5) : 5;
+  const unit = usesDuration ? normalizeUnit(settings.unit) : "minutes";
+  const clockTime =
+    startMode === "clock-time"
+      ? settings.clockTime?.trim() || "12:00"
+      : "12:00";
+  const normalized = {
+    target,
+    startMode,
+    amount,
+    unit,
+    clockTime,
   };
+
+  buildStartUrl({
+    target,
+    mode: startMode,
+    amount,
+    unit,
+    clockTime,
+  });
+  return normalized;
+}
+
+export function normalizeFileStartSettings(
+  settings: FileTimerStartSettings,
+): NormalizedFileTimerStartSettings {
+  const displayFormat = normalizeFileTimerFormat(settings.displayFormat);
+  const usesDuration = displayFormat === "countdown";
+  const normalized = {
+    displayFormat,
+    amount: usesDuration ? normalizeAmount(settings.amount, 5) : 5,
+    unit: usesDuration ? normalizeUnit(settings.unit) : "minutes",
+    ...normalizeFileOutputSettings(settings),
+  };
+
+  if (usesDuration) {
+    requirePositiveAmount(normalized.amount);
+  }
+  return normalized;
 }
 
 export function normalizeControlSettings(
   settings: ControlTimerSettings,
 ): NormalizedControlTimerSettings {
-  return {
-    target: normalizeTarget(settings.target),
-    operation: normalizeOperation(settings.operation),
-    amount: normalizeAmount(settings.amount, 1),
-    unit: normalizeUnit(settings.unit),
+  const target = normalizeTarget(settings.target);
+  const operation = normalizeOperation(settings.operation);
+  const usesAmount = operation === "add" || operation === "subtract";
+  const normalized = {
+    target,
+    operation,
+    amount: usesAmount ? normalizeAmount(settings.amount, 1) : 1,
+    unit: usesAmount ? normalizeUnit(settings.unit) : "minutes",
   };
+
+  buildControlUrl(normalized);
+  return normalized;
+}
+
+export function normalizeFileControlSettings(
+  settings: FileTimerControlSettings,
+): NormalizedFileTimerControlSettings {
+  const displayFormat = normalizeFileTimerFormat(settings.displayFormat);
+  const operation = normalizeFileTimerOperation(settings.operation);
+
+  if (displayFormat === "current-time") {
+    if (operation !== "start" && operation !== "stop") {
+      throw new Error("Current Time file timers only support Start and Stop.");
+    }
+  } else if (operation === "start") {
+    throw new Error("Use the File Timer Start action to start this timer.");
+  }
+
+  return {
+    displayFormat,
+    operation,
+    ...normalizeFileOutputSettings(settings),
+  };
+}
+
+export function getFileOutputPath(
+  settings: NormalizedFileOutputSettings,
+): string {
+  return resolve(settings.outputDirectory, settings.fileName);
 }
 
 export function normalizeFileName(value: string | undefined): string {
@@ -106,16 +209,10 @@ function normalizeAmount(
   return parsed;
 }
 
-function normalizeBackend(
-  value: ExecutionBackend | undefined,
-): ExecutionBackend {
-  if (value === undefined || value === "app") {
-    return "app";
+function requirePositiveAmount(value: number): void {
+  if (value <= 0) {
+    throw new Error("Amount must be greater than zero.");
   }
-  if (value === "native") {
-    return "native";
-  }
-  throw new Error("Select a valid execution backend.");
 }
 
 function normalizeTarget(value: TimerTarget | undefined): TimerTarget {
@@ -171,4 +268,42 @@ function normalizeUnit(value: DurationUnit | undefined): DurationUnit {
     return "seconds";
   }
   throw new Error("Select minutes or seconds.");
+}
+
+function normalizeFileOutputSettings(
+  settings: Pick<FileTimerStartSettings, "outputDirectory" | "fileName">,
+): NormalizedFileOutputSettings {
+  return {
+    outputDirectory: settings.outputDirectory?.trim() || defaultOutputDirectory,
+    fileName: normalizeFileName(settings.fileName),
+  };
+}
+
+function normalizeFileTimerFormat(
+  value: FileTimerFormat | undefined,
+): FileTimerFormat {
+  if (value === undefined || value === "countdown") {
+    return "countdown";
+  }
+  if (value === "countup" || value === "current-time") {
+    return value;
+  }
+  throw new Error("Select a valid file timer display format.");
+}
+
+function normalizeFileTimerOperation(
+  value: FileTimerOperation | undefined,
+): FileTimerOperation {
+  if (value === undefined || value === "pause") {
+    return "pause";
+  }
+  if (
+    value === "resume" ||
+    value === "reset" ||
+    value === "stop" ||
+    value === "start"
+  ) {
+    return value;
+  }
+  throw new Error("Select a valid file timer operation.");
 }

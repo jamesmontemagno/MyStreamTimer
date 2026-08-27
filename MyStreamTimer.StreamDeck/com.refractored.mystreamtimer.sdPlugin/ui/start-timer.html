@@ -6,13 +6,7 @@
     <script src="sdpi-components.js"></script>
   </head>
   <body>
-    <sdpi-item label="Run With">
-      <sdpi-select id="backend" setting="backend" default="app">
-        <option value="app">My Stream Timer</option>
-        <option value="native">Plugin File Timer</option>
-      </sdpi-select>
-    </sdpi-item>
-    <sdpi-item id="target-item" label="Timer">
+    <sdpi-item label="Timer">
       <sdpi-select id="target" setting="target" default="countdown">
         <option value="countdown">Countdown 1</option>
         <option value="countdown2">Countdown 2</option>
@@ -51,23 +45,6 @@
         type="time"
         default="12:00"
       ></sdpi-textfield>
-    </sdpi-item>
-    <sdpi-item id="output-item" label="Output Folder">
-      <sdpi-textfield
-        setting="outputDirectory"
-        placeholder="Defaults to Documents/MyStreamTimerStreamDeck"
-      ></sdpi-textfield>
-    </sdpi-item>
-    <sdpi-item id="file-item" label="File Name">
-      <sdpi-textfield
-        setting="fileName"
-        default="countdown.txt"
-      ></sdpi-textfield>
-    </sdpi-item>
-    <sdpi-item id="file-help">
-      <sdpi-alert type="info"
-        >File settings apply only to Plugin File Timer.</sdpi-alert
-      >
     </sdpi-item>
     <script src="start-timer.js"></script>
   </body>
