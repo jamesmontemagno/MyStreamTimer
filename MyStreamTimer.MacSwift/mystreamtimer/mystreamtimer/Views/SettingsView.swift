@@ -67,12 +67,23 @@ struct SettingsWorkspaceView: View {
             ) {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 170), spacing: 10)], spacing: 10) {
                     ForEach(appModel.allControllers) { controller in
-                        Label(controller.fileName, systemImage: controller.kind.systemImage)
+                        Label(controller.fileName, systemImage: controller.effectiveSystemImage)
                             .font(.subheadline)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 8)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    }
+                }
+            }
+
+            SectionCard(
+                title: "Timer appearance",
+                subtitle: "Choose the name and icon shown for each timer."
+            ) {
+                VStack(spacing: 12) {
+                    ForEach(appModel.allControllers) { controller in
+                        TimerAppearanceRow(controller: controller)
                     }
                 }
             }
@@ -114,6 +125,50 @@ struct SettingsWorkspaceView: View {
                 isPro: appModel.purchaseManager.isPro,
                 goToPro: { appModel.selectedItem = .pro }
             )
+        }
+    }
+}
+
+private struct TimerAppearanceRow: View {
+    @ObservedObject var controller: TimerController
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Label(controller.kind.title, systemImage: controller.effectiveSystemImage)
+                .frame(width: 140, alignment: .leading)
+
+            TextField(
+                controller.kind.title,
+                text: Binding(
+                    get: { controller.displayName },
+                    set: {
+                        controller.displayName = $0
+                        controller.persist(restartTimer: false)
+                    }
+                )
+            )
+            .textFieldStyle(.roundedBorder)
+
+            Picker(
+                "Icon",
+                selection: Binding(
+                    get: { controller.iconGlyph },
+                    set: {
+                        controller.iconGlyph = $0
+                        controller.persist(restartTimer: false)
+                    }
+                )
+            ) {
+                Label("Default", systemImage: controller.kind.systemImage)
+                    .tag("")
+                Divider()
+                ForEach(TimerKind.iconChoices) { choice in
+                    Label(choice.label, systemImage: choice.systemName)
+                        .tag(choice.systemName)
+                }
+            }
+            .pickerStyle(.menu)
+            .frame(width: 150)
         }
     }
 }

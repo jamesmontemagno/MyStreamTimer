@@ -1,5 +1,12 @@
 import Foundation
 
+struct TimerIconChoice: Identifiable {
+    let systemName: String
+    let label: String
+
+    var id: String { systemName }
+}
+
 enum CommandAction {
     case start
     case stop
@@ -68,6 +75,41 @@ enum TimerKind: String, CaseIterable, Identifiable, Codable {
             return "clock"
         }
     }
+
+    func effectiveTitle(displayName: String) -> String {
+        let trimmedName = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmedName.isEmpty ? title : trimmedName
+    }
+
+func effectiveSystemImage(iconGlyph: String) -> String {
+    let trimmedIcon = iconGlyph.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmedIcon.isEmpty else { return systemImage }
+
+    return Self.iconChoices.contains(where: { $0.systemName == trimmedIcon }) ? trimmedIcon : systemImage
+}
+
+    static let iconChoices = [
+        TimerIconChoice(systemName: "timer", label: "Stopwatch"),
+        TimerIconChoice(systemName: "arrow.up", label: "Up"),
+        TimerIconChoice(systemName: "clock", label: "Clock"),
+        TimerIconChoice(systemName: "bolt.fill", label: "Lightning"),
+        TimerIconChoice(systemName: "star.fill", label: "Star"),
+        TimerIconChoice(systemName: "trophy.fill", label: "Trophy"),
+        TimerIconChoice(systemName: "gift.fill", label: "Gift"),
+        TimerIconChoice(systemName: "gamecontroller.fill", label: "Game"),
+        TimerIconChoice(systemName: "music.note", label: "Music"),
+        TimerIconChoice(systemName: "video.fill", label: "Video"),
+        TimerIconChoice(systemName: "megaphone.fill", label: "Megaphone"),
+        TimerIconChoice(systemName: "cup.and.saucer.fill", label: "Coffee"),
+        TimerIconChoice(systemName: "airplane", label: "Launch"),
+        TimerIconChoice(systemName: "heart.fill", label: "Favorite"),
+        TimerIconChoice(systemName: "flag.fill", label: "Flag"),
+        TimerIconChoice(systemName: "microphone.fill", label: "Microphone"),
+        TimerIconChoice(systemName: "display", label: "Monitor"),
+        TimerIconChoice(systemName: "bubble.left.fill", label: "Chat"),
+        TimerIconChoice(systemName: "calendar", label: "Calendar"),
+        TimerIconChoice(systemName: "book.fill", label: "Book"),
+    ]
 
     var requiresPro: Bool {
         self == .countdown4 || self == .countup2 || self == .time
@@ -301,4 +343,6 @@ struct TimerConfiguration {
     var beepAtZero: Bool
     var showAMPM: Bool
     var outputStyle: Int
+    var displayName: String
+    var iconGlyph: String
 }

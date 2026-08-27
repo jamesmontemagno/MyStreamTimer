@@ -5,7 +5,7 @@ import SwiftUI
 
 @MainActor
 final class LegacySettingsStore: ObservableObject {
-    private let defaults = UserDefaults.standard
+    private let defaults: UserDefaults
 
     @Published var directoryPath: String
     @Published var stayOnTop: Bool {
@@ -46,7 +46,8 @@ final class LegacySettingsStore: ObservableObject {
         }
     }
 
-    init() {
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
         let defaultDirectoryPath = Self.defaultDirectoryURL().path
         self.directoryPath = defaults.string(forKey: "global_directory_path") ?? defaultDirectoryPath
         self.stayOnTop = defaults.object(forKey: "StayOnTop") as? Bool ?? false
@@ -186,7 +187,9 @@ final class LegacySettingsStore: ObservableObject {
             autoStart: bool(forKey: "key_auto_start_\(keyPrefix)", default: false),
             beepAtZero: bool(forKey: "make_sound_\(keyPrefix)", default: false),
             showAMPM: bool(forKey: "key_show_ampm_\(keyPrefix)", default: false),
-            outputStyle: int(forKey: "key_output_style_\(keyPrefix)", default: 0)
+            outputStyle: int(forKey: "key_output_style_\(keyPrefix)", default: 0),
+            displayName: string(forKey: "DisplayName_\(keyPrefix)", default: ""),
+            iconGlyph: string(forKey: "IconGlyph_\(keyPrefix)", default: "")
         )
     }
 
@@ -202,6 +205,8 @@ final class LegacySettingsStore: ObservableObject {
         defaults.set(config.beepAtZero, forKey: "make_sound_\(keyPrefix)")
         defaults.set(config.showAMPM, forKey: "key_show_ampm_\(keyPrefix)")
         defaults.set(config.outputStyle, forKey: "key_output_style_\(keyPrefix)")
+        defaults.set(config.displayName, forKey: "DisplayName_\(keyPrefix)")
+        defaults.set(config.iconGlyph, forKey: "IconGlyph_\(keyPrefix)")
 
         let midnight = Calendar.current.startOfDay(for: config.finishAt)
         let ticks = Int64(config.finishAt.timeIntervalSince(midnight) * 10_000_000)

@@ -34,7 +34,7 @@ struct SingleTimerView: View {
     private var timerHeader: some View {
         VStack(spacing: 0) {
             HStack(alignment: .firstTextBaseline) {
-                Label(controller.kind.title, systemImage: controller.kind.systemImage)
+                Label(controller.effectiveTitle, systemImage: controller.effectiveSystemImage)
                     .font(.title2.weight(.semibold))
 
                 Spacer()
@@ -209,7 +209,7 @@ struct SingleTimerView: View {
     private var proLockedCard: some View {
         SectionCard(
             title: "Pro feature",
-            subtitle: "\(controller.kind.title) requires a Pro unlock."
+            subtitle: "\(controller.effectiveTitle) requires a Pro unlock."
         ) {
             HStack(spacing: 16) {
                 Image(systemName: "lock.fill")

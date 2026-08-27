@@ -17,6 +17,8 @@ final class TimerController: ObservableObject, Identifiable {
     @Published var beepAtZero: Bool
     @Published var showAMPM: Bool
     @Published var outputStyle: Int
+    @Published var displayName: String
+    @Published var iconGlyph: String
     @Published private(set) var currentText = ""
     @Published private(set) var isRunning = false
     @Published private(set) var isPaused = false
@@ -55,6 +57,14 @@ final class TimerController: ObservableObject, Identifiable {
         outputStyle > 0 && !canUseProFeatures() ? 0 : outputStyle
     }
 
+    var effectiveTitle: String {
+        kind.effectiveTitle(displayName: displayName)
+    }
+
+    var effectiveSystemImage: String {
+        kind.effectiveSystemImage(iconGlyph: iconGlyph)
+    }
+
     init(
         kind: TimerKind,
         settingsStore: LegacySettingsStore,
@@ -78,6 +88,8 @@ final class TimerController: ObservableObject, Identifiable {
         self.beepAtZero = configuration.beepAtZero
         self.showAMPM = configuration.showAMPM
         self.outputStyle = configuration.outputStyle
+        self.displayName = configuration.displayName
+        self.iconGlyph = configuration.iconGlyph
 
         persist()
 
@@ -92,7 +104,7 @@ final class TimerController: ObservableObject, Identifiable {
         }
     }
 
-    func persist() {
+    func persist(restartTimer: Bool = true) {
         let configuration = TimerConfiguration(
             minutes: minutes,
             seconds: seconds,
@@ -104,11 +116,13 @@ final class TimerController: ObservableObject, Identifiable {
             autoStart: autoStart,
             beepAtZero: beepAtZero,
             showAMPM: showAMPM,
-            outputStyle: outputStyle
+            outputStyle: outputStyle,
+            displayName: displayName,
+            iconGlyph: iconGlyph
         )
         settingsStore.saveConfiguration(configuration, for: kind)
 
-        if isRunning, !isPaused {
+        if restartTimer, isRunning, !isPaused {
             launchTimerEngine()
         }
     }
@@ -147,7 +161,7 @@ final class TimerController: ObservableObject, Identifiable {
 
     func start(overrideMinutes: Double? = nil) {
         guard !kind.requiresPro || canUseProFeatures() else {
-            lastError = "\(kind.title) requires Pro."
+            lastError = "\(effectiveTitle) requires Pro."
             return
         }
 
