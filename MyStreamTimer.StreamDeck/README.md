@@ -45,6 +45,18 @@ the installer, writes a SHA-256 checksum, and creates a GitHub Release. Upload t
 to [Elgato Maker Console](https://maker.elgato.com/) for Marketplace review; the official Stream
 Deck CLI does not currently provide a documented Marketplace publish command.
 
+## Marketplace assets
+
+Regenerate the white action-list icons and Marketplace media from the repository root:
+
+```powershell
+./MyStreamTimer.StreamDeck/marketplace/generate-assets.ps1
+```
+
+The script preserves the colorful 72 px and 144 px key images, converts only the category and
+action-list icons to Elgato's required white-on-transparent treatment, and writes the 288 px app
+icon, 1920 x 960 thumbnail, and three 1920 x 960 gallery images to `marketplace`.
+
 ## Actions
 
 - **App Timer Start** controls any Countdown, Count Up, or Current Time output through the
