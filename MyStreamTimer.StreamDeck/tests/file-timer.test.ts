@@ -268,10 +268,9 @@ describe("FileTimerManager", () => {
       );
 
       await expect
-        .poll(
-          () => manager.isRunning(join(directory, "countdown.txt")),
-          { timeout: 2_000 },
-        )
+        .poll(() => manager.isRunning(join(directory, "countdown.txt")), {
+          timeout: 2_000,
+        })
         .toBe(false);
       expect(await readFile(join(directory, "countdown.txt"), "utf8")).toBe(
         "0:00",
