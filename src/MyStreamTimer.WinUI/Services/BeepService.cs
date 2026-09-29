@@ -13,12 +13,11 @@ public enum EndSoundPlaybackResult
     Cancelled,
 }
 
-/// <summary>Plays complete end sounds once, serializing timer completions and previews. Never throws to callers.</summary>
+/// <summary>Plays complete end sounds once, without delaying timer alarms behind previews or other timers. Never throws to callers.</summary>
 public sealed class BeepService
 {
     private static readonly TimeSpan OpenTimeout = TimeSpan.FromSeconds(15);
     private readonly GlobalSettings _settings;
-    private readonly SemaphoreSlim _playbackGate = new(1, 1);
 
     public BeepService(GlobalSettings settings) => _settings = settings;
 
@@ -45,12 +44,8 @@ public sealed class BeepService
 
     private async Task<EndSoundPlaybackResult> PlaySelectedAsync(CancellationToken cancellationToken)
     {
-        var acquired = false;
         try
         {
-            await _playbackGate.WaitAsync(cancellationToken).ConfigureAwait(false);
-            acquired = true;
-
             var id = _settings.EndSound;
             var path = id == EndSounds.Custom ? _settings.CustomEndSoundPath : BuiltInPath(id);
             if ((id != EndSounds.Custom || EndSounds.IsSupportedCustomFile(path))
@@ -73,14 +68,6 @@ public sealed class BeepService
         {
             Debug.WriteLine($"[BeepService] End sound failed: {ex.Message}");
         }
-        finally
-        {
-            if (acquired)
-            {
-                _playbackGate.Release();
-            }
-        }
-
         return EndSoundPlaybackResult.Unavailable;
     }
 
