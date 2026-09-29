@@ -1,95 +1,158 @@
 using System.Diagnostics;
+using MyStreamTimer.Core.Settings;
 using Windows.Media.Core;
 using Windows.Media.Playback;
-using Windows.Storage.Streams;
 
 namespace MyStreamTimer.WinUI.Services;
 
-/// <summary>
-/// Port of the legacy generated beep: a 2000 Hz, 75 ms, amplitude-200 tone rendered as 44.1 kHz 16-bit stereo
-/// PCM WAV, played three times 200 ms apart through <see cref="MediaPlayer"/>. Never throws.
-/// </summary>
+public enum EndSoundPlaybackResult
+{
+    Played,
+    DefaultFallback,
+    Unavailable,
+    Cancelled,
+}
+
+/// <summary>Plays complete end sounds once, serializing timer completions and previews. Never throws to callers.</summary>
 public sealed class BeepService
 {
-    private const int Amplitude = 200;
-    private const int FrequencyHz = 2000;
-    private const int DurationMs = 75;
-    private const int SampleRate = 44100;
-    private const short Channels = 2;
-    private const short BitsPerSample = 16;
-    private const int Repeats = 3;
-    private const int GapMs = 200;
+    private static readonly TimeSpan OpenTimeout = TimeSpan.FromSeconds(15);
+    private readonly GlobalSettings _settings;
+    private readonly SemaphoreSlim _playbackGate = new(1, 1);
 
-    private readonly byte[] _wav = BuildWav();
-    private MediaPlayer? _player;
+    public BeepService(GlobalSettings settings) => _settings = settings;
 
-    /// <summary>Plays the beep sequence. Safe to call from any thread.</summary>
-    public async Task PlayAsync()
+    public async Task PlayAsync() =>
+        await Task.Run(() => PlaySelectedAsync(CancellationToken.None)).ConfigureAwait(false);
+
+    public Task<EndSoundPlaybackResult> PreviewAsync(CancellationToken cancellationToken) =>
+        Task.Run(() => PlaySelectedAsync(cancellationToken));
+
+    /// <summary>Opens the file with the same decoder used for playback, without making a sound.</summary>
+    public static async Task<bool> ValidateCustomFileAsync(string path, CancellationToken cancellationToken)
     {
         try
         {
-            for (var i = 0; i < Repeats; i++)
-            {
-                await PlayOnceAsync().ConfigureAwait(false);
-                await Task.Delay(GapMs).ConfigureAwait(false);
-            }
+            return EndSounds.IsSupportedCustomFile(path)
+                && await Task.Run(() => TryPlayFileAsync(path, validateOnly: true, cancellationToken)).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[BeepService] Beep failed: {ex.Message}");
+            Debug.WriteLine($"[BeepService] Audio validation failed: {ex.Message}");
+            return false;
         }
     }
 
-    private async Task PlayOnceAsync()
+    private async Task<EndSoundPlaybackResult> PlaySelectedAsync(CancellationToken cancellationToken)
     {
-        var stream = new InMemoryRandomAccessStream();
-        using (var writer = new DataWriter(stream.GetOutputStreamAt(0)))
+        var acquired = false;
+        try
         {
-            writer.WriteBytes(_wav);
-            await writer.StoreAsync();
-            await writer.FlushAsync();
-            writer.DetachStream();
+            await _playbackGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+            acquired = true;
+
+            var id = _settings.EndSound;
+            var path = id == EndSounds.Custom ? _settings.CustomEndSoundPath : BuiltInPath(id);
+            if ((id != EndSounds.Custom || EndSounds.IsSupportedCustomFile(path))
+                && await TryPlayFileAsync(path, validateOnly: false, cancellationToken).ConfigureAwait(false))
+            {
+                return EndSoundPlaybackResult.Played;
+            }
+
+            if (id != EndSounds.Default
+                && await TryPlayFileAsync(BuiltInPath(EndSounds.Default), validateOnly: false, cancellationToken).ConfigureAwait(false))
+            {
+                return EndSoundPlaybackResult.DefaultFallback;
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return EndSoundPlaybackResult.Cancelled;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[BeepService] End sound failed: {ex.Message}");
+        }
+        finally
+        {
+            if (acquired)
+            {
+                _playbackGate.Release();
+            }
         }
 
-        stream.Seek(0);
-        var player = _player ??= new MediaPlayer { AutoPlay = false };
-        player.Source = MediaSource.CreateFromStream(stream, "audio/wav");
-        player.Play();
+        return EndSoundPlaybackResult.Unavailable;
     }
 
-    private static byte[] BuildWav()
+    private static string BuiltInPath(string id) =>
+        Path.Combine(AppContext.BaseDirectory, "Assets", "Sounds", EndSounds.GetBuiltInFileName(id));
+
+    private static async Task<bool> TryPlayFileAsync(string path, bool validateOnly, CancellationToken cancellationToken)
     {
-        var samples = SampleRate * DurationMs / 1000;
-        var blockAlign = Channels * BitsPerSample / 8;
-        var dataSize = samples * blockAlign;
-
-        using var ms = new MemoryStream(44 + dataSize);
-        using var w = new BinaryWriter(ms);
-
-        // RIFF header (44 bytes)
-        w.Write("RIFF"u8);
-        w.Write(36 + dataSize);
-        w.Write("WAVE"u8);
-        w.Write("fmt "u8);
-        w.Write(16);                                   // PCM chunk size
-        w.Write((short)1);                             // PCM format
-        w.Write(Channels);
-        w.Write(SampleRate);
-        w.Write(SampleRate * blockAlign);              // byte rate
-        w.Write((short)blockAlign);
-        w.Write(BitsPerSample);
-        w.Write("data"u8);
-        w.Write(dataSize);
-
-        var theta = FrequencyHz * Math.PI * 2 / SampleRate;
-        for (var step = 0; step < samples; step++)
+        try
         {
-            var sample = (short)(Amplitude * Math.Sin(theta * step));
-            w.Write(sample);
-            w.Write(sample);
-        }
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!Path.IsPathFullyQualified(path) || !File.Exists(path))
+            {
+                return false;
+            }
 
-        w.Flush();
-        return ms.ToArray();
+            using var source = MediaSource.CreateFromUri(new Uri(path));
+            var item = new MediaPlaybackItem(source);
+            using var player = new MediaPlayer { AutoPlay = false, IsLoopingEnabled = false, IsMuted = validateOnly };
+            player.CommandManager.IsEnabled = false;
+            var opened = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var ended = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            void OnOpened(MediaPlayer sender, object args) => opened.TrySetResult(true);
+            void OnEnded(MediaPlayer sender, object args) => ended.TrySetResult(true);
+            void OnFailed(MediaPlayer sender, MediaPlayerFailedEventArgs args)
+            {
+                opened.TrySetResult(false);
+                ended.TrySetResult(false);
+            }
+
+            player.MediaOpened += OnOpened;
+            player.MediaEnded += OnEnded;
+            player.MediaFailed += OnFailed;
+            try
+            {
+                player.Source = item;
+                if (!await opened.Task.WaitAsync(OpenTimeout, cancellationToken).ConfigureAwait(false))
+                {
+                    return false;
+                }
+
+                var duration = player.PlaybackSession.NaturalDuration;
+                if (duration <= TimeSpan.Zero || item.AudioTracks.Count == 0 || ended.Task.IsCompleted)
+                {
+                    return false;
+                }
+
+                if (validateOnly)
+                {
+                    return true;
+                }
+
+                cancellationToken.ThrowIfCancellationRequested();
+                player.Play();
+                return await ended.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                player.MediaOpened -= OnOpened;
+                player.MediaEnded -= OnEnded;
+                player.MediaFailed -= OnFailed;
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[BeepService] Couldn't open or play audio: {ex.Message}");
+            return false;
+        }
     }
 }

@@ -471,7 +471,7 @@
                     </controls:SettingsCard>
                     <controls:SettingsCard
                         AutomationProperties.AutomationId="BeepCard"
-                        Description="Play a short beep when the timer reaches zero"
+                        Description="Play the end sound when the timer reaches zero. Choose the sound in Settings."
                         Header="Beep at zero"
                         HeaderIcon="{ui:FontIcon Glyph=&#xE995;}"
                         IsEnabled="{x:Bind ViewModel.CanEdit, Mode=OneWay}"
@@ -553,5 +553,4 @@
         </TeachingTip>
     </Grid>
 </Page>
-
 

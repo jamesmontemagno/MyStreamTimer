@@ -87,6 +87,30 @@ public class TimerEngineTests
         Assert.False(platform.HasRunningTimers);
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task End_sound_obeys_the_timer_switch_and_plays_only_once(bool makeSound)
+    {
+        var (engine, clock, files, platform, _) = Create(TimerKind.Countdown,
+            settings => { settings.Minutes = 0; settings.Seconds = 1; settings.MakeSound = makeSound; settings.Finish = "Finished"; });
+        using (engine)
+        {
+            engine.StartStop();
+            await WaitFor(() => files.Last == "Starting in 00:00:01");
+            clock.Advance(TimeSpan.FromSeconds(2));
+            await WaitFor(() => files.Last == "Finished" && engine.State == TimerState.Idle);
+            if (makeSound)
+                await WaitFor(() => platform.Beeps == 1);
+
+            clock.Advance(TimeSpan.FromMinutes(1));
+            await Task.Delay(300);
+            Assert.Equal(makeSound ? 1 : 0, platform.Beeps);
+            Assert.Equal("Finished", files.Last);
+            Assert.False(platform.HasRunningTimers);
+        }
+    }
+
     [Fact]
     public async Task Start_during_finish_beep_is_not_orphaned()
     {
@@ -378,8 +402,6 @@ public class TimerEngineTests
         e.StartStop();
     }
 }
-
-
 
 
 

@@ -46,6 +46,14 @@ final class LegacySettingsStore: ObservableObject {
         }
     }
 
+    @Published var endSound: EndSound {
+        didSet {
+            defaults.set(endSound.rawValue, forKey: "EndSound")
+        }
+    }
+
+    @Published private(set) var customEndSoundFileName: String
+
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         let defaultDirectoryPath = Self.defaultDirectoryURL().path
@@ -56,6 +64,8 @@ final class LegacySettingsStore: ObservableObject {
         self.popOutTextColorHex = defaults.string(forKey: "PopOutTextColorHex") ?? "#FFFFFF"
         self.popOutBackgroundColorHex = defaults.string(forKey: "PopOutBackgroundColorHex") ?? "#000000"
         self.theme = AppTheme(rawValue: defaults.string(forKey: "AppTheme") ?? "") ?? .system
+        self.endSound = EndSound(rawValue: defaults.string(forKey: "EndSound") ?? "") ?? .defaultBeep
+        self.customEndSoundFileName = defaults.string(forKey: "CustomEndSoundFileName") ?? ""
     }
 
     static let availableFontFamilies: [String] = NSFontManager.shared.availableFontFamilies.sorted {
@@ -102,6 +112,18 @@ final class LegacySettingsStore: ObservableObject {
     var bookmarkData: Data? {
         get { defaults.data(forKey: "bookmark") }
         set { defaults.set(newValue, forKey: "bookmark") }
+    }
+
+    var customEndSoundBookmark: Data? {
+        get { defaults.data(forKey: "CustomEndSoundBookmark") }
+        set { defaults.set(newValue, forKey: "CustomEndSoundBookmark") }
+    }
+
+    func saveCustomEndSound(bookmark: Data, fileName: String) {
+        customEndSoundBookmark = bookmark
+        customEndSoundFileName = fileName
+        defaults.set(fileName, forKey: "CustomEndSoundFileName")
+        endSound = .custom
     }
 
     var hasLegacyProEntitlement: Bool {

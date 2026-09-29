@@ -41,6 +41,9 @@ final class AppModel: ObservableObject {
 
     private var hasStarted = false
     private var cancellables = Set<AnyCancellable>()
+    private let endSoundPlayer: EndSoundPlayer
+
+    var isPreviewingEndSound: Bool { endSoundPlayer.isPlaying }
 
     var allControllers: [TimerController] {
         countdownControllers + countUpControllers + [timeController]
@@ -66,6 +69,7 @@ final class AppModel: ObservableObject {
     init() {
         let settingsStore = LegacySettingsStore()
         self.settingsStore = settingsStore
+        self.endSoundPlayer = EndSoundPlayer(settingsStore: settingsStore)
 
         let fileAccess = BookmarkFileAccess(settingsStore: settingsStore)
         self.fileAccess = fileAccess
@@ -103,6 +107,15 @@ final class AppModel: ObservableObject {
                 self?.objectWillChange.send()
             }
             .store(in: &cancellables)
+
+        endSoundPlayer.objectWillChange
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+            .store(in: &cancellables)
+        endSoundPlayer.onPlaybackError = { [weak self] message in
+            self?.showAlert(title: "Couldn't Preview End Sound", message: message)
+        }
     }
 
     func startup() async {
@@ -170,6 +183,48 @@ final class AppModel: ObservableObject {
     func openOutputFolder() {
         let url = URL(fileURLWithPath: settingsStore.directoryPath, isDirectory: true)
         NSWorkspace.shared.open(url)
+    }
+
+    func selectEndSound(_ sound: EndSound) {
+        stopEndSoundPreview()
+        if sound == .custom, !endSoundPlayer.hasUsableCustomSound {
+            chooseCustomEndSound()
+        } else {
+            settingsStore.endSound = sound
+        }
+    }
+
+    func chooseCustomEndSound() {
+        stopEndSoundPreview()
+        do {
+            try endSoundPlayer.chooseCustomSound()
+        } catch {
+            showAlert(
+                title: "Couldn't Choose End Sound",
+                message: "\(error.localizedDescription) Your previous sound has not been changed."
+            )
+        }
+    }
+
+    func previewEndSound() {
+        if isPreviewingEndSound {
+            stopEndSoundPreview()
+            return
+        }
+        do {
+            if try endSoundPlayer.play() {
+                showAlert(
+                    title: "End Sound Unavailable",
+                    message: "The selected sound couldn't be opened or played. Default beep was played instead. If using a custom sound, choose the file again."
+                )
+            }
+        } catch {
+            showAlert(title: "Couldn't Preview End Sound", message: error.localizedDescription)
+        }
+    }
+
+    func stopEndSoundPreview() {
+        endSoundPlayer.stop()
     }
 
     func chooseOutputFolder() {

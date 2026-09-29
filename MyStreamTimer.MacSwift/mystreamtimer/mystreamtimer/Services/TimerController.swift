@@ -27,6 +27,7 @@ final class TimerController: ObservableObject, Identifiable {
     private let settingsStore: LegacySettingsStore
     private let fileAccess: BookmarkFileAccess
     private let canUseProFeatures: () -> Bool
+    private lazy var endSoundPlayer = EndSoundPlayer(settingsStore: settingsStore)
 
     private var startDate = Date()
     private var endDate = Date()
@@ -355,7 +356,7 @@ final class TimerController: ObservableObject, Identifiable {
             activeGeneration = nil
             endActivity()
             if beepAtZero {
-                NSSound.beep()
+                endSoundPlayer.playAtCompletion()
             }
         }
     }

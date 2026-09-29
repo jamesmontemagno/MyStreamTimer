@@ -33,7 +33,7 @@ public sealed partial class TimerFileItem : ObservableObject
     public string AutomationName => $"Copy path for {Title}";
 }
 
-/// <summary>Settings page: output folder, appearance (theme / stay on top), pop-out appearance (Pro) and data reset.</summary>
+/// <summary>Settings page: output folder, end sound, appearance, pop-out appearance (Pro) and data reset.</summary>
 public sealed partial class SettingsViewModel : ObservableObject
 {
     public const string DefaultFontLabel = "Default (Segoe UI)";
@@ -50,6 +50,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         nameof(GlobalSettings.PopOutFontSize), nameof(GlobalSettings.PopOutFontFamily),
         nameof(GlobalSettings.PopOutTextColorHex), nameof(GlobalSettings.PopOutBackgroundColorHex),
         nameof(GlobalSettings.LastSelectedPage), nameof(GlobalSettings.MainWindowBounds),
+        nameof(GlobalSettings.EndSound), nameof(GlobalSettings.CustomEndSoundPath),
     ];
 
     private readonly GlobalSettings _settings;
@@ -62,11 +63,13 @@ public sealed partial class SettingsViewModel : ObservableObject
     private readonly ProEntitlement _pro;
     private readonly PopOutService _popOuts;
     private readonly TimerHost _timers;
+    private readonly BeepService _beep;
+    private CancellationTokenSource _endSoundCancellation = new();
     private bool _isLoading;
 
     public SettingsViewModel(GlobalSettings settings, ISettingsStore store, WindowService windowService, FolderService folders,
         ClipboardService clipboard, LauncherService launcher, DialogService dialogs, ProEntitlement pro, PopOutService popOuts,
-        TimerHost timers)
+        TimerHost timers, BeepService beep)
     {
         _settings = settings;
         _store = store;
@@ -78,6 +81,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         _pro = pro;
         _popOuts = popOuts;
         _timers = timers;
+        _beep = beep;
 
         FontOptions = [DefaultFontLabel, .. FontFamilies.GetSystemFontFamilies()];
         foreach (var kind in TimerKindExtensions.All)
@@ -121,6 +125,42 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     [ObservableProperty]
     public partial bool IsFolderBusy { get; set; }
+
+    // ---------- end sound ----------
+
+    public IReadOnlyList<EndSoundChoice> EndSoundChoices => EndSounds.Choices;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsCustomEndSound))]
+    public partial string SelectedEndSoundId { get; set; } = EndSounds.Default;
+
+    public bool IsCustomEndSound => SelectedEndSoundId == EndSounds.Custom;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CustomEndSoundStatus))]
+    public partial string CustomEndSoundPath { get; set; } = string.Empty;
+
+    public string CustomEndSoundStatus => string.IsNullOrWhiteSpace(CustomEndSoundPath)
+        ? "No custom audio selected. The default beep will be used."
+        : !File.Exists(CustomEndSoundPath)
+            ? $"Unavailable: {Path.GetFileName(CustomEndSoundPath)}. The default beep will be used."
+            : $"Selected: {Path.GetFileName(CustomEndSoundPath)}";
+
+    [ObservableProperty]
+    public partial bool IsEndSoundBusy { get; set; }
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(StopEndSoundPreviewCommand))]
+    public partial bool IsEndSoundPreviewing { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsEndSoundStatusOpen { get; set; }
+
+    [ObservableProperty]
+    public partial string EndSoundStatusMessage { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial InfoBarSeverity EndSoundStatusSeverity { get; set; } = InfoBarSeverity.Informational;
 
     // ---------- appearance ----------
 
@@ -179,9 +219,14 @@ public sealed partial class SettingsViewModel : ObservableObject
     {
         _pro.Changed += OnProChanged;
         IsPro = _pro.IsPro;
+        OnPropertyChanged(nameof(CustomEndSoundStatus));
     }
 
-    public void Deactivate() => _pro.Changed -= OnProChanged;
+    public void Deactivate()
+    {
+        _pro.Changed -= OnProChanged;
+        CancelEndSoundOperations();
+    }
 
     private void OnProChanged(object? sender, EventArgs e) => App.DispatcherQueue.TryEnqueue(() => IsPro = _pro.IsPro);
 
@@ -202,6 +247,11 @@ public sealed partial class SettingsViewModel : ObservableObject
             };
             StayOnTop = _settings.StayOnTop;
             IsPro = _pro.IsPro;
+
+            SelectedEndSoundId = _settings.EndSound;
+            CustomEndSoundPath = _settings.CustomEndSoundPath;
+            OnPropertyChanged(nameof(CustomEndSoundStatus));
+            IsEndSoundStatusOpen = false;
 
             PopOutFontSize = Math.Clamp(_settings.PopOutFontSize, 12, 200);
             var family = _settings.PopOutFontFamily;
@@ -338,6 +388,125 @@ public sealed partial class SettingsViewModel : ObservableObject
         }
     }
 
+    // ---------- commands: end sound ----------
+
+    [RelayCommand]
+    private async Task ChooseEndSoundFileAsync()
+    {
+        if (IsEndSoundBusy)
+        {
+            return;
+        }
+
+        var cancellationToken = _endSoundCancellation.Token;
+        IsEndSoundBusy = true;
+        try
+        {
+            var picker = new Microsoft.Windows.Storage.Pickers.FileOpenPicker(App.Window.AppWindow.Id)
+            {
+                SuggestedStartLocation = Microsoft.Windows.Storage.Pickers.PickerLocationId.MusicLibrary,
+            };
+            picker.FileTypeFilter.Add(".mp3");
+            picker.FileTypeFilter.Add(".wav");
+            picker.FileTypeFilter.Add(".wave");
+            var result = await picker.PickSingleFileAsync();
+            if (result is null || string.IsNullOrEmpty(result.Path) || cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+
+            if (!EndSounds.IsSupportedCustomFile(result.Path))
+            {
+                ShowEndSoundStatus("Choose an MP3 or WAV audio file. Your previous selection was kept.", InfoBarSeverity.Error);
+                return;
+            }
+
+            var valid = await BeepService.ValidateCustomFileAsync(result.Path, cancellationToken);
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+
+            if (!valid)
+            {
+                ShowEndSoundStatus("This audio file couldn't be opened or decoded. Choose a playable MP3 or WAV file. Your previous selection was kept.", InfoBarSeverity.Error);
+                return;
+            }
+
+            _settings.CustomEndSoundPath = result.Path;
+            CustomEndSoundPath = result.Path;
+            SelectedEndSoundId = EndSounds.Custom;
+            ShowEndSoundStatus("Custom end sound saved. Keep the file in this location so it can be played.", InfoBarSeverity.Success);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[SettingsViewModel] Choose end sound failed: {ex.Message}");
+            if (!cancellationToken.IsCancellationRequested)
+            {
+                ShowEndSoundStatus("Couldn't choose this audio file. Your previous selection was kept.", InfoBarSeverity.Error);
+            }
+        }
+        finally
+        {
+            IsEndSoundBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task PreviewEndSoundAsync()
+    {
+        if (IsEndSoundBusy)
+        {
+            return;
+        }
+
+        var cancellationToken = _endSoundCancellation.Token;
+        IsEndSoundBusy = true;
+        IsEndSoundPreviewing = true;
+        IsEndSoundStatusOpen = false;
+        try
+        {
+            var result = await _beep.PreviewAsync(cancellationToken);
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+
+            OnPropertyChanged(nameof(CustomEndSoundStatus));
+            if (result == EndSoundPlaybackResult.DefaultFallback)
+            {
+                ShowEndSoundStatus("The selected audio couldn't be played. The default beep was used instead.", InfoBarSeverity.Warning);
+            }
+            else if (result == EndSoundPlaybackResult.Unavailable)
+            {
+                ShowEndSoundStatus("The end sound couldn't be played. Check your audio output and try another file.", InfoBarSeverity.Error);
+            }
+        }
+        finally
+        {
+            IsEndSoundPreviewing = false;
+            IsEndSoundBusy = false;
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(IsEndSoundPreviewing))]
+    private void StopEndSoundPreview() => CancelEndSoundOperations();
+
+    private void ShowEndSoundStatus(string message, InfoBarSeverity severity)
+    {
+        EndSoundStatusMessage = message;
+        EndSoundStatusSeverity = severity;
+        IsEndSoundStatusOpen = true;
+    }
+
+    private void CancelEndSoundOperations()
+    {
+        _endSoundCancellation.Cancel();
+        _endSoundCancellation.Dispose();
+        _endSoundCancellation = new CancellationTokenSource();
+        IsEndSoundPreviewing = false;
+    }
+
     // ---------- commands: pro / data ----------
 
     [RelayCommand]
@@ -348,7 +517,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     {
         var confirmed = await _dialogs.ConfirmAsync(
             "Reset all settings?",
-            "Every timer's duration, output format, file name and behaviour, plus the output folder, theme and pop-out appearance will return to their defaults. Your Pro purchases are kept.",
+            "Every timer's duration, output format, file name and behaviour, plus the output folder, end sound, theme and pop-out appearance will return to their defaults. Your Pro purchases are kept.",
             "Reset",
             "Cancel");
         if (!confirmed)
@@ -356,6 +525,7 @@ public sealed partial class SettingsViewModel : ObservableObject
             return;
         }
 
+        CancelEndSoundOperations();
         foreach (var kind in TimerKindExtensions.All)
         {
             foreach (var name in TimerKeyNames)
@@ -383,6 +553,18 @@ public sealed partial class SettingsViewModel : ObservableObject
     }
 
     // ---------- change handlers ----------
+
+    partial void OnSelectedEndSoundIdChanged(string value)
+    {
+        if (_isLoading || string.IsNullOrEmpty(value))
+        {
+            return;
+        }
+
+        _settings.EndSound = value;
+        IsEndSoundStatusOpen = false;
+        OnPropertyChanged(nameof(CustomEndSoundStatus));
+    }
 
     partial void OnThemeIndexChanged(int value)
     {
@@ -456,4 +638,3 @@ public sealed partial class SettingsViewModel : ObservableObject
         _popOuts.NotifyAppearanceChanged();
     }
 }
-

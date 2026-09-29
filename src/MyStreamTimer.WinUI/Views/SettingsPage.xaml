@@ -145,6 +145,75 @@
                 Message="{x:Bind ViewModel.FolderStatusMessage, Mode=OneWay}"
                 Severity="{x:Bind ViewModel.FolderStatusSeverity, Mode=OneWay}" />
 
+            <TextBlock Style="{StaticResource SectionHeaderStyle}" Text="End sound" />
+
+            <controls:SettingsExpander
+                AutomationProperties.AutomationId="EndSoundExpander"
+                AutomationProperties.Name="End sound"
+                Description="Used by every timer with Beep at zero enabled"
+                Header="End sound"
+                HeaderIcon="{ui:FontIcon Glyph=&#xE767;}"
+                IsExpanded="True">
+                <controls:WrapPanel HorizontalSpacing="8" VerticalSpacing="8">
+                    <ComboBox
+                        MinWidth="160"
+                        AutomationProperties.AutomationId="EndSoundComboBox"
+                        AutomationProperties.Name="End sound"
+                        DisplayMemberPath="DisplayName"
+                        IsEnabled="{x:Bind local:SettingsPage.Not(ViewModel.IsEndSoundBusy), Mode=OneWay}"
+                        ItemsSource="{x:Bind ViewModel.EndSoundChoices}"
+                        SelectedValue="{x:Bind ViewModel.SelectedEndSoundId, Mode=TwoWay}"
+                        SelectedValuePath="Id" />
+                    <Button
+                        AutomationProperties.AutomationId="PreviewEndSoundButton"
+                        AutomationProperties.Name="Preview end sound"
+                        Command="{x:Bind ViewModel.PreviewEndSoundCommand}"
+                        Content="Preview"
+                        IsEnabled="{x:Bind local:SettingsPage.Not(ViewModel.IsEndSoundBusy), Mode=OneWay}" />
+                    <Button
+                        AutomationProperties.AutomationId="StopEndSoundPreviewButton"
+                        AutomationProperties.Name="Stop end sound preview"
+                        Command="{x:Bind ViewModel.StopEndSoundPreviewCommand}"
+                        Content="Stop preview" />
+                </controls:WrapPanel>
+                <controls:SettingsExpander.Items>
+                    <controls:SettingsCard
+                        Description="{x:Bind ViewModel.CustomEndSoundStatus, Mode=OneWay}"
+                        Header="Custom audio (MP3 or WAV)"
+                        ToolTipService.ToolTip="{x:Bind ViewModel.CustomEndSoundPath, Mode=OneWay}"
+                        Visibility="{x:Bind local:SettingsPage.BoolToVisibility(ViewModel.IsCustomEndSound), Mode=OneWay}">
+                        <Button
+                            AutomationProperties.AutomationId="ChooseEndSoundFileButton"
+                            AutomationProperties.Name="Choose custom end sound audio file"
+                            Command="{x:Bind ViewModel.ChooseEndSoundFileCommand}"
+                            Content="Choose audio file"
+                            IsEnabled="{x:Bind local:SettingsPage.Not(ViewModel.IsEndSoundBusy), Mode=OneWay}" />
+                    </controls:SettingsCard>
+                </controls:SettingsExpander.Items>
+                <controls:SettingsExpander.ItemsFooter>
+                    <StackPanel Padding="44,12,44,12" Spacing="8">
+                        <TextBlock
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Text="The entire sound plays once. If a custom file is missing or can't be played, the default beep is used."
+                            TextWrapping="Wrap" />
+                        <ProgressRing
+                            Width="20"
+                            Height="20"
+                            HorizontalAlignment="Left"
+                            AutomationProperties.Name="Loading or playing end sound"
+                            IsActive="{x:Bind ViewModel.IsEndSoundBusy, Mode=OneWay}"
+                            Visibility="{x:Bind local:SettingsPage.BoolToVisibility(ViewModel.IsEndSoundBusy), Mode=OneWay}" />
+                        <InfoBar
+                            AutomationProperties.AutomationId="EndSoundStatusInfoBar"
+                            AutomationProperties.LiveSetting="Polite"
+                            IsOpen="{x:Bind ViewModel.IsEndSoundStatusOpen, Mode=TwoWay}"
+                            Message="{x:Bind ViewModel.EndSoundStatusMessage, Mode=OneWay}"
+                            Severity="{x:Bind ViewModel.EndSoundStatusSeverity, Mode=OneWay}" />
+                    </StackPanel>
+                </controls:SettingsExpander.ItemsFooter>
+            </controls:SettingsExpander>
+
             <!--  ======================= Timers ======================= -->
             <TextBlock Style="{StaticResource SectionHeaderStyle}" Text="Timers" />
 
@@ -434,4 +503,3 @@
         </StackPanel>
     </ScrollViewer>
 </Page>
-

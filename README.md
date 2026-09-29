@@ -35,6 +35,14 @@ Next, Open OBS/SLOBS and add a **Text** source. Check "Read from file" and click
 
 If you are on macOS when you set click "Browse" in OBS/SLOBS the file picker will come up. To browse to a folder use the following command on your keyboard: (CMD + SHIFT + G) and then paste the directory from My Stream Timer
 
+## End sounds
+
+On Windows and macOS, open **Settings > End sound** to choose **Default beep**, **Chime**, **Bell**, **Digital**, or **Custom**. The four built-in sounds are original synthesized WAV files included with each app; Default beep uses the classic three-beep pattern. Use **Preview** to hear your choice.
+
+For **Custom**, choose an MP3 or WAV file (`.mp3`, `.wav`, or `.wave`). The selection is saved between app launches. Keep the file available in its selected location; if it cannot be played, the app falls back to Default beep.
+
+The sound choice applies to all timers with **Beep at zero** enabled. Each timer's switch still controls whether it makes a sound when its countdown finishes.
+
 ## Integrating into Stream Deck
 
 The official My Stream Timer plugin is in [`MyStreamTimer.StreamDeck`](MyStreamTimer.StreamDeck). It provides configurable actions for every countdown, count-up, and Current Time output, including start, add/subtract, pause, resume, reset, and stop. A Start Timer action can also run an independent countdown that writes directly to a text file without launching the app.
@@ -95,6 +103,5 @@ In some instances My Stream Timer may need full file accessed based on your setu
 ![Adding my stream timer to full disk access](macossettings.png)
 
 ### macOS: I dont' hear any "beeps"
-My Stream Timer uses the native device sound effects. This means you can make the beeps whatever you would like, but you have to turn them on. Head to **Preferences > Sound > Sound Effects**. Ensure that **Play user interface sound effects** is turned on and that it is set to playback through the speaker you would like to use.
-
+Enable **Beep at zero** on the timer, then try **Settings > End sound > Preview**. Check your system output device and volume in **System Settings > Sound**. End sounds play as app audio rather than using the system alert sound. If a custom file is no longer accessible or cannot be decoded, choose it again or select a built-in sound.
 

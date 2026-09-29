@@ -5,7 +5,7 @@ using MyStreamTimer.WinUI.ViewModels;
 
 namespace MyStreamTimer.WinUI.Views;
 
-/// <summary>Settings: output folder, appearance, pop-out appearance (Pro) and data reset.</summary>
+/// <summary>Settings: output folder, end sound, appearance, pop-out appearance (Pro) and data reset.</summary>
 public sealed partial class SettingsPage : Page
 {
     private Flyout? _openIconFlyout;

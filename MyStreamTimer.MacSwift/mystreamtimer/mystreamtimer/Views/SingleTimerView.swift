@@ -473,7 +473,7 @@ struct SingleTimerView: View {
                     ) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Beep at zero")
-                            Text("Play the system alert sound when the countdown finishes.")
+                            Text("Play the end sound when the countdown finishes. Choose and preview it in Settings > End sound.")
                                 .font(.caption)
                                 .foregroundStyle(.tertiary)
                         }
