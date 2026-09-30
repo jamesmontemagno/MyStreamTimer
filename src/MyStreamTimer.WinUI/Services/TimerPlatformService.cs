@@ -1,4 +1,5 @@
 using MyStreamTimer.Core.Services;
+using MyStreamTimer.Core.Settings;
 
 namespace MyStreamTimer.WinUI.Services;
 
@@ -58,5 +59,5 @@ public sealed class TimerPlatformService : ITimerPlatform
         }
     }
 
-    public Task BeepAsync() => _beep.PlayAsync();
+    public Task BeepAsync(EndSoundSelection sound) => _beep.PlayAsync(sound);
 }

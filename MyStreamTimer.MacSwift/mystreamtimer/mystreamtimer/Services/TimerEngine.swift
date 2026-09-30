@@ -18,10 +18,11 @@ actor TimerEngine {
         let showAMPM: Bool
         let outputStyle: Int
         let destination: TimerOutputDestination
+        let countUpSoundTarget: TimeInterval?
     }
 
     enum Event: Sendable {
-        case rendered(generation: UInt64, text: String)
+        case rendered(generation: UInt64, text: String, countUpElapsed: TimeInterval?)
         case writeSucceeded(
             generation: UInt64,
             refreshedBookmark: Data?,
@@ -67,8 +68,9 @@ actor TimerEngine {
 
         while !Task.isCancelled, isCurrent(configuration.generation) {
             let now = Date()
+            let countUpElapsed = elapsedCountUpInterval(configuration, now: now)
             let text = formattedOutput(configuration, now: now)
-            emit(.rendered(generation: configuration.generation, text: text))
+            emit(.rendered(generation: configuration.generation, text: text, countUpElapsed: countUpElapsed))
 
             guard !Task.isCancelled, isCurrent(configuration.generation) else { return }
 
@@ -145,46 +147,62 @@ actor TimerEngine {
         }
 
         let cadence = outputCadence(for: configuration)
+        let outputTransition: Date
         switch cadence {
         case .static:
-            return configuration.mode == .countdown
+            outputTransition = configuration.mode == .countdown
                 ? configuration.endDate
                 : now.addingTimeInterval(86_400)
 
         case .second:
             if configuration.mode == .time {
-                return nextWallClockBoundary(after: now, interval: 1)
+                outputTransition = nextWallClockBoundary(after: now, interval: 1)
+            } else {
+                outputTransition = nextElapsedBoundary(
+                    for: configuration,
+                    after: now,
+                    interval: 1
+                )
             }
-            return nextElapsedBoundary(
-                for: configuration,
-                after: now,
-                interval: 1
-            )
 
         case .minute:
             if configuration.mode == .time {
-                return nextWallClockBoundary(after: now, interval: 60)
+                outputTransition = nextWallClockBoundary(after: now, interval: 60)
+            } else {
+                outputTransition = nextElapsedBoundary(
+                    for: configuration,
+                    after: now,
+                    interval: 60
+                )
             }
-            return nextElapsedBoundary(
-                for: configuration,
-                after: now,
-                interval: 60
-            )
 
         case .hour:
-            return nextElapsedBoundary(
+            outputTransition = nextElapsedBoundary(
                 for: configuration,
                 after: now,
                 interval: 3_600
             )
 
         case .day:
-            return nextElapsedBoundary(
+            outputTransition = nextElapsedBoundary(
                 for: configuration,
                 after: now,
                 interval: 86_400
             )
         }
+
+        guard configuration.mode == .countUp,
+              let target = configuration.countUpSoundTarget,
+              target > 0,
+              let elapsed = elapsedCountUpInterval(configuration, now: now),
+              elapsed < target
+        else {
+            return outputTransition
+        }
+
+        let targetTransition = configuration.startDate
+            .addingTimeInterval(target - configuration.initialElapsed)
+        return min(outputTransition, targetTransition)
     }
 
     private func nextWallClockBoundary(after now: Date, interval: TimeInterval) -> Date {
@@ -260,6 +278,14 @@ actor TimerEngine {
             )
             return formattedInterval(elapsed, configuration: configuration)
         }
+    }
+
+    private func elapsedCountUpInterval(_ configuration: Configuration, now: Date) -> TimeInterval? {
+        guard configuration.mode == .countUp else { return nil }
+        return max(
+            0,
+            now.timeIntervalSince(configuration.startDate) + configuration.initialElapsed
+        )
     }
 
     private func formattedTimeOutput(_ configuration: Configuration, now: Date) -> String {

@@ -17,15 +17,12 @@ public enum EndSoundPlaybackResult
 public sealed class BeepService
 {
     private static readonly TimeSpan OpenTimeout = TimeSpan.FromSeconds(15);
-    private readonly GlobalSettings _settings;
 
-    public BeepService(GlobalSettings settings) => _settings = settings;
+    public async Task PlayAsync(EndSoundSelection sound) =>
+        await Task.Run(() => PlaySelectedAsync(sound, CancellationToken.None)).ConfigureAwait(false);
 
-    public async Task PlayAsync() =>
-        await Task.Run(() => PlaySelectedAsync(CancellationToken.None)).ConfigureAwait(false);
-
-    public Task<EndSoundPlaybackResult> PreviewAsync(CancellationToken cancellationToken) =>
-        Task.Run(() => PlaySelectedAsync(cancellationToken));
+    public Task<EndSoundPlaybackResult> PreviewAsync(EndSoundSelection sound, CancellationToken cancellationToken) =>
+        Task.Run(() => PlaySelectedAsync(sound, cancellationToken));
 
     /// <summary>Opens the file with the same decoder used for playback, without making a sound.</summary>
     public static async Task<bool> ValidateCustomFileAsync(string path, CancellationToken cancellationToken)
@@ -42,12 +39,12 @@ public sealed class BeepService
         }
     }
 
-    private async Task<EndSoundPlaybackResult> PlaySelectedAsync(CancellationToken cancellationToken)
+    private static async Task<EndSoundPlaybackResult> PlaySelectedAsync(EndSoundSelection sound, CancellationToken cancellationToken)
     {
         try
         {
-            var id = _settings.EndSound;
-            var path = id == EndSounds.Custom ? _settings.CustomEndSoundPath : BuiltInPath(id);
+            var id = EndSounds.Normalize(sound.Id);
+            var path = id == EndSounds.Custom ? sound.CustomPath : BuiltInPath(id);
             if ((id != EndSounds.Custom || EndSounds.IsSupportedCustomFile(path))
                 && await TryPlayFileAsync(path, validateOnly: false, cancellationToken).ConfigureAwait(false))
             {

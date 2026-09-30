@@ -469,19 +469,124 @@
                             AutomationProperties.Name="Auto start"
                             IsOn="{x:Bind ViewModel.AutoStart, Mode=TwoWay}" />
                     </controls:SettingsCard>
-                    <controls:SettingsCard
+                    <controls:SettingsExpander
+                        x:Name="SoundExpander"
                         AutomationProperties.AutomationId="BeepCard"
-                        Description="Play the end sound when the timer reaches zero. Choose the sound in Settings."
-                        Header="Beep at zero"
+                        AutomationProperties.Name="{x:Bind ViewModel.SoundToggleHeader, Mode=OneWay}"
+                        Description="{x:Bind ViewModel.SoundToggleDescription, Mode=OneWay}"
+                        Header="{x:Bind ViewModel.SoundToggleHeader, Mode=OneWay}"
                         HeaderIcon="{ui:FontIcon Glyph=&#xE995;}"
                         IsEnabled="{x:Bind ViewModel.CanEdit, Mode=OneWay}"
                         Visibility="{x:Bind helpers:Bind.ToVisibility(ViewModel.IsNotTime), Mode=OneWay}">
                         <ToggleSwitch
                             x:Name="BeepToggle"
                             AutomationProperties.AutomationId="BeepToggle"
-                            AutomationProperties.Name="Beep at zero"
+                            AutomationProperties.Name="{x:Bind ViewModel.SoundToggleHeader, Mode=OneWay}"
                             IsOn="{x:Bind ViewModel.BeepAtZero, Mode=TwoWay}" />
-                    </controls:SettingsCard>
+                        <controls:SettingsExpander.Items>
+                            <controls:SettingsCard
+                                AutomationProperties.AutomationId="SoundAtCard"
+                                Description="Elapsed time when the sound plays. It plays once per run; the count up keeps going."
+                                Header="Play sound at"
+                                Visibility="{x:Bind helpers:Bind.ToVisibility(ViewModel.IsCountUp), Mode=OneWay}">
+                                <StackPanel Orientation="Horizontal" Spacing="12">
+                                    <NumberBox
+                                        x:Name="SoundAtMinutesBox"
+                                        MinWidth="140"
+                                        AutomationProperties.AutomationId="SoundAtMinutesBox"
+                                        AutomationProperties.Name="Play sound at minutes"
+                                        Header="Minutes"
+                                        LargeChange="5"
+                                        Maximum="1000"
+                                        Minimum="0"
+                                        SmallChange="1"
+                                        SpinButtonPlacementMode="Inline"
+                                        ValidationMode="InvalidInputOverwritten"
+                                        Value="{x:Bind ViewModel.SoundAtMinutes, Mode=TwoWay}" />
+                                    <NumberBox
+                                        x:Name="SoundAtSecondsBox"
+                                        MinWidth="140"
+                                        AutomationProperties.AutomationId="SoundAtSecondsBox"
+                                        AutomationProperties.Name="Play sound at seconds"
+                                        Header="Seconds"
+                                        LargeChange="10"
+                                        Maximum="59"
+                                        Minimum="0"
+                                        SmallChange="1"
+                                        SpinButtonPlacementMode="Inline"
+                                        ValidationMode="InvalidInputOverwritten"
+                                        Value="{x:Bind ViewModel.SoundAtSeconds, Mode=TwoWay}" />
+                                </StackPanel>
+                            </controls:SettingsCard>
+
+                            <controls:SettingsCard
+                                AutomationProperties.AutomationId="EndSoundCard"
+                                Description="Each timer can use its own sound"
+                                Header="Sound">
+                                <controls:WrapPanel HorizontalSpacing="8" VerticalSpacing="8">
+                                    <ComboBox
+                                        x:Name="EndSoundCombo"
+                                        MinWidth="160"
+                                        AutomationProperties.AutomationId="EndSoundComboBox"
+                                        AutomationProperties.Name="Sound"
+                                        DisplayMemberPath="DisplayName"
+                                        IsEnabled="{x:Bind ViewModel.IsEndSoundIdle, Mode=OneWay}"
+                                        ItemsSource="{x:Bind ViewModel.EndSoundChoices}"
+                                        SelectedValue="{x:Bind ViewModel.SelectedEndSoundId, Mode=TwoWay}"
+                                        SelectedValuePath="Id" />
+                                    <Button
+                                        AutomationProperties.AutomationId="PreviewEndSoundButton"
+                                        AutomationProperties.Name="Preview sound"
+                                        Command="{x:Bind ViewModel.PreviewEndSoundCommand, Mode=OneWay}"
+                                        IsEnabled="{x:Bind ViewModel.IsEndSoundIdle, Mode=OneWay}">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <FontIcon FontSize="14" Glyph="&#xE768;" />
+                                            <TextBlock Text="Preview" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button
+                                        AutomationProperties.AutomationId="StopEndSoundPreviewButton"
+                                        AutomationProperties.Name="Stop sound preview"
+                                        Command="{x:Bind ViewModel.StopEndSoundPreviewCommand, Mode=OneWay}"
+                                        Visibility="{x:Bind helpers:Bind.ToVisibility(ViewModel.IsEndSoundPreviewing), Mode=OneWay}">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <FontIcon FontSize="14" Glyph="&#xE71A;" />
+                                            <TextBlock Text="Stop" />
+                                        </StackPanel>
+                                    </Button>
+                                </controls:WrapPanel>
+                            </controls:SettingsCard>
+
+                            <controls:SettingsCard
+                                AutomationProperties.AutomationId="CustomEndSoundCard"
+                                Description="{x:Bind ViewModel.CustomEndSoundStatus, Mode=OneWay}"
+                                Header="Custom audio (MP3 or WAV)"
+                                ToolTipService.ToolTip="{x:Bind ViewModel.CustomEndSoundPath, Mode=OneWay}"
+                                Visibility="{x:Bind helpers:Bind.ToVisibility(ViewModel.IsCustomEndSound), Mode=OneWay}">
+                                <Button
+                                    AutomationProperties.AutomationId="ChooseEndSoundFileButton"
+                                    AutomationProperties.Name="Choose custom audio file"
+                                    Command="{x:Bind ViewModel.ChooseEndSoundFileCommand, Mode=OneWay}"
+                                    Content="Choose audio file"
+                                    IsEnabled="{x:Bind ViewModel.IsEndSoundIdle, Mode=OneWay}" />
+                            </controls:SettingsCard>
+                        </controls:SettingsExpander.Items>
+                        <controls:SettingsExpander.ItemsFooter>
+                            <StackPanel Padding="44,12,44,12" Spacing="8">
+                                <TextBlock
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Style="{StaticResource CaptionTextBlockStyle}"
+                                    Text="The entire sound plays once. If a custom file is missing or can't be played, the default beep is used."
+                                    TextWrapping="Wrap" />
+                                <InfoBar
+                                    AutomationProperties.AutomationId="EndSoundStatusInfoBar"
+                                    AutomationProperties.LiveSetting="Polite"
+                                    IsOpen="{x:Bind ViewModel.IsEndSoundStatusOpen, Mode=TwoWay}"
+                                    Message="{x:Bind ViewModel.EndSoundStatusMessage, Mode=OneWay}"
+                                    Severity="{x:Bind ViewModel.EndSoundStatusSeverity, Mode=OneWay}" />
+                            </StackPanel>
+                        </controls:SettingsExpander.ItemsFooter>
+                    </controls:SettingsExpander>
                 </StackPanel>
             </StackPanel>
         </ScrollViewer>

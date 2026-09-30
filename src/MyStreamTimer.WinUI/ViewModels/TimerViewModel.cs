@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.UI.Xaml.Controls;
 using MyStreamTimer.Core.Automation;
 using MyStreamTimer.Core.Purchases;
 using MyStreamTimer.Core.Settings;
@@ -24,9 +25,11 @@ public sealed partial class TimerViewModel : ObservableObject
     private readonly ClipboardService _clipboard;
     private readonly LauncherService _launcher;
     private readonly PopOutService _popOuts;
+    private readonly BeepService _beep;
+    private CancellationTokenSource _endSoundCancellation = new();
 
     public TimerViewModel(TimerEngine engine, GlobalSettings global, ProEntitlement pro, ClipboardService clipboard,
-        LauncherService launcher, PopOutService popOuts)
+        LauncherService launcher, PopOutService popOuts, BeepService beep)
     {
         _engine = engine;
         _global = global;
@@ -34,6 +37,7 @@ public sealed partial class TimerViewModel : ObservableObject
         _clipboard = clipboard;
         _launcher = launcher;
         _popOuts = popOuts;
+        _beep = beep;
 
         Kind = engine.Kind;
         IsCountdown = Kind.IsCountdown();
@@ -64,6 +68,8 @@ public sealed partial class TimerViewModel : ObservableObject
         };
         popOuts.SettingsReset += (_, _) => Dispatch(() =>
         {
+            CancelEndSoundOperations();
+            IsEndSoundStatusOpen = false;
             // every pass-through property now reads a default; re-bind everything
             OnPropertyChanged(string.Empty);
             OutputValidationMessage = Validate(_engine.Settings.Output);
@@ -314,6 +320,95 @@ public sealed partial class TimerViewModel : ObservableObject
         }
     }
 
+    // ---------------- end sound (per timer) ----------------
+
+    public string SoundToggleHeader => IsCountUp ? "Play sound at time" : "Beep at zero";
+
+    public string SoundToggleDescription => IsCountUp
+        ? "Play this timer's sound once when the count up reaches the time below"
+        : "Play this timer's sound when the countdown reaches zero";
+
+    public IReadOnlyList<EndSoundChoice> EndSoundChoices => EndSounds.Choices;
+
+    public string SelectedEndSoundId
+    {
+        get => _engine.Settings.EndSound;
+        set
+        {
+            if (string.IsNullOrEmpty(value) || value == _engine.Settings.EndSound)
+            {
+                return;
+            }
+
+            _engine.Settings.EndSound = value;
+            IsEndSoundStatusOpen = false;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(IsCustomEndSound));
+            OnPropertyChanged(nameof(CustomEndSoundStatus));
+        }
+    }
+
+    public bool IsCustomEndSound => SelectedEndSoundId == EndSounds.Custom;
+
+    public string CustomEndSoundPath => _engine.Settings.CustomEndSoundPath;
+
+    public string CustomEndSoundStatus => string.IsNullOrWhiteSpace(CustomEndSoundPath)
+        ? "No custom audio selected. The default beep will be used."
+        : !File.Exists(CustomEndSoundPath)
+            ? $"Unavailable: {Path.GetFileName(CustomEndSoundPath)}. The default beep will be used."
+            : $"Selected: {Path.GetFileName(CustomEndSoundPath)}";
+
+    public double SoundAtMinutes
+    {
+        get => _engine.Settings.SoundAtMinutes;
+        set
+        {
+            var minutes = ClampToInt(value, 0, 1000);
+            if (minutes == _engine.Settings.SoundAtMinutes)
+            {
+                return;
+            }
+
+            _engine.Settings.SoundAtMinutes = minutes;
+            OnPropertyChanged();
+        }
+    }
+
+    public double SoundAtSeconds
+    {
+        get => _engine.Settings.SoundAtSeconds;
+        set
+        {
+            var seconds = ClampToInt(value, 0, 59);
+            if (seconds == _engine.Settings.SoundAtSeconds)
+            {
+                return;
+            }
+
+            _engine.Settings.SoundAtSeconds = seconds;
+            OnPropertyChanged();
+        }
+    }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsEndSoundIdle))]
+    public partial bool IsEndSoundBusy { get; set; }
+
+    public bool IsEndSoundIdle => !IsEndSoundBusy;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(StopEndSoundPreviewCommand))]
+    public partial bool IsEndSoundPreviewing { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsEndSoundStatusOpen { get; set; }
+
+    [ObservableProperty]
+    public partial string EndSoundStatusMessage { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial InfoBarSeverity EndSoundStatusSeverity { get; set; } = InfoBarSeverity.Informational;
+
     public bool ShowAmPm
     {
         get => _engine.Settings.ShowAmPm;
@@ -414,6 +509,126 @@ public sealed partial class TimerViewModel : ObservableObject
         }
 
         _popOuts.Show(Kind);
+    }
+
+    [RelayCommand]
+    private async Task ChooseEndSoundFileAsync()
+    {
+        if (IsEndSoundBusy)
+        {
+            return;
+        }
+
+        var cancellationToken = _endSoundCancellation.Token;
+        IsEndSoundBusy = true;
+        IsEndSoundStatusOpen = false;
+        try
+        {
+            var picker = new Microsoft.Windows.Storage.Pickers.FileOpenPicker(App.Window.AppWindow.Id)
+            {
+                SuggestedStartLocation = Microsoft.Windows.Storage.Pickers.PickerLocationId.MusicLibrary,
+            };
+            picker.FileTypeFilter.Add(".mp3");
+            picker.FileTypeFilter.Add(".wav");
+            picker.FileTypeFilter.Add(".wave");
+            var result = await picker.PickSingleFileAsync();
+            if (result is null || string.IsNullOrEmpty(result.Path) || cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+
+            if (!EndSounds.IsSupportedCustomFile(result.Path))
+            {
+                ShowEndSoundStatus("Choose an MP3 or WAV audio file. Your previous selection was kept.", InfoBarSeverity.Error);
+                return;
+            }
+
+            var valid = await BeepService.ValidateCustomFileAsync(result.Path, cancellationToken);
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+
+            if (!valid)
+            {
+                ShowEndSoundStatus("This audio file couldn't be opened or decoded. Choose a playable MP3 or WAV file. Your previous selection was kept.", InfoBarSeverity.Error);
+                return;
+            }
+
+            _engine.Settings.CustomEndSoundPath = result.Path;
+            OnPropertyChanged(nameof(CustomEndSoundPath));
+            OnPropertyChanged(nameof(CustomEndSoundStatus));
+            SelectedEndSoundId = EndSounds.Custom;
+            ShowEndSoundStatus("Custom sound saved. Keep the file in this location so it can be played.", InfoBarSeverity.Success);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[TimerViewModel] Choose end sound failed: {ex.Message}");
+            if (!cancellationToken.IsCancellationRequested)
+            {
+                ShowEndSoundStatus("Couldn't choose this audio file. Your previous selection was kept.", InfoBarSeverity.Error);
+            }
+        }
+        finally
+        {
+            IsEndSoundBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task PreviewEndSoundAsync()
+    {
+        if (IsEndSoundBusy)
+        {
+            return;
+        }
+
+        var cancellationToken = _endSoundCancellation.Token;
+        IsEndSoundBusy = true;
+        IsEndSoundPreviewing = true;
+        IsEndSoundStatusOpen = false;
+        try
+        {
+            var result = await _beep.PreviewAsync(_engine.Settings.EndSoundSelection, cancellationToken);
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+
+            OnPropertyChanged(nameof(CustomEndSoundStatus));
+            if (result == EndSoundPlaybackResult.DefaultFallback)
+            {
+                ShowEndSoundStatus("The selected audio couldn't be played. The default beep was used instead.", InfoBarSeverity.Warning);
+            }
+            else if (result == EndSoundPlaybackResult.Unavailable)
+            {
+                ShowEndSoundStatus("The sound couldn't be played. Check your audio output and try another file.", InfoBarSeverity.Error);
+            }
+        }
+        finally
+        {
+            IsEndSoundPreviewing = false;
+            IsEndSoundBusy = false;
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(IsEndSoundPreviewing))]
+    private void StopEndSoundPreview() => CancelEndSoundOperations();
+
+    /// <summary>Stops any preview or pending file validation, e.g. when the page navigates away.</summary>
+    public void CancelEndSoundOperations()
+    {
+        _endSoundCancellation.Cancel();
+        _endSoundCancellation.Dispose();
+        _endSoundCancellation = new CancellationTokenSource();
+        IsEndSoundPreviewing = false;
+    }
+
+    private void ShowEndSoundStatus(string message, InfoBarSeverity severity)
+    {
+        EndSoundStatusMessage = message;
+        EndSoundStatusSeverity = severity;
+        IsEndSoundStatusOpen = true;
     }
 
     // ---------------- internals ----------------

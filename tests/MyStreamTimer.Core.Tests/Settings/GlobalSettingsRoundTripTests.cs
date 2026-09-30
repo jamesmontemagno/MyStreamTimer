@@ -127,7 +127,7 @@ public class GlobalSettingsRoundTripTests
         Assert.True(p.HasRunningTimers);
         p.StopActivity("a");
         Assert.False(p.HasRunningTimers);
-        Assert.True(p.BeepAsync().IsCompletedSuccessfully);
+        Assert.True(p.BeepAsync(EndSoundSelection.Default).IsCompletedSuccessfully);
 
         var none = UrlCommand.None;
         Assert.False(none.IsValid);

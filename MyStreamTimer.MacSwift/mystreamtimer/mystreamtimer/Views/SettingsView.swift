@@ -88,51 +88,6 @@ struct SettingsWorkspaceView: View {
                 }
             }
 
-            SectionCard(
-                title: "End sound",
-                subtitle: "Used by every timer with “Beep at zero” enabled. Custom tracks play once in full."
-            ) {
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack {
-                        Picker("Sound", selection: Binding(
-                            get: { appModel.settingsStore.endSound },
-                            set: { appModel.selectEndSound($0) }
-                        )) {
-                            ForEach(EndSound.allCases) { sound in
-                                Text(sound.displayName).tag(sound)
-                            }
-                        }
-                        .pickerStyle(.menu)
-                        .frame(maxWidth: 240)
-
-                        Button {
-                            appModel.previewEndSound()
-                        } label: {
-                            Label(
-                                appModel.isPreviewingEndSound ? "Stop Preview" : "Preview",
-                                systemImage: appModel.isPreviewingEndSound ? "stop.fill" : "play.fill"
-                            )
-                        }
-                        .buttonStyle(AppActionButtonStyle())
-
-                        Button {
-                            appModel.chooseCustomEndSound()
-                        } label: {
-                            Label("Choose MP3 or WAV…", systemImage: "folder")
-                        }
-                        .buttonStyle(AppActionButtonStyle())
-                    }
-
-                    Text(appModel.settingsStore.customEndSoundFileName.isEmpty
-                         ? "No custom file selected. Choose an MP3 or WAV file to use Custom."
-                         : "Custom file: \(appModel.settingsStore.customEndSoundFileName)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .textSelection(.enabled)
-                }
-            }
-            .onDisappear { appModel.stopEndSoundPreview() }
-
             SectionCard(title: "Appearance", subtitle: "Choose how the app looks.") {
                 Picker("Theme", selection: Binding(
                     get: { appModel.settingsStore.theme },

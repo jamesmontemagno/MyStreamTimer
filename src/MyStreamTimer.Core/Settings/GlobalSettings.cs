@@ -69,8 +69,6 @@ public sealed class GlobalSettings
     public const double DefaultPopOutFontSize = 48;
 
     public string AppTheme { get => store.GetString(nameof(AppTheme), "system"); set => store.Set(nameof(AppTheme), value); }
-    public string EndSound { get => EndSounds.Normalize(store.GetString(nameof(EndSound), EndSounds.Default)); set => store.Set(nameof(EndSound), EndSounds.Normalize(value)); }
-    public string CustomEndSoundPath { get => store.GetString(nameof(CustomEndSoundPath), string.Empty); set => store.Set(nameof(CustomEndSoundPath), value); }
     public double PopOutFontSize { get => store.GetDouble(nameof(PopOutFontSize), DefaultPopOutFontSize); set => store.Set(nameof(PopOutFontSize), value); }
     public string PopOutFontFamily { get => store.GetString(nameof(PopOutFontFamily), string.Empty); set => store.Set(nameof(PopOutFontFamily), value); }
     public string PopOutTextColorHex { get => store.GetString(nameof(PopOutTextColorHex), DefaultPopOutTextColorHex); set => store.Set(nameof(PopOutTextColorHex), value); }

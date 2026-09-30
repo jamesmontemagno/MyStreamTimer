@@ -43,7 +43,8 @@
 
   <ItemGroup>
     <Content Include="Assets\**\*.png;Assets\**\*.ico" />
-    <Content Update="Assets\Sounds\*.wav" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Remove="Assets\Sounds\*.wav" />
+    <Content Include="Assets\Sounds\*.wav" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

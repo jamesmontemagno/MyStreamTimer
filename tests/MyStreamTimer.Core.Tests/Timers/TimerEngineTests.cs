@@ -32,11 +32,12 @@ sealed class FakePlatform : ITimerPlatform
 {
     public int Beeps;
     public int BeepDelayMs;
+    public readonly List<EndSoundSelection> Sounds = [];
     readonly HashSet<string> active = [];
     public void StartActivity(string id) => active.Add(id);
     public void StopActivity(string id) => active.Remove(id);
     public bool HasRunningTimers => active.Count > 0;
-    public async Task BeepAsync() { Beeps++; if (BeepDelayMs > 0) await Task.Delay(BeepDelayMs); }
+    public async Task BeepAsync(EndSoundSelection sound) { lock (Sounds) Sounds.Add(sound); Interlocked.Increment(ref Beeps); if (BeepDelayMs > 0) await Task.Delay(BeepDelayMs); }
 }
 
 public class TimerEngineTests
@@ -109,6 +110,123 @@ public class TimerEngineTests
             Assert.Equal("Finished", files.Last);
             Assert.False(platform.HasRunningTimers);
         }
+    }
+
+    [Fact]
+    public async Task Countdown_plays_its_own_selected_sound()
+    {
+        var (engine, clock, files, platform, _) = Create(TimerKind.Countdown2,
+            s => { s.Minutes = 0; s.Seconds = 1; s.MakeSound = true; s.EndSound = EndSounds.Custom; s.CustomEndSoundPath = @"C:\a.mp3"; });
+        using (engine)
+        {
+            engine.StartStop();
+            clock.Advance(TimeSpan.FromSeconds(2));
+            await WaitFor(() => platform.Beeps == 1);
+            Assert.Equal(new EndSoundSelection(EndSounds.Custom, @"C:\a.mp3"), Assert.Single(platform.Sounds));
+        }
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Count_up_plays_once_at_target_and_keeps_running(bool makeSound)
+    {
+        var (engine, clock, files, platform, _) = Create(TimerKind.Countup,
+            s => { s.MakeSound = makeSound; s.SoundAtMinutes = 0; s.SoundAtSeconds = 3; s.EndSound = "chime"; });
+        using (engine)
+        {
+            engine.StartStop();
+            await WaitFor(() => files.Last == "00:00:00");
+            for (var i = 1; i <= 2; i++)
+            {
+                clock.Advance(TimeSpan.FromSeconds(1));
+                await WaitFor(() => files.Last == $"00:00:0{i}");
+            }
+            Assert.Equal(0, platform.Beeps);
+
+            clock.Advance(TimeSpan.FromSeconds(1));
+            await WaitFor(() => files.Last == "00:00:03");
+            if (makeSound)
+            {
+                await WaitFor(() => platform.Beeps == 1);
+                Assert.Equal(new EndSoundSelection("chime", ""), Assert.Single(platform.Sounds));
+            }
+
+            clock.Advance(TimeSpan.FromSeconds(5));
+            await WaitFor(() => files.Last == "00:00:08");
+            await Task.Delay(300);
+            Assert.Equal(makeSound ? 1 : 0, platform.Beeps);
+            Assert.Equal(TimerState.Running, engine.State);
+        }
+    }
+
+    [Fact]
+    public async Task Count_up_sound_does_not_replay_on_resume_but_replays_after_reset()
+    {
+        var (engine, clock, files, platform, _) = Create(TimerKind.Countup,
+            s => { s.MakeSound = true; s.SoundAtMinutes = 0; s.SoundAtSeconds = 2; });
+        using (engine)
+        {
+            engine.StartStop();
+            await WaitFor(() => files.Last == "00:00:00");
+            clock.Advance(TimeSpan.FromSeconds(3));
+            await WaitFor(() => platform.Beeps == 1);
+
+            engine.PauseResume();
+            Assert.Equal(TimerState.Paused, engine.State);
+            engine.PauseResume();
+            clock.Advance(TimeSpan.FromSeconds(2));
+            await WaitFor(() => files.Last == "00:00:05");
+            await Task.Delay(300);
+            Assert.Equal(1, platform.Beeps);
+
+            engine.Reset();
+            await WaitFor(() => files.Last == "00:00:00");
+            clock.Advance(TimeSpan.FromSeconds(2));
+            await WaitFor(() => platform.Beeps == 2);
+        }
+    }
+
+    [Fact]
+    public async Task Count_up_started_past_target_is_silent_until_added_time_crosses_it_once()
+    {
+        var (engine, clock, files, platform, _) = Create(TimerKind.Countup,
+            s => { s.MakeSound = true; s.SoundAtMinutes = 5; s.SoundAtSeconds = 0; });
+        using (engine)
+        {
+            engine.StartAtBoot(10);
+            await WaitFor(() => files.Last == "00:10:00");
+            clock.Advance(TimeSpan.FromSeconds(2));
+            await WaitFor(() => files.Last == "00:10:02");
+            await Task.Delay(300);
+            Assert.Equal(0, platform.Beeps);
+
+            engine.AddMinutes(-6);
+            await WaitFor(() => files.Last == "00:04:02");
+            engine.AddMinutes(2);
+            await WaitFor(() => platform.Beeps == 1);
+
+            // once per run: dropping back below the target and crossing it again stays silent
+            engine.AddMinutes(-3);
+            await WaitFor(() => files.Last == "00:03:02");
+            engine.AddMinutes(3);
+            await WaitFor(() => files.Last == "00:06:02");
+            await Task.Delay(300);
+            Assert.Equal(1, platform.Beeps);
+        }
+    }
+
+    [Theory]
+    [InlineData(0, 3, 3, true)]
+    [InlineData(2, 3, 3, true)]
+    [InlineData(2, 10, 3, true)]
+    [InlineData(3, 4, 3, false)]
+    [InlineData(1, 2, 3, false)]
+    [InlineData(0, 5, 0, false)]
+    public void Count_up_sound_plays_only_when_crossing_the_target(int previous, int current, int target, bool expected)
+    {
+        Assert.Equal(expected, TimerEngine.ShouldPlayCountUpSound(
+            TimeSpan.FromSeconds(previous), TimeSpan.FromSeconds(current), TimeSpan.FromSeconds(target)));
     }
 
     [Fact]

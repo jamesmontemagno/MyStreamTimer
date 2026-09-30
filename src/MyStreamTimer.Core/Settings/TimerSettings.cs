@@ -18,6 +18,11 @@ public sealed class TimerSettings
     const string OutputStyleKey = "key_output_style";
     const string UseMinutesKey = "UseMinutes";
     const string FinishAtTimeKey = "FinishAtTime";
+    public const string EndSoundKey = "key_end_sound";
+    public const string CustomEndSoundPathKey = "key_custom_end_sound_path";
+    public const string SoundAtMinutesKey = "key_sound_minutes";
+    public const string SoundAtSecondsKey = "key_sound_seconds";
+    public const int DefaultSoundAtMinutes = 5;
 
     readonly ISettingsStore store;
     readonly string id;
@@ -71,6 +76,16 @@ public sealed class TimerSettings
 
     /// <summary>User-chosen Segoe Fluent Icons glyph (e.g. "\uE916"); empty means the default glyph for the kind.</summary>
     public string IconGlyph { get => store.GetString(Key("IconGlyph"), string.Empty); set => store.Set(Key("IconGlyph"), value); }
+
+    /// <summary>End sound played by <see cref="MakeSound"/> (countdown at zero, count-up at <see cref="SoundAt"/>).</summary>
+    public string EndSound { get => EndSounds.Normalize(store.GetString(Key(EndSoundKey), EndSounds.Default)); set => store.Set(Key(EndSoundKey), EndSounds.Normalize(value)); }
+    public string CustomEndSoundPath { get => store.GetString(Key(CustomEndSoundPathKey), string.Empty); set => store.Set(Key(CustomEndSoundPathKey), value ?? string.Empty); }
+    public EndSoundSelection EndSoundSelection => new(EndSound, CustomEndSoundPath);
+
+    /// <summary>Count-up only: elapsed time at which the end sound plays.</summary>
+    public int SoundAtMinutes { get => Math.Max(0, store.GetInt(Key(SoundAtMinutesKey), DefaultSoundAtMinutes)); set => store.Set(Key(SoundAtMinutesKey), Math.Max(0, value)); }
+    public int SoundAtSeconds { get => Math.Clamp(store.GetInt(Key(SoundAtSecondsKey), 0), 0, 59); set => store.Set(Key(SoundAtSecondsKey), Math.Clamp(value, 0, 59)); }
+    public TimeSpan SoundAt => TimeSpan.FromMinutes(SoundAtMinutes) + TimeSpan.FromSeconds(SoundAtSeconds);
 
     public string EffectiveTitle => string.IsNullOrWhiteSpace(DisplayName) ? Kind.Title() : DisplayName.Trim();
     public string EffectiveIconGlyph => string.IsNullOrWhiteSpace(IconGlyph) ? Kind.DefaultIconGlyph() : IconGlyph;

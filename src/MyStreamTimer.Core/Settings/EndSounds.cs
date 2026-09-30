@@ -2,6 +2,12 @@ namespace MyStreamTimer.Core.Settings;
 
 public sealed record EndSoundChoice(string Id, string DisplayName, string? FileName);
 
+/// <summary>A timer's chosen end sound: a catalog id plus the custom file path used when the id is <see cref="EndSounds.Custom"/>.</summary>
+public sealed record EndSoundSelection(string Id, string CustomPath)
+{
+    public static EndSoundSelection Default { get; } = new(EndSounds.Default, string.Empty);
+}
+
 public static class EndSounds
 {
     public const string Default = "default";

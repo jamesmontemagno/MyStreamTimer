@@ -37,11 +37,12 @@ If you are on macOS when you set click "Browse" in OBS/SLOBS the file picker wil
 
 ## End sounds
 
-On Windows and macOS, open **Settings > End sound** to choose **Default beep**, **Chime**, **Bell**, **Digital**, or **Custom**. The four built-in sounds are original synthesized WAV files included with each app; Default beep uses the classic three-beep pattern. Use **Preview** to hear your choice.
+Every countdown and count-up timer has its own sound settings on its timer page, so each timer can use a different sound. Choose **Default beep**, **Chime**, **Bell**, **Digital**, or **Custom**, and use **Preview** to hear it. The four built-in sounds are original synthesized WAV files included with each app; Default beep uses the classic three-beep pattern.
 
-For **Custom**, choose an MP3 or WAV file (`.mp3`, `.wav`, or `.wave`). The selection is saved between app launches. Keep the file available in its selected location; if it cannot be played, the app falls back to Default beep.
+- **Countdowns:** turn on **Beep at zero** to play the timer's sound when it finishes.
+- **Count ups:** turn on **Play sound at time** and set the minutes and seconds. The sound plays once when the count up reaches that time, and the timer keeps counting. Resuming a paused count up that is already past the time does not replay the sound.
 
-The sound choice applies to all timers with **Beep at zero** enabled. Each timer's switch still controls whether it makes a sound when its countdown finishes.
+For **Custom**, choose an MP3 or WAV file (`.mp3`, `.wav`, or `.wave`) for that timer. The selection is saved between app launches. Keep the file available in its selected location; if it cannot be played, the app falls back to Default beep.
 
 ## Integrating into Stream Deck
 
@@ -103,5 +104,5 @@ In some instances My Stream Timer may need full file accessed based on your setu
 ![Adding my stream timer to full disk access](macossettings.png)
 
 ### macOS: I dont' hear any "beeps"
-Enable **Beep at zero** on the timer, then try **Settings > End sound > Preview**. Check your system output device and volume in **System Settings > Sound**. End sounds play as app audio rather than using the system alert sound. If a custom file is no longer accessible or cannot be decoded, choose it again or select a built-in sound.
+Enable **Beep at zero** (or **Play sound at time** for a count up) on the timer, then use **Preview** next to that timer's sound. Check your system output device and volume in **System Settings > Sound**. End sounds play as app audio rather than using the system alert sound. If a custom file is no longer accessible or cannot be decoded, choose it again or select a built-in sound.
 

@@ -27,6 +27,11 @@ enum EndSoundError: LocalizedError {
     }
 }
 
+struct CustomEndSoundFile {
+    let bookmark: Data
+    let fileName: String
+}
+
 @MainActor
 final class EndSoundPlayback {
     let player: AVAudioPlayer
@@ -53,20 +58,14 @@ final class EndSoundPlayer: NSObject, ObservableObject, AVAudioPlayerDelegate {
     @Published private(set) var isPlaying = false
     var onPlaybackError: ((String) -> Void)?
 
-    private let settingsStore: LegacySettingsStore
     private(set) var playback: EndSoundPlayback?
     private var playingDefault = false
 
-    init(settingsStore: LegacySettingsStore) {
-        self.settingsStore = settingsStore
-        super.init()
+    func hasUsableCustomSound(bookmark: Data?) -> Bool {
+        (try? loadSound(.custom, customBookmark: bookmark)) != nil
     }
 
-    var hasUsableCustomSound: Bool {
-        (try? loadSound(.custom)) != nil
-    }
-
-    func chooseCustomSound() throws {
+    func chooseCustomSound() throws -> CustomEndSoundFile? {
         let panel = NSOpenPanel()
         panel.canChooseDirectories = false
         panel.canChooseFiles = true
@@ -77,12 +76,12 @@ final class EndSoundPlayer: NSObject, ObservableObject, AVAudioPlayerDelegate {
         panel.title = "Choose a custom end sound"
         panel.message = "Choose an MP3 or WAV file. The entire track plays once."
         panel.prompt = "Choose Sound"
-        guard panel.runModal() == .OK else { return }
-        try selectCustomFile(panel.url)
+        guard panel.runModal() == .OK else { return nil }
+        return try selectCustomFile(panel.url)
     }
 
-    func selectCustomFile(_ url: URL?) throws {
-        guard let url else { return }
+    func selectCustomFile(_ url: URL?) throws -> CustomEndSoundFile? {
+        guard let url else { return nil }
         guard EndSound.supports(url) else { throw EndSoundError.unsupportedFile }
 
         let hasAccess = url.startAccessingSecurityScopedResource()
@@ -95,14 +94,25 @@ final class EndSoundPlayer: NSObject, ObservableObject, AVAudioPlayerDelegate {
             includingResourceValuesForKeys: nil,
             relativeTo: nil
         )
-        settingsStore.saveCustomEndSound(bookmark: bookmark, fileName: url.lastPathComponent)
+        return CustomEndSoundFile(bookmark: bookmark, fileName: url.lastPathComponent)
     }
 
     @discardableResult
-    func play() throws -> Bool {
+    func play(
+        sound: EndSound,
+        customBookmark: Data?,
+        updateCustomBookmark: ((Data) -> Void)? = nil
+    ) throws -> Bool {
         stop()
-        let result = try settingsStore.endSound.resolve { sound in
-            try startPlayer(loadSound(sound), sound: sound)
+        let result = try sound.resolve { selectedSound in
+            try startPlayer(
+                loadSound(
+                    selectedSound,
+                    customBookmark: customBookmark,
+                    updateCustomBookmark: updateCustomBookmark
+                ),
+                sound: selectedSound
+            )
         }
         return result.usedFallback
     }
@@ -114,9 +124,13 @@ final class EndSoundPlayer: NSObject, ObservableObject, AVAudioPlayerDelegate {
         isPlaying = false
     }
 
-    func playAtCompletion() {
+    func playAtCompletion(
+        sound: EndSound,
+        customBookmark: Data?,
+        updateCustomBookmark: ((Data) -> Void)? = nil
+    ) {
         do {
-            try play()
+            try play(sound: sound, customBookmark: customBookmark, updateCustomBookmark: updateCustomBookmark)
         } catch {
             NSSound.beep()
         }
@@ -156,7 +170,7 @@ final class EndSoundPlayer: NSObject, ObservableObject, AVAudioPlayerDelegate {
         var message = "The end sound could not finish playing."
         if !wasDefault {
             do {
-                try startPlayer(loadSound(.defaultBeep), sound: .defaultBeep)
+                try startPlayer(loadSound(.defaultBeep, customBookmark: nil), sound: .defaultBeep)
                 message += " Default beep is playing instead."
             } catch {
                 NSSound.beep()
@@ -167,18 +181,22 @@ final class EndSoundPlayer: NSObject, ObservableObject, AVAudioPlayerDelegate {
         onPlaybackError?(message)
     }
 
-    func loadSound(_ sound: EndSound) throws -> EndSoundPlayback {
+    func loadSound(
+        _ sound: EndSound,
+        customBookmark: Data? = nil,
+        updateCustomBookmark: ((Data) -> Void)? = nil
+    ) throws -> EndSoundPlayback {
         guard sound == .custom else {
             guard let url = sound.bundledURL() else { throw EndSoundError.missingBundledSound }
             return try EndSoundPlayback(url: url, securityScoped: false)
         }
 
-        guard let bookmark = settingsStore.customEndSoundBookmark else {
+        guard let customBookmark else {
             throw EndSoundError.noCustomFile
         }
         var isStale = false
         let url = try URL(
-            resolvingBookmarkData: bookmark,
+            resolvingBookmarkData: customBookmark,
             options: [.withSecurityScope, .withoutUI],
             relativeTo: nil,
             bookmarkDataIsStale: &isStale
@@ -186,11 +204,12 @@ final class EndSoundPlayer: NSObject, ObservableObject, AVAudioPlayerDelegate {
         guard EndSound.supports(url) else { throw EndSoundError.unsupportedFile }
         let candidate = try EndSoundPlayback(url: url, securityScoped: true)
         if isStale {
-            settingsStore.customEndSoundBookmark = try url.bookmarkData(
+            let refreshedBookmark = try url.bookmarkData(
                 options: [.withSecurityScope, .securityScopeAllowOnlyReadAccess],
                 includingResourceValuesForKeys: nil,
                 relativeTo: nil
             )
+            updateCustomBookmark?(refreshedBookmark)
         }
         return candidate
     }
