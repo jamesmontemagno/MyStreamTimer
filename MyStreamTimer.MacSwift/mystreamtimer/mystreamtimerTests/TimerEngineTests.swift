@@ -28,7 +28,8 @@ final class TimerEngineTests: XCTestCase {
                 finishText: "Finished",
                 showAMPM: false,
                 outputStyle: 0,
-                destination: destination
+                destination: destination,
+                countUpSoundTarget: nil
             )
         )
 
@@ -63,7 +64,8 @@ final class TimerEngineTests: XCTestCase {
                 finishText: "",
                 showAMPM: false,
                 outputStyle: 0,
-                destination: destination
+                destination: destination,
+                countUpSoundTarget: nil
             )
         )
         await engine.start(
@@ -77,7 +79,8 @@ final class TimerEngineTests: XCTestCase {
                 finishText: "",
                 showAMPM: false,
                 outputStyle: 0,
-                destination: destination
+                destination: destination,
+                countUpSoundTarget: nil
             )
         )
 
@@ -95,7 +98,7 @@ final class TimerEngineTests: XCTestCase {
 
         let advanced = expectation(description: "seconds token advanced")
         let engine = TimerEngine { event in
-            if case let .rendered(_, text) = event, text.hasSuffix(":01") {
+            if case let .rendered(_, text, _) = event, text.hasSuffix(":01") {
                 advanced.fulfill()
             }
         }
@@ -112,7 +115,8 @@ final class TimerEngineTests: XCTestCase {
                 finishText: "",
                 showAMPM: false,
                 outputStyle: 0,
-                destination: timerDestination(in: directory)
+                destination: timerDestination(in: directory),
+                countUpSoundTarget: nil
             )
         )
 

@@ -33,7 +33,7 @@ public sealed partial class TimerFileItem : ObservableObject
     public string AutomationName => $"Copy path for {Title}";
 }
 
-/// <summary>Settings page: output folder, appearance (theme / stay on top), pop-out appearance (Pro) and data reset.</summary>
+/// <summary>Settings page: output folder, appearance, pop-out appearance (Pro) and data reset.</summary>
 public sealed partial class SettingsViewModel : ObservableObject
 {
     public const string DefaultFontLabel = "Default (Segoe UI)";
@@ -42,6 +42,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     [
         "key_minutes", "key_seconds", "key_output", "key_finish", "key_file_name", "key_auto_start", "make_sound",
         "key_show_ampm", "key_output_style", "UseMinutes", "FinishAtTime", "PopOutBounds", "DisplayName", "IconGlyph",
+        TimerSettings.EndSoundKey, TimerSettings.CustomEndSoundPathKey, TimerSettings.SoundAtMinutesKey, TimerSettings.SoundAtSecondsKey,
     ];
 
     private static readonly string[] GlobalKeyNames =
@@ -181,7 +182,10 @@ public sealed partial class SettingsViewModel : ObservableObject
         IsPro = _pro.IsPro;
     }
 
-    public void Deactivate() => _pro.Changed -= OnProChanged;
+    public void Deactivate()
+    {
+        _pro.Changed -= OnProChanged;
+    }
 
     private void OnProChanged(object? sender, EventArgs e) => App.DispatcherQueue.TryEnqueue(() => IsPro = _pro.IsPro);
 
@@ -348,7 +352,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     {
         var confirmed = await _dialogs.ConfirmAsync(
             "Reset all settings?",
-            "Every timer's duration, output format, file name and behaviour, plus the output folder, theme and pop-out appearance will return to their defaults. Your Pro purchases are kept.",
+            "Every timer's duration, output format, file name, end sound and behaviour, plus the output folder, theme and pop-out appearance will return to their defaults. Your Pro purchases are kept.",
             "Reset",
             "Cancel");
         if (!confirmed)
@@ -456,4 +460,3 @@ public sealed partial class SettingsViewModel : ObservableObject
         _popOuts.NotifyAppearanceChanged();
     }
 }
-

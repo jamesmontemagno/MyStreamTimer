@@ -77,4 +77,3 @@ public sealed class GlobalSettings
     public string LastSelectedPage { get => store.GetString(nameof(LastSelectedPage), string.Empty); set => store.Set(nameof(LastSelectedPage), value); }
     public string MainWindowBounds { get => store.GetString(nameof(MainWindowBounds), string.Empty); set => store.Set(nameof(MainWindowBounds), value); }
 }
-

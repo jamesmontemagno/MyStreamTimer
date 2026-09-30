@@ -1,3 +1,5 @@
+using MyStreamTimer.Core.Settings;
+
 namespace MyStreamTimer.Core.Services;
 
 public interface IClock
@@ -78,7 +80,8 @@ public interface ITimerPlatform
     void StopActivity(string id);
     bool HasRunningTimers { get; }
 
-    Task BeepAsync();
+    /// <summary>Plays <paramref name="sound"/> once (falling back to the default beep). Must not throw.</summary>
+    Task BeepAsync(EndSoundSelection sound);
 }
 
 public sealed class NullTimerPlatform : ITimerPlatform
@@ -87,5 +90,5 @@ public sealed class NullTimerPlatform : ITimerPlatform
     public void StartActivity(string id) => active.Add(id);
     public void StopActivity(string id) => active.Remove(id);
     public bool HasRunningTimers => active.Count > 0;
-    public Task BeepAsync() => Task.CompletedTask;
+    public Task BeepAsync(EndSoundSelection sound) => Task.CompletedTask;
 }

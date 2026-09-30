@@ -43,6 +43,8 @@
 
   <ItemGroup>
     <Content Include="Assets\**\*.png;Assets\**\*.ico" />
+    <None Remove="Assets\Sounds\*.wav" />
+    <Content Include="Assets\Sounds\*.wav" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
@@ -113,8 +115,6 @@
     <PublishTrimmed Condition="'$(Configuration)' != 'Debug'">False</PublishTrimmed>
   </PropertyGroup>
 </Project>
-
-
 
 
 

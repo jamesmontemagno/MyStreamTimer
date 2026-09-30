@@ -118,6 +118,29 @@ final class LegacySettingsStore: ObservableObject {
         defaults.set(newPath, forKey: "global_directory_path")
     }
 
+    func endSound(for kind: TimerKind) -> EndSound {
+        let rawValue = defaults.string(forKey: "key_end_sound_\(kind.rawValue)") ?? ""
+        return EndSound(rawValue: rawValue) ?? .defaultBeep
+    }
+
+    func customEndSoundBookmark(for kind: TimerKind) -> Data? {
+        defaults.data(forKey: "key_custom_end_sound_bookmark_\(kind.rawValue)")
+    }
+
+    func customEndSoundFileName(for kind: TimerKind) -> String {
+        defaults.string(forKey: "key_custom_end_sound_file_name_\(kind.rawValue)") ?? ""
+    }
+
+    func saveCustomEndSound(bookmark: Data, fileName: String, for kind: TimerKind) {
+        defaults.set(bookmark, forKey: "key_custom_end_sound_bookmark_\(kind.rawValue)")
+        defaults.set(fileName, forKey: "key_custom_end_sound_file_name_\(kind.rawValue)")
+        defaults.set(EndSound.custom.rawValue, forKey: "key_end_sound_\(kind.rawValue)")
+    }
+
+    func updateCustomEndSoundBookmark(_ bookmark: Data, for kind: TimerKind) {
+        defaults.set(bookmark, forKey: "key_custom_end_sound_bookmark_\(kind.rawValue)")
+    }
+
     func syncPurchaseState(
         entitledProductIDs: Set<String>,
         subscriptionExpiration: Date?,
@@ -186,6 +209,11 @@ final class LegacySettingsStore: ObservableObject {
             fileName: string(forKey: "key_file_name_\(keyPrefix)", default: kind.defaultFileName),
             autoStart: bool(forKey: "key_auto_start_\(keyPrefix)", default: false),
             beepAtZero: bool(forKey: "make_sound_\(keyPrefix)", default: false),
+            endSound: endSound(for: kind),
+            customEndSoundBookmark: customEndSoundBookmark(for: kind),
+            customEndSoundFileName: customEndSoundFileName(for: kind),
+            soundMinutes: int(forKey: "key_sound_minutes_\(keyPrefix)", default: 5),
+            soundSeconds: min(59, max(0, int(forKey: "key_sound_seconds_\(keyPrefix)", default: 0))),
             showAMPM: bool(forKey: "key_show_ampm_\(keyPrefix)", default: false),
             outputStyle: int(forKey: "key_output_style_\(keyPrefix)", default: 0),
             displayName: string(forKey: "DisplayName_\(keyPrefix)", default: ""),
@@ -203,6 +231,19 @@ final class LegacySettingsStore: ObservableObject {
         defaults.set(config.fileName, forKey: "key_file_name_\(keyPrefix)")
         defaults.set(config.autoStart, forKey: "key_auto_start_\(keyPrefix)")
         defaults.set(config.beepAtZero, forKey: "make_sound_\(keyPrefix)")
+        defaults.set(config.endSound.rawValue, forKey: "key_end_sound_\(keyPrefix)")
+        if let bookmark = config.customEndSoundBookmark {
+            defaults.set(bookmark, forKey: "key_custom_end_sound_bookmark_\(keyPrefix)")
+        } else {
+            defaults.removeObject(forKey: "key_custom_end_sound_bookmark_\(keyPrefix)")
+        }
+        if config.customEndSoundFileName.isEmpty {
+            defaults.removeObject(forKey: "key_custom_end_sound_file_name_\(keyPrefix)")
+        } else {
+            defaults.set(config.customEndSoundFileName, forKey: "key_custom_end_sound_file_name_\(keyPrefix)")
+        }
+        defaults.set(config.soundMinutes, forKey: "key_sound_minutes_\(keyPrefix)")
+        defaults.set(min(59, max(0, config.soundSeconds)), forKey: "key_sound_seconds_\(keyPrefix)")
         defaults.set(config.showAMPM, forKey: "key_show_ampm_\(keyPrefix)")
         defaults.set(config.outputStyle, forKey: "key_output_style_\(keyPrefix)")
         defaults.set(config.displayName, forKey: "DisplayName_\(keyPrefix)")

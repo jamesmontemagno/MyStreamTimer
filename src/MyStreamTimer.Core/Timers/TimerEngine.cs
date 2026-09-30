@@ -36,6 +36,11 @@ public sealed class TimerEngine : IDisposable
     string currentFinished = string.Empty, currentOutput = string.Empty, currentFileName = string.Empty;
     int currentOutputStyle;
     bool currentBeepAtZero;
+    EndSoundSelection currentSound = EndSoundSelection.Default;
+    TimeSpan currentSoundAt;
+    TimeSpan prevUpElapsed;
+    bool hasPrevUpElapsed;
+    bool countUpSoundPlayed;
     float bootMins = -1;
     long extraTicksForUp;
     bool firstTime = true;
@@ -289,13 +294,16 @@ public sealed class TimerEngine : IDisposable
         currentIsDown = IsDown;
         currentShowAmPm = settings.ShowAmPm;
         var currentSeconds = 0;
+        var isResume = bootMins <= 0 && extraTicksForUp > 0;
+        if (!isResume)
+            countUpSoundPlayed = false; // once per run; a resumed count-up keeps its played state
         if (bootMins > 0)
         {
             currentMinutes = bootMins;
             extraTicksForUp = 0;
             bootMins = -1;
         }
-        else if (extraTicksForUp > 0)
+        else if (isResume)
         {
             currentMinutes = 0; // resuming a count-up
         }
@@ -319,6 +327,9 @@ public sealed class TimerEngine : IDisposable
 
         currentOutput = OutputFormatter.NormalizeTemplate(settings.Output);
         currentBeepAtZero = settings.MakeSound;
+        currentSound = settings.EndSoundSelection;
+        currentSoundAt = settings.SoundAt;
+        hasPrevUpElapsed = false;
         currentOutputStyle = EffectiveOutputStyle;
 
         var start = clock.Now;
@@ -374,7 +385,7 @@ public sealed class TimerEngine : IDisposable
                         // Beep fire-and-forget so a Start issued during the beep can never race this loop's CTS;
                         // StopLoop() is the only place that clears loopCts.
                         if (currentBeepAtZero)
-                            _ = platform.BeepAsync();
+                            _ = platform.BeepAsync(currentSound);
                         return;
                     }
 
@@ -405,6 +416,15 @@ public sealed class TimerEngine : IDisposable
                 {
                     TimeSpan elapsed;
                     lock (locker) elapsed = now.AddTicks(extraTicksForUp) - startTime;
+                    // The first sample after a start/resume only establishes the baseline, so a count-up that is
+                    // already past its target never plays; afterwards it plays the first time the target is crossed.
+                    if (currentBeepAtZero && !countUpSoundPlayed && hasPrevUpElapsed && ShouldPlayCountUpSound(prevUpElapsed, elapsed, currentSoundAt))
+                    {
+                        countUpSoundPlayed = true;
+                        _ = platform.BeepAsync(currentSound);
+                    }
+                    prevUpElapsed = elapsed;
+                    hasPrevUpElapsed = true;
                     delayMs = 1000 - (int)(elapsed.TotalMilliseconds % 1000);
                     if (SameSecond(prevTime, elapsed) && !firstTime)
                         goto Delay;
@@ -434,6 +454,10 @@ public sealed class TimerEngine : IDisposable
             catch (OperationCanceledException) { return; }
         }
     }
+
+    /// <summary>True when a count-up moved from before <paramref name="target"/> to at/after it. A zero target never plays.</summary>
+    public static bool ShouldPlayCountUpSound(TimeSpan previous, TimeSpan current, TimeSpan target) =>
+        target > TimeSpan.Zero && previous < target && current >= target;
 
     /// <summary>ms until a counting-down TimeSpan drops to the next whole second (its fractional part).</summary>
     static int MillisUntilNextSecondBoundaryDown(TimeSpan remaining)

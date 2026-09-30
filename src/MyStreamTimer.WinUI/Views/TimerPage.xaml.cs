@@ -47,6 +47,12 @@ public sealed partial class TimerPage : Page
         }
     }
 
+    protected override void OnNavigatedFrom(NavigationEventArgs e)
+    {
+        base.OnNavigatedFrom(e);
+        _viewModel?.CancelEndSoundOperations();
+    }
+
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
         if (!_isShadowReceiverWired)

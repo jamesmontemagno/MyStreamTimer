@@ -15,10 +15,11 @@ public sealed partial class ShellViewModel : ObservableObject
     private readonly GlobalSettings _settings;
     private readonly Dictionary<TimerKind, TimerViewModel> _timers;
 
-    public ShellViewModel(TimerHost host, GlobalSettings settings, ProEntitlement pro, ClipboardService clipboard, LauncherService launcher, PopOutService popOuts)
+    public ShellViewModel(TimerHost host, GlobalSettings settings, ProEntitlement pro, ClipboardService clipboard, LauncherService launcher, PopOutService popOuts,
+        BeepService beep)
     {
         _settings = settings;
-        _timers = TimerKindExtensions.All.ToDictionary(kind => kind, kind => new TimerViewModel(host.Engine(kind), settings, pro, clipboard, launcher, popOuts));
+        _timers = TimerKindExtensions.All.ToDictionary(kind => kind, kind => new TimerViewModel(host.Engine(kind), settings, pro, clipboard, launcher, popOuts, beep));
         host.CommandDispatched += (_, kind) => TimerCommandDispatched?.Invoke(this, kind);
     }
 
@@ -29,7 +30,8 @@ public sealed partial class ShellViewModel : ObservableObject
         App.GetService<ProEntitlement>(),
         App.GetService<ClipboardService>(),
         App.GetService<LauncherService>(),
-        App.GetService<PopOutService>());
+        App.GetService<PopOutService>(),
+        App.GetService<BeepService>());
 
     /// <summary>Raised on the UI thread after a <c>mystreamtimer://</c> command targeted a timer; the shell selects it.</summary>
     public event EventHandler<TimerKind>? TimerCommandDispatched;

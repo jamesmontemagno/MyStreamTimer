@@ -462,24 +462,152 @@ struct SingleTimerView: View {
                 if controller.kind.isCountdown {
                     Divider()
 
-                    LeadingToggleRow(
-                        isOn: Binding(
-                            get: { controller.beepAtZero },
-                            set: {
-                                controller.beepAtZero = $0
-                                controller.persist()
-                            }
-                        )
-                    ) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Beep at zero")
-                            Text("Play the system alert sound when the countdown finishes.")
-                                .font(.caption)
-                                .foregroundStyle(.tertiary)
-                        }
-                    }
+                    endSoundSection
+                } else if controller.kind.isCountUp {
+                    Divider()
+
+                    endSoundSection
                 }
             }
+        }
+    }
+
+    private var endSoundSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            LeadingToggleRow(
+                isOn: Binding(
+                    get: { controller.beepAtZero },
+                    set: {
+                        controller.beepAtZero = $0
+                        controller.persist(restartTimer: false)
+                    }
+                )
+            ) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(controller.kind.isCountUp ? "Play sound at time" : "Beep at zero")
+                    Text(controller.kind.isCountUp
+                         ? "Play this timer's end sound once when the count-up reaches the target time."
+                         : "Play this timer's end sound once when the countdown finishes.")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
+            }
+
+            if controller.kind.isCountUp {
+                HStack(spacing: 16) {
+                    Text("Play sound at")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+
+                    NumericTimeField(
+                        title: "Minutes",
+                        value: Binding(
+                            get: { controller.soundMinutes },
+                            set: {
+                                controller.soundMinutes = $0
+                                controller.persist(restartTimer: false)
+                            }
+                        ),
+                        range: 0...100_000
+                    )
+
+                    NumericTimeField(
+                        title: "Seconds",
+                        value: Binding(
+                            get: { controller.soundSeconds },
+                            set: {
+                                controller.soundSeconds = $0
+                                controller.persist(restartTimer: false)
+                            }
+                        ),
+                        range: 0...59
+                    )
+
+                    Spacer()
+                }
+                .padding(.leading, 28)
+            }
+
+            HStack(spacing: 10) {
+                Picker("Sound", selection: Binding(
+                    get: { controller.endSound },
+                    set: { selectEndSound($0) }
+                )) {
+                    ForEach(EndSound.allCases) { sound in
+                        Text(sound.displayName).tag(sound)
+                    }
+                }
+                .pickerStyle(.menu)
+                .frame(maxWidth: 220)
+
+                Button {
+                    previewEndSound()
+                } label: {
+                    Label(
+                        controller.isPreviewingEndSound ? "Stop Preview" : "Preview",
+                        systemImage: controller.isPreviewingEndSound ? "stop.fill" : "play.fill"
+                    )
+                }
+                .buttonStyle(AppActionButtonStyle())
+
+                if controller.endSound == .custom {
+                    Button {
+                        chooseCustomEndSound()
+                    } label: {
+                        Label("Choose audio file…", systemImage: "folder")
+                    }
+                    .buttonStyle(AppActionButtonStyle())
+                }
+            }
+            .padding(.leading, 28)
+
+            if controller.endSound == .custom {
+                Text(controller.customEndSoundFileName.isEmpty
+                     ? "No custom file selected. Choose an MP3 or WAV file to use Custom."
+                     : "Custom file: \(controller.customEndSoundFileName)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+                    .padding(.leading, 28)
+            }
+        }
+        .onDisappear {
+            controller.stopEndSoundPreview()
+        }
+    }
+
+    private func selectEndSound(_ sound: EndSound) {
+        do {
+            try controller.selectEndSound(sound)
+        } catch {
+            appModel.showAlert(
+                title: "Couldn't Choose End Sound",
+                message: "\(error.localizedDescription) Your previous sound has not been changed."
+            )
+        }
+    }
+
+    private func chooseCustomEndSound() {
+        do {
+            try controller.chooseCustomEndSound()
+        } catch {
+            appModel.showAlert(
+                title: "Couldn't Choose End Sound",
+                message: "\(error.localizedDescription) Your previous sound has not been changed."
+            )
+        }
+    }
+
+    private func previewEndSound() {
+        do {
+            if try controller.previewEndSound() {
+                appModel.showAlert(
+                    title: "End Sound Unavailable",
+                    message: "The selected sound couldn't be opened or played. Default beep was played instead. If using a custom sound, choose the file again."
+                )
+            }
+        } catch {
+            appModel.showAlert(title: "Couldn't Preview End Sound", message: error.localizedDescription)
         }
     }
 

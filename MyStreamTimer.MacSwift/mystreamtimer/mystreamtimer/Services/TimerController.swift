@@ -15,6 +15,11 @@ final class TimerController: ObservableObject, Identifiable {
     @Published var fileName: String
     @Published var autoStart: Bool
     @Published var beepAtZero: Bool
+    @Published var endSound: EndSound
+    @Published var customEndSoundBookmark: Data?
+    @Published private(set) var customEndSoundFileName: String
+    @Published var soundMinutes: Int
+    @Published var soundSeconds: Int
     @Published var showAMPM: Bool
     @Published var outputStyle: Int
     @Published var displayName: String
@@ -27,6 +32,7 @@ final class TimerController: ObservableObject, Identifiable {
     private let settingsStore: LegacySettingsStore
     private let fileAccess: BookmarkFileAccess
     private let canUseProFeatures: () -> Bool
+    private lazy var endSoundPlayer = EndSoundPlayer()
 
     private var startDate = Date()
     private var endDate = Date()
@@ -35,6 +41,13 @@ final class TimerController: ObservableObject, Identifiable {
     private var generation: UInt64 = 0
     private var activeGeneration: UInt64?
     private var activityToken: NSObjectProtocol?
+    private var cancellables = Set<AnyCancellable>()
+    private var activeSoundEnabled = false
+    private var activeEndSound: EndSound = .defaultBeep
+    private var activeCustomEndSoundBookmark: Data?
+    private var activeCountUpSoundTarget: TimeInterval = 0
+    private var previousCountUpSoundElapsed: TimeInterval = 0
+    private var didPlayCountUpSound = false
     private lazy var timerEngine = TimerEngine { [weak self] event in
         self?.handleTimerEvent(event)
     }
@@ -51,6 +64,10 @@ final class TimerController: ObservableObject, Identifiable {
 
     var pauseResumeTitle: String {
         isPaused ? "Resume" : "Pause"
+    }
+
+    var isPreviewingEndSound: Bool {
+        endSoundPlayer.isPlaying
     }
 
     var effectiveOutputStyle: Int {
@@ -86,10 +103,24 @@ final class TimerController: ObservableObject, Identifiable {
         self.fileName = configuration.fileName
         self.autoStart = configuration.autoStart
         self.beepAtZero = configuration.beepAtZero
+        self.endSound = configuration.endSound
+        self.customEndSoundBookmark = configuration.customEndSoundBookmark
+        self.customEndSoundFileName = configuration.customEndSoundFileName
+        self.soundMinutes = configuration.soundMinutes
+        self.soundSeconds = configuration.soundSeconds
         self.showAMPM = configuration.showAMPM
         self.outputStyle = configuration.outputStyle
         self.displayName = configuration.displayName
         self.iconGlyph = configuration.iconGlyph
+
+        endSoundPlayer.objectWillChange
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+            .store(in: &cancellables)
+        endSoundPlayer.onPlaybackError = { [weak self] message in
+            self?.lastError = message
+        }
 
         persist()
 
@@ -115,6 +146,11 @@ final class TimerController: ObservableObject, Identifiable {
             fileName: fileName,
             autoStart: autoStart,
             beepAtZero: beepAtZero,
+            endSound: endSound,
+            customEndSoundBookmark: customEndSoundBookmark,
+            customEndSoundFileName: customEndSoundFileName,
+            soundMinutes: soundMinutes,
+            soundSeconds: soundSeconds,
             showAMPM: showAMPM,
             outputStyle: outputStyle,
             displayName: displayName,
@@ -125,6 +161,46 @@ final class TimerController: ObservableObject, Identifiable {
         if restartTimer, isRunning, !isPaused {
             launchTimerEngine()
         }
+    }
+
+    func selectEndSound(_ sound: EndSound) throws {
+        stopEndSoundPreview()
+        if sound == .custom, !endSoundPlayer.hasUsableCustomSound(bookmark: customEndSoundBookmark) {
+            try chooseCustomEndSound()
+        } else {
+            endSound = sound
+            persist(restartTimer: false)
+        }
+    }
+
+    func chooseCustomEndSound() throws {
+        stopEndSoundPreview()
+        guard let customFile = try endSoundPlayer.chooseCustomSound() else { return }
+        saveCustomEndSound(customFile)
+    }
+
+    func selectCustomEndSoundFile(_ url: URL?) throws {
+        guard let customFile = try endSoundPlayer.selectCustomFile(url) else { return }
+        saveCustomEndSound(customFile)
+    }
+
+    @discardableResult
+    func previewEndSound() throws -> Bool {
+        if isPreviewingEndSound {
+            stopEndSoundPreview()
+            return false
+        }
+        return try endSoundPlayer.play(
+            sound: endSound,
+            customBookmark: customEndSoundBookmark,
+            updateCustomBookmark: { [weak self] bookmark in
+                self?.updateCustomEndSoundBookmark(bookmark)
+            }
+        )
+    }
+
+    func stopEndSoundPreview() {
+        endSoundPlayer.stop()
     }
 
     func apply(_ command: URLCommand) async {
@@ -206,6 +282,8 @@ final class TimerController: ObservableObject, Identifiable {
                 ?? TimeInterval((minutes * 60) + seconds)
         }
 
+        captureEndSoundSettings(startingElapsed: kind.isCountUp ? currentCountUpElapsed(at: now) : 0)
+
         activityToken = ProcessInfo.processInfo.beginActivity(
             options: [.userInitiated, .latencyCritical, .idleDisplaySleepDisabled],
             reason: "My Stream Timer is actively writing timer output."
@@ -248,6 +326,7 @@ final class TimerController: ObservableObject, Identifiable {
                 endDate = Date().addingTimeInterval(pausedRemaining)
             } else if kind.isCountUp {
                 startDate = Date()
+                previousCountUpSoundElapsed = currentCountUpElapsed()
             }
             launchTimerEngine()
         }
@@ -274,7 +353,9 @@ final class TimerController: ObservableObject, Identifiable {
                 launchTimerEngine()
             }
         } else if kind.isCountUp {
+            let previousElapsed = currentCountUpElapsed()
             pausedElapsed = max(0, pausedElapsed + (delta * 60))
+            observeCountUpSoundCrossing(from: previousElapsed, to: currentCountUpElapsed())
             if !isPaused {
                 launchTimerEngine()
             }
@@ -302,7 +383,10 @@ final class TimerController: ObservableObject, Identifiable {
             finishText: finishText,
             showAMPM: showAMPM,
             outputStyle: effectiveOutputStyle,
-            destination: fileAccess.timerOutputDestination(fileName: fileName)
+            destination: fileAccess.timerOutputDestination(fileName: fileName),
+            countUpSoundTarget: kind.isCountUp && activeSoundEnabled && activeCountUpSoundTarget > 0 && !didPlayCountUpSound
+                ? activeCountUpSoundTarget
+                : nil
         )
 
         Task {
@@ -324,7 +408,7 @@ final class TimerController: ObservableObject, Identifiable {
     private func handleTimerEvent(_ event: TimerEngine.Event) {
         let eventGeneration: UInt64
         switch event {
-        case let .rendered(generation, _),
+        case let .rendered(generation, _, _),
              let .writeSucceeded(generation, _, _),
              let .writeFailed(generation, _),
              let .completed(generation):
@@ -334,9 +418,12 @@ final class TimerController: ObservableObject, Identifiable {
         guard activeGeneration == eventGeneration else { return }
 
         switch event {
-        case let .rendered(_, text):
+        case let .rendered(_, text, countUpElapsed):
             if currentText != text {
                 currentText = text
+            }
+            if let countUpElapsed {
+                observeCountUpSoundCrossing(from: previousCountUpSoundElapsed, to: countUpElapsed)
             }
 
         case let .writeSucceeded(_, refreshedBookmark, destination):
@@ -354,9 +441,88 @@ final class TimerController: ObservableObject, Identifiable {
             isPaused = false
             activeGeneration = nil
             endActivity()
-            if beepAtZero {
-                NSSound.beep()
+            if activeSoundEnabled {
+                playActiveEndSound()
             }
+        }
+    }
+
+    static func shouldPlayCountUpSound(
+        previous: TimeInterval,
+        current: TimeInterval,
+        target: TimeInterval
+    ) -> Bool {
+        target > 0 && previous < target && target <= current
+    }
+
+    private func saveCustomEndSound(_ customFile: CustomEndSoundFile) {
+        customEndSoundBookmark = customFile.bookmark
+        customEndSoundFileName = customFile.fileName
+        endSound = .custom
+        settingsStore.saveCustomEndSound(
+            bookmark: customFile.bookmark,
+            fileName: customFile.fileName,
+            for: kind
+        )
+        persist(restartTimer: false)
+    }
+
+    private func updateCustomEndSoundBookmark(_ bookmark: Data) {
+        customEndSoundBookmark = bookmark
+        settingsStore.updateCustomEndSoundBookmark(bookmark, for: kind)
+        persist(restartTimer: false)
+    }
+
+    private func captureEndSoundSettings(startingElapsed: TimeInterval) {
+        activeSoundEnabled = kind != .time && beepAtZero
+        activeEndSound = endSound
+        activeCustomEndSoundBookmark = customEndSoundBookmark
+        activeCountUpSoundTarget = TimeInterval((soundMinutes * 60) + min(59, max(0, soundSeconds)))
+        previousCountUpSoundElapsed = startingElapsed
+        didPlayCountUpSound = false
+    }
+
+    private func observeCountUpSoundCrossing(from previous: TimeInterval, to current: TimeInterval) {
+        defer {
+            previousCountUpSoundElapsed = current
+        }
+        guard kind.isCountUp,
+              activeSoundEnabled,
+              !didPlayCountUpSound,
+              Self.shouldPlayCountUpSound(
+                previous: previous,
+                current: current,
+                target: activeCountUpSoundTarget
+              )
+        else {
+            return
+        }
+
+        didPlayCountUpSound = true
+        playActiveEndSound()
+    }
+
+    private func currentCountUpElapsed(at date: Date = Date()) -> TimeInterval {
+        guard kind.isCountUp else { return 0 }
+        return max(0, date.timeIntervalSince(startDate) + pausedElapsed)
+    }
+
+    private func playActiveEndSound() {
+        endSoundPlayer.playAtCompletion(
+            sound: activeEndSound,
+            customBookmark: activeCustomEndSoundBookmark,
+            updateCustomBookmark: { [weak self] bookmark in
+                self?.updateActiveCustomEndSoundBookmark(bookmark)
+            }
+        )
+    }
+
+    private func updateActiveCustomEndSoundBookmark(_ bookmark: Data) {
+        activeCustomEndSoundBookmark = bookmark
+        if activeEndSound == endSound {
+            updateCustomEndSoundBookmark(bookmark)
+        } else {
+            settingsStore.updateCustomEndSoundBookmark(bookmark, for: kind)
         }
     }
 

@@ -341,6 +341,11 @@ struct TimerConfiguration {
     var fileName: String
     var autoStart: Bool
     var beepAtZero: Bool
+    var endSound: EndSound
+    var customEndSoundBookmark: Data?
+    var customEndSoundFileName: String
+    var soundMinutes: Int
+    var soundSeconds: Int
     var showAMPM: Bool
     var outputStyle: Int
     var displayName: String
