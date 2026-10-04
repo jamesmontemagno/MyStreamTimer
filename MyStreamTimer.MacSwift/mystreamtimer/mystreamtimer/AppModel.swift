@@ -22,6 +22,8 @@ final class AppModel: ObservableObject {
     @Published var selectedItem: SidebarItem = .timer(.countdown)
     @Published var alert: AppAlert?
     @Published var showWelcomeBack = false
+    /// Changes whenever the main window should be opened or brought forward.
+    @Published private(set) var mainWindowRequest = 0
 
     let settingsStore: LegacySettingsStore
     let fileAccess: BookmarkFileAccess
@@ -38,6 +40,14 @@ final class AppModel: ObservableObject {
         }
         return lookup
     }()
+
+    private(set) lazy var menuBarController = MenuBarController(
+        controllers: allControllers,
+        purchaseManager: purchaseManager,
+        showMainWindow: { [weak self] kind in
+            self?.showMainWindow(selecting: kind.map(SidebarItem.timer))
+        }
+    )
 
     private var hasStarted = false
     private var cancellables = Set<AnyCancellable>()
@@ -105,11 +115,14 @@ final class AppModel: ObservableObject {
             .store(in: &cancellables)
     }
 
+    /// Runs once per launch. It is called at launch and again whenever the main window
+    /// appears, because the app can launch, and keep running, without that window.
     func startup() async {
+        WindowManager.applyStayOnTop(settingsStore.stayOnTop)
+
         guard !hasStarted else { return }
         hasStarted = true
 
-        WindowManager.applyStayOnTop(settingsStore.stayOnTop)
         settingsStore.timesUsed += 1
 
         if settingsStore.timesUsed == 10 {
@@ -121,10 +134,39 @@ final class AppModel: ObservableObject {
             showWelcomeBack = true
         }
 
+        menuBarController.start()
+
         await purchaseManager.start()
         allControllers
             .filter(\.autoStart)
             .forEach { $0.start() }
+
+        // With window restoration on, the app can relaunch without ever creating its
+        // window. That is fine while a timer is in the menu bar; otherwise open it.
+        if !menuBarController.hasVisibleItems, WindowManager.contentWindows.isEmpty {
+            showMainWindow()
+        }
+    }
+
+    func showMainWindow(selecting item: SidebarItem? = nil) {
+        if let item {
+            selectedItem = item
+        }
+        mainWindowRequest &+= 1
+    }
+
+    func setShowInMenuBar(_ isOn: Bool, for controller: TimerController) {
+        guard !isOn || purchaseManager.isPro else {
+            showAlert(
+                title: "Pro Feature",
+                message: "Menu bar timers are a Pro feature. Upgrade to Pro to keep any timer in the menu bar with quick controls."
+            )
+            selectedItem = .pro
+            return
+        }
+
+        controller.showInMenuBar = isOn
+        controller.persist(restartTimer: false)
     }
 
     func showAlert(title: String, message: String) {

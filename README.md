@@ -44,6 +44,14 @@ Every countdown and count-up timer has its own sound settings on its timer page,
 
 For **Custom**, choose an MP3 or WAV file (`.mp3`, `.wav`, or `.wave`) for that timer. The selection is saved between app launches. Keep the file available in its selected location; if it cannot be played, the app falls back to Default beep.
 
+## Menu bar timers (macOS, Pro)
+
+On macOS, any timer can have its own menu bar item. Turn on **Show in menu bar** on a timer's page, or pick several at once under **Settings › Menu bar timers**.
+
+- An idle timer shows its icon. A running timer shows the icon and a compact time such as `4:59`, and a paused timer shows a pause icon with the time it stopped at. The time ticks every second whatever the timer's output format is.
+- Click the item to start, stop, pause, resume, add a minute, reset, open the app on that timer, or hide the item.
+- While at least one timer is in the menu bar, My Stream Timer keeps running after you close its window, and timers keep writing their output files. Use **Quit My Stream Timer** in the menu to quit.
+
 ## Integrating into Stream Deck
 
 The official My Stream Timer plugin is in [`MyStreamTimer.StreamDeck`](MyStreamTimer.StreamDeck). It provides configurable actions for every countdown, count-up, and Current Time output, including start, add/subtract, pause, resume, reset, and stop. A Start Timer action can also run an independent countdown that writes directly to a text file without launching the app.

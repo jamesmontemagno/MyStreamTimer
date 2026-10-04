@@ -45,6 +45,7 @@ struct ProWorkspaceView: View {
                     BulletRow(text: "Countdown 4, Count Up 2, and Current Time output")
                     BulletRow(text: "Auto, total seconds, and total minutes output formats")
                     BulletRow(text: "Pop-out timer preview windows with customizable font, text color, and background")
+                    BulletRow(text: "Menu bar timers with quick controls for any timer")
                     BulletRow(text: "All automation commands for every timer")
                     BulletRow(text: "Support ongoing development")
                 }

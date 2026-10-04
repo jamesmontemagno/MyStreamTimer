@@ -123,6 +123,24 @@ struct LeadingToggleRow<Label: View>: View {
     }
 }
 
+/// Switches a timer's menu bar item on or off, sending free users to the Pro page.
+struct MenuBarToggleRow<Label: View>: View {
+    @EnvironmentObject private var appModel: AppModel
+    @ObservedObject var controller: TimerController
+    @ViewBuilder let label: Label
+
+    var body: some View {
+        LeadingToggleRow(
+            isOn: Binding(
+                get: { controller.showInMenuBar },
+                set: { appModel.setShowInMenuBar($0, for: controller) }
+            )
+        ) {
+            label
+        }
+    }
+}
+
 struct StatusChip: View {
     let title: String
     let tint: Color

@@ -24,6 +24,7 @@ final class TimerController: ObservableObject, Identifiable {
     @Published var outputStyle: Int
     @Published var displayName: String
     @Published var iconGlyph: String
+    @Published var showInMenuBar: Bool
     @Published private(set) var currentText = ""
     @Published private(set) var isRunning = false
     @Published private(set) var isPaused = false
@@ -112,6 +113,7 @@ final class TimerController: ObservableObject, Identifiable {
         self.outputStyle = configuration.outputStyle
         self.displayName = configuration.displayName
         self.iconGlyph = configuration.iconGlyph
+        self.showInMenuBar = configuration.showInMenuBar
 
         endSoundPlayer.objectWillChange
             .sink { [weak self] _ in
@@ -154,7 +156,8 @@ final class TimerController: ObservableObject, Identifiable {
             showAMPM: showAMPM,
             outputStyle: outputStyle,
             displayName: displayName,
-            iconGlyph: iconGlyph
+            iconGlyph: iconGlyph,
+            showInMenuBar: showInMenuBar
         )
         settingsStore.saveConfiguration(configuration, for: kind)
 
@@ -345,6 +348,9 @@ final class TimerController: ObservableObject, Identifiable {
     func adjustBy(minutes delta: Double) {
         guard isRunning else { return }
 
+        // The dates below aren't published, so tell observers that read displayInterval(at:).
+        objectWillChange.send()
+
         if kind.isCountdown {
             if isPaused {
                 pausedRemaining = max(0, pausedRemaining + (delta * 60))
@@ -360,6 +366,21 @@ final class TimerController: ObservableObject, Identifiable {
                 launchTimerEngine()
             }
         }
+    }
+
+    /// The time this timer is showing right now, independent of its output format:
+    /// time remaining for a countdown, time elapsed for a count-up.
+    /// Nil when the timer is stopped, and always nil for the clock.
+    func displayInterval(at date: Date = Date()) -> TimeInterval? {
+        guard isRunning else { return nil }
+
+        if kind.isCountdown {
+            return isPaused ? pausedRemaining : max(0, endDate.timeIntervalSince(date))
+        }
+        if kind.isCountUp {
+            return isPaused ? pausedElapsed : currentCountUpElapsed(at: date)
+        }
+        return nil
     }
 
     func refreshOutputDestination() {

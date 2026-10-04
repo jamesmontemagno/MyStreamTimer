@@ -217,7 +217,8 @@ final class LegacySettingsStore: ObservableObject {
             showAMPM: bool(forKey: "key_show_ampm_\(keyPrefix)", default: false),
             outputStyle: int(forKey: "key_output_style_\(keyPrefix)", default: 0),
             displayName: string(forKey: "DisplayName_\(keyPrefix)", default: ""),
-            iconGlyph: string(forKey: "IconGlyph_\(keyPrefix)", default: "")
+            iconGlyph: string(forKey: "IconGlyph_\(keyPrefix)", default: ""),
+            showInMenuBar: bool(forKey: "ShowInMenuBar_\(keyPrefix)", default: false)
         )
     }
 
@@ -248,6 +249,7 @@ final class LegacySettingsStore: ObservableObject {
         defaults.set(config.outputStyle, forKey: "key_output_style_\(keyPrefix)")
         defaults.set(config.displayName, forKey: "DisplayName_\(keyPrefix)")
         defaults.set(config.iconGlyph, forKey: "IconGlyph_\(keyPrefix)")
+        defaults.set(config.showInMenuBar, forKey: "ShowInMenuBar_\(keyPrefix)")
 
         let midnight = Calendar.current.startOfDay(for: config.finishAt)
         let ticks = Int64(config.finishAt.timeIntervalSince(midnight) * 10_000_000)

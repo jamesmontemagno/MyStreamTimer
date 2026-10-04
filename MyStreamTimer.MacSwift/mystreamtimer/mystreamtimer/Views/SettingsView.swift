@@ -125,6 +125,78 @@ struct SettingsWorkspaceView: View {
                 isPro: appModel.purchaseManager.isPro,
                 goToPro: { appModel.selectedItem = .pro }
             )
+
+            MenuBarTimersCard(
+                controllers: appModel.allControllers,
+                isPro: appModel.purchaseManager.isPro,
+                goToPro: { appModel.selectedItem = .pro }
+            )
+        }
+    }
+}
+
+// MARK: - Menu bar timers (Pro)
+
+struct MenuBarTimersCard: View {
+    let controllers: [TimerController]
+    let isPro: Bool
+    let goToPro: () -> Void
+
+    var body: some View {
+        if isPro {
+            SectionCard(
+                title: "Menu bar timers",
+                subtitle: "Choose which timers get their own menu bar item."
+            ) {
+                VStack(alignment: .leading, spacing: 12) {
+                    LazyVGrid(
+                        columns: [GridItem(.adaptive(minimum: 200), spacing: 10, alignment: .leading)],
+                        alignment: .leading,
+                        spacing: 10
+                    ) {
+                        ForEach(controllers) { controller in
+                            MenuBarTimerToggle(controller: controller)
+                        }
+                    }
+
+                    Text("While a timer is in the menu bar, My Stream Timer keeps running after you close its window.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        } else {
+            SectionCard(
+                title: "Menu bar timers",
+                subtitle: "Keep any timer in the menu bar with quick controls."
+            ) {
+                HStack(spacing: 16) {
+                    Image(systemName: "lock.fill")
+                        .font(.title)
+                        .foregroundStyle(.secondary)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Upgrade to Pro to show timers in the menu bar.")
+                            .foregroundStyle(.secondary)
+
+                        Button {
+                            goToPro()
+                        } label: {
+                            Label("Go to Pro", systemImage: "sparkles")
+                        }
+                        .buttonStyle(AppActionButtonStyle(prominent: true))
+                    }
+                }
+            }
+        }
+    }
+}
+
+private struct MenuBarTimerToggle: View {
+    @ObservedObject var controller: TimerController
+
+    var body: some View {
+        MenuBarToggleRow(controller: controller) {
+            Label(controller.effectiveTitle, systemImage: controller.effectiveSystemImage)
         }
     }
 }
