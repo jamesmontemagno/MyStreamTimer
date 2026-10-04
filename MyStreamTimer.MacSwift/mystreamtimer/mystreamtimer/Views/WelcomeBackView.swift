@@ -8,13 +8,13 @@ struct WelcomeBackView: View {
         VStack(spacing: 0) {
             // Header
             VStack(spacing: 8) {
-                Text("👋")
+                Text("🎉")
                     .font(.system(size: 48))
 
-                Text("Welcome Back!")
+                Text("What's New in 3.1.0")
                     .font(.largeTitle.bold())
 
-                Text("My Stream Timer has been completely redesigned. Here's what's new.")
+                Text("Here's what was added to My Stream Timer in this update.")
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -25,24 +25,18 @@ struct WelcomeBackView: View {
             // Feature rows
             VStack(spacing: 12) {
                 FeatureRow(
-                    icon: "sparkles",
+                    icon: "menubar.rectangle",
                     iconColor: .purple,
-                    title: "Fresh Redesign",
-                    description: "A completely new look built natively for macOS with a clean sidebar layout."
+                    title: "Menu Bar Timers",
+                    description: "Keep any timer in the menu bar with quick controls, even when the window is closed.",
+                    isPro: true
                 )
 
                 FeatureRow(
-                    icon: "paintpalette.fill",
-                    iconColor: .blue,
-                    title: "New Themes",
-                    description: "Choose Light, Dark, or follow your System appearance in Settings."
-                )
-
-                FeatureRow(
-                    icon: "macwindow.on.rectangle",
+                    icon: "speaker.wave.2.fill",
                     iconColor: .orange,
-                    title: "Pop-Out Previews",
-                    description: "Float a live timer preview anywhere on your screen. Available with Pro."
+                    title: "Custom End Sounds",
+                    description: "Give each timer its own sound: Chime, Bell, Digital, or your own MP3 or WAV."
                 )
             }
             .padding(24)
@@ -66,7 +60,7 @@ struct WelcomeBackView: View {
                 Button {
                     dismiss()
                 } label: {
-                    Label("Get Started", systemImage: "arrow.right")
+                    Label("Continue", systemImage: "arrow.right")
                 }
                 .buttonStyle(AppActionButtonStyle(prominent: true))
                 .keyboardShortcut(.defaultAction)
@@ -74,6 +68,9 @@ struct WelcomeBackView: View {
             .padding(20)
         }
         .frame(width: 460)
+        .onAppear {
+            appModel.settingsStore.hasSeenWelcomeBack = true
+        }
     }
 }
 
@@ -82,6 +79,7 @@ private struct FeatureRow: View {
     let iconColor: Color
     let title: String
     let description: String
+    var isPro = false
 
     var body: some View {
         HStack(alignment: .top, spacing: 16) {
@@ -92,8 +90,13 @@ private struct FeatureRow: View {
                 .background(iconColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
 
             VStack(alignment: .leading, spacing: 3) {
-                Text(title)
-                    .font(.headline)
+                HStack(spacing: 6) {
+                    Text(title)
+                        .font(.headline)
+                    if isPro {
+                        StatusChip(title: "PRO", tint: .yellow)
+                    }
+                }
                 Text(description)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)

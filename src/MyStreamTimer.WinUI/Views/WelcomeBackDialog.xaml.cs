@@ -5,7 +5,7 @@ using MyStreamTimer.Core.Settings;
 namespace MyStreamTimer.WinUI.Views;
 
 /// <summary>
-/// One-time "what's new in 3.0" sheet shown to users upgrading from 2.x (never on a fresh install).
+/// One-time "what's new" sheet shown to returning users (never on a first launch).
 /// The caller decides what to do with the result; <see cref="NavigateToProRequested"/> fires for "Learn about Pro".
 /// </summary>
 public sealed partial class WelcomeBackDialog : ContentDialog
@@ -24,7 +24,7 @@ public sealed partial class WelcomeBackDialog : ContentDialog
     /// </summary>
     public static async Task<bool> TryShowAsync(GlobalSettings settings)
     {
-        if (settings.HasSeenWelcomeBackV1 || settings.TimesUsed <= 1)
+        if (settings.HasSeenWelcomeBackV2 || settings.TimesUsed <= 1)
         {
             return false;
         }
@@ -34,10 +34,13 @@ public sealed partial class WelcomeBackDialog : ContentDialog
             return false;
         }
 
-        settings.HasSeenWelcomeBackV1 = true;
         try
         {
             var dialog = new WelcomeBackDialog { XamlRoot = xamlRoot };
+
+            // Record it once the dialog is on screen, so a failed show is retried on the next launch
+            // and closing the app with the dialog open still counts as seen.
+            dialog.Opened += (_, _) => settings.HasSeenWelcomeBackV2 = true;
             var result = await dialog.ShowAsync();
             if (result == ContentDialogResult.Secondary)
             {

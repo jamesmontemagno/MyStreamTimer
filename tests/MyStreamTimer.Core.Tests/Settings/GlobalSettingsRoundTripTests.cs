@@ -38,7 +38,7 @@ public class GlobalSettingsRoundTripTests
         g.PopOutFontFamily = "Cascadia Mono"; Assert.Equal("Cascadia Mono", g.PopOutFontFamily);
         Assert.Equal("#FFFFFF", g.PopOutTextColorHex); g.PopOutTextColorHex = "#00FF00"; Assert.Equal("#00FF00", g.PopOutTextColorHex);
         Assert.Equal("#000000", g.PopOutBackgroundColorHex); g.PopOutBackgroundColorHex = "#123456"; Assert.Equal("#123456", g.PopOutBackgroundColorHex);
-        Assert.False(g.HasSeenWelcomeBackV1); g.HasSeenWelcomeBackV1 = true; Assert.True(g.HasSeenWelcomeBackV1);
+        Assert.False(g.HasSeenWelcomeBackV2); g.HasSeenWelcomeBackV2 = true; Assert.True(g.HasSeenWelcomeBackV2);
         g.LastSelectedPage = "countdown2"; Assert.Equal("countdown2", g.LastSelectedPage);
         g.MainWindowBounds = "1,2,3,4"; Assert.Equal("1,2,3,4", g.MainWindowBounds);
         Assert.Equal(@"C:\d", g.DefaultDirectoryPath);
