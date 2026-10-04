@@ -101,6 +101,94 @@ final class MenuBarTimerTests: XCTestCase {
         XCTAssertFalse(MenuBarController.shouldShowItem(isEnabled: false, isPro: false))
     }
 
+    func testStaleStopActionDoesNotStartAFinishedTimer() async throws {
+        try await withController(.countdown) { controller in
+            let actions = MenuBarTimerActions(controller: controller)
+
+            XCTAssertNil(actions.stop(), "Stop on a stopped timer should do nothing")
+            XCTAssertFalse(controller.isRunning)
+
+            XCTAssertTrue(actions.start())
+            XCTAssertTrue(controller.isRunning)
+
+            await actions.stop()?.value
+            XCTAssertFalse(controller.isRunning)
+
+            // The menu was opened while the timer ran, so it still offers Stop.
+            XCTAssertNil(actions.stop())
+            XCTAssertFalse(controller.isRunning)
+        }
+    }
+
+    func testStaleStartActionDoesNotRestartARunningTimer() async throws {
+        try await withController(.countdown) { controller in
+            let actions = MenuBarTimerActions(controller: controller)
+            XCTAssertTrue(actions.start())
+            controller.adjustBy(minutes: 10)
+            let adjusted = try XCTUnwrap(controller.displayInterval())
+
+            XCTAssertTrue(actions.start(), "Start on a running timer reports it as running")
+            XCTAssertEqual(
+                try XCTUnwrap(controller.displayInterval()),
+                adjusted,
+                accuracy: 5,
+                "Start on a running timer should not restart it"
+            )
+
+            await actions.stop()?.value
+        }
+    }
+
+    func testStalePauseAndResumeActionsDoNotFlipTheTimer() async throws {
+        try await withController(.countup) { controller in
+            let actions = MenuBarTimerActions(controller: controller)
+
+            actions.pause()
+            actions.resume()
+            XCTAssertFalse(controller.isRunning, "Pause and Resume do nothing to a stopped timer")
+
+            XCTAssertTrue(actions.start())
+            actions.resume()
+            XCTAssertFalse(controller.isPaused, "Resume should not pause a running timer")
+
+            actions.pause()
+            XCTAssertTrue(controller.isPaused)
+            actions.pause()
+            XCTAssertTrue(controller.isPaused, "Pause should not resume a paused timer")
+
+            actions.resume()
+            XCTAssertFalse(controller.isPaused)
+            XCTAssertTrue(controller.isRunning)
+
+            await actions.stop()?.value
+        }
+    }
+
+    private func withController(
+        _ kind: TimerKind,
+        _ body: (TimerController) async throws -> Void
+    ) async throws {
+        let suiteName = "MenuBarTimerTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(suiteName, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        defaults.set(directory.path, forKey: "global_directory_path")
+
+        let store = LegacySettingsStore(defaults: defaults)
+        let controller = TimerController(
+            kind: kind,
+            settingsStore: store,
+            fileAccess: BookmarkFileAccess(settingsStore: store),
+            canUseProFeatures: { true }
+        )
+        try await body(controller)
+    }
+
     func testShowInMenuBarDefaultsToOffAndPersistsPerTimer() throws {
         let suiteName = "MenuBarTimerTests.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))

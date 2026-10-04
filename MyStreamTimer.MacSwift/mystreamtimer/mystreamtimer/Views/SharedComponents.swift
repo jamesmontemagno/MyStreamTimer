@@ -108,11 +108,13 @@ struct AppActionButtonStyle: ButtonStyle {
 
 struct LeadingToggleRow<Label: View>: View {
     @Binding var isOn: Bool
+    /// Names the switch for VoiceOver. It isn't drawn; `label` is what's shown beside the switch.
+    var title = ""
     @ViewBuilder let label: Label
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            Toggle("", isOn: $isOn)
+            Toggle(title, isOn: $isOn)
                 .labelsHidden()
                 .toggleStyle(.switch)
 
@@ -134,7 +136,8 @@ struct MenuBarToggleRow<Label: View>: View {
             isOn: Binding(
                 get: { controller.showInMenuBar },
                 set: { appModel.setShowInMenuBar($0, for: controller) }
-            )
+            ),
+            title: "Show \(controller.effectiveTitle) in menu bar"
         ) {
             label
         }

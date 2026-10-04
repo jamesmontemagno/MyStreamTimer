@@ -89,10 +89,48 @@ final class MenuBarController {
     }
 }
 
+// MARK: - Menu actions
+
+/// What a timer's menu items do. A menu keeps the titles it opened with while its timer
+/// carries on, so each action checks the timer's state again and does nothing when it no
+/// longer applies. A "Stop" left on screen after a countdown finishes must not start it.
+struct MenuBarTimerActions {
+    let controller: TimerController
+
+    /// Returns false when the timer was stopped and could not be started.
+    @discardableResult
+    func start() -> Bool {
+        guard !controller.isRunning else { return true }
+        controller.start()
+        return controller.isRunning
+    }
+
+    /// Returns the task doing the stop, or nil when the timer was not running.
+    @discardableResult
+    func stop() -> Task<Void, Never>? {
+        guard controller.isRunning else { return nil }
+        let controller = controller
+        return Task {
+            await controller.stop(clearOutput: true)
+        }
+    }
+
+    func pause() {
+        guard controller.canPauseResume, !controller.isPaused else { return }
+        controller.pauseResume()
+    }
+
+    func resume() {
+        guard controller.canPauseResume, controller.isPaused else { return }
+        controller.pauseResume()
+    }
+}
+
 // MARK: - One timer's menu bar item
 
 private final class MenuBarTimerItem: NSObject, NSMenuDelegate {
     private let controller: TimerController
+    private let actions: MenuBarTimerActions
     private let showMainWindow: () -> Void
     private let statusItem: NSStatusItem
     private var visibilityObservation: NSKeyValueObservation?
@@ -101,6 +139,7 @@ private final class MenuBarTimerItem: NSObject, NSMenuDelegate {
 
     init(controller: TimerController, showMainWindow: @escaping () -> Void) {
         self.controller = controller
+        self.actions = MenuBarTimerActions(controller: controller)
         self.showMainWindow = showMainWindow
         self.statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         super.init()
@@ -231,11 +270,15 @@ private final class MenuBarTimerItem: NSObject, NSMenuDelegate {
         menu.addItem(header)
         menu.addItem(.separator())
 
-        menu.addItem(menuItem(controller.startStopTitle, action: #selector(toggleRunning)))
+        // The action is chosen with the title, so an item always does what it says.
+        menu.addItem(menuItem(
+            controller.startStopTitle,
+            action: controller.isRunning ? #selector(stopTimer) : #selector(startTimer)
+        ))
         if controller.kind != .time {
             menu.addItem(menuItem(
                 controller.pauseResumeTitle,
-                action: #selector(togglePause),
+                action: controller.isPaused ? #selector(resumeTimer) : #selector(pauseTimer),
                 isEnabled: controller.canPauseResume
             ))
             menu.addItem(menuItem(
@@ -264,22 +307,23 @@ private final class MenuBarTimerItem: NSObject, NSMenuDelegate {
         return item
     }
 
-    @objc private func toggleRunning() {
-        if controller.isRunning {
-            Task {
-                await controller.stop(clearOutput: true)
-            }
-        } else {
-            controller.start()
-            if !controller.isRunning {
-                // The reason it didn't start is only shown on the timer's page.
-                showMainWindow()
-            }
+    @objc private func startTimer() {
+        if !actions.start() {
+            // The reason it didn't start is only shown on the timer's page.
+            showMainWindow()
         }
     }
 
-    @objc private func togglePause() {
-        controller.pauseResume()
+    @objc private func stopTimer() {
+        actions.stop()
+    }
+
+    @objc private func pauseTimer() {
+        actions.pause()
+    }
+
+    @objc private func resumeTimer() {
+        actions.resume()
     }
 
     @objc private func addMinute() {
