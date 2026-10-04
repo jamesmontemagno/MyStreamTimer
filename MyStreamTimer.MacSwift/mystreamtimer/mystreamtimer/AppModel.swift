@@ -129,8 +129,9 @@ final class AppModel: ObservableObject {
             SKStoreReviewController.requestReview()
         }
 
+        // The sheet records that it was seen when it appears. The app can launch without
+        // its window, and then the sheet waits until the window opens, or for a later launch.
         if settingsStore.timesUsed > 1 && !settingsStore.hasSeenWelcomeBack {
-            settingsStore.hasSeenWelcomeBack = true
             showWelcomeBack = true
         }
 

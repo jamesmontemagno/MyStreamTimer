@@ -68,6 +68,9 @@ struct WelcomeBackView: View {
             .padding(20)
         }
         .frame(width: 460)
+        .onAppear {
+            appModel.settingsStore.hasSeenWelcomeBack = true
+        }
     }
 }
 

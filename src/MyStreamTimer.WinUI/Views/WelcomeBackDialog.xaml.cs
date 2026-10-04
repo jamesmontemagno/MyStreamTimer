@@ -34,10 +34,13 @@ public sealed partial class WelcomeBackDialog : ContentDialog
             return false;
         }
 
-        settings.HasSeenWelcomeBackV2 = true;
         try
         {
             var dialog = new WelcomeBackDialog { XamlRoot = xamlRoot };
+
+            // Record it once the dialog is on screen, so a failed show is retried on the next launch
+            // and closing the app with the dialog open still counts as seen.
+            dialog.Opened += (_, _) => settings.HasSeenWelcomeBackV2 = true;
             var result = await dialog.ShowAsync();
             if (result == ContentDialogResult.Secondary)
             {
