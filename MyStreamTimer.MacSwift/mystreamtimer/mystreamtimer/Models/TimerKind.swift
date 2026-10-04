@@ -350,4 +350,5 @@ struct TimerConfiguration {
     var outputStyle: Int
     var displayName: String
     var iconGlyph: String
+    var showInMenuBar: Bool
 }

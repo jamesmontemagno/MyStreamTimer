@@ -459,6 +459,20 @@ struct SingleTimerView: View {
                     }
                 }
 
+                MenuBarToggleRow(controller: controller) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 6) {
+                            Text("Show in menu bar")
+                            if !appModel.purchaseManager.isPro {
+                                StatusChip(title: "PRO", tint: .yellow)
+                            }
+                        }
+                        Text("Keep this timer in the menu bar with quick controls, even when the window is closed.")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+
                 if controller.kind.isCountdown {
                     Divider()
 

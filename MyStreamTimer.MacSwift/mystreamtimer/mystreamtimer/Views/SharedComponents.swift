@@ -108,17 +108,38 @@ struct AppActionButtonStyle: ButtonStyle {
 
 struct LeadingToggleRow<Label: View>: View {
     @Binding var isOn: Bool
+    /// Names the switch for VoiceOver. It isn't drawn; `label` is what's shown beside the switch.
+    var title = ""
     @ViewBuilder let label: Label
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            Toggle("", isOn: $isOn)
+            Toggle(title, isOn: $isOn)
                 .labelsHidden()
                 .toggleStyle(.switch)
 
             label
 
             Spacer(minLength: 0)
+        }
+    }
+}
+
+/// Switches a timer's menu bar item on or off, sending free users to the Pro page.
+struct MenuBarToggleRow<Label: View>: View {
+    @EnvironmentObject private var appModel: AppModel
+    @ObservedObject var controller: TimerController
+    @ViewBuilder let label: Label
+
+    var body: some View {
+        LeadingToggleRow(
+            isOn: Binding(
+                get: { controller.showInMenuBar },
+                set: { appModel.setShowInMenuBar($0, for: controller) }
+            ),
+            title: "Show \(controller.effectiveTitle) in menu bar"
+        ) {
+            label
         }
     }
 }

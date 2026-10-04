@@ -24,6 +24,7 @@ final class TimerController: ObservableObject, Identifiable {
     @Published var outputStyle: Int
     @Published var displayName: String
     @Published var iconGlyph: String
+    @Published var showInMenuBar: Bool
     @Published private(set) var currentText = ""
     @Published private(set) var isRunning = false
     @Published private(set) var isPaused = false
@@ -112,6 +113,7 @@ final class TimerController: ObservableObject, Identifiable {
         self.outputStyle = configuration.outputStyle
         self.displayName = configuration.displayName
         self.iconGlyph = configuration.iconGlyph
+        self.showInMenuBar = configuration.showInMenuBar
 
         endSoundPlayer.objectWillChange
             .sink { [weak self] _ in
@@ -154,7 +156,8 @@ final class TimerController: ObservableObject, Identifiable {
             showAMPM: showAMPM,
             outputStyle: outputStyle,
             displayName: displayName,
-            iconGlyph: iconGlyph
+            iconGlyph: iconGlyph,
+            showInMenuBar: showInMenuBar
         )
         settingsStore.saveConfiguration(configuration, for: kind)
 
