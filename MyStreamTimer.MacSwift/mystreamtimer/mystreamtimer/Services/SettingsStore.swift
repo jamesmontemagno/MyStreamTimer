@@ -92,10 +92,10 @@ final class LegacySettingsStore: ObservableObject {
 
     var hasSeenWelcomeBack: Bool {
         get {
-            defaults.object(forKey: "HasSeenWelcomeBackV1") as? Bool ?? false
+            defaults.object(forKey: "HasSeenWelcomeBackV2") as? Bool ?? false
         }
         set {
-            defaults.set(newValue, forKey: "HasSeenWelcomeBackV1")
+            defaults.set(newValue, forKey: "HasSeenWelcomeBackV2")
         }
     }
 

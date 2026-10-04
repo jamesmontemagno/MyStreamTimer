@@ -73,7 +73,8 @@ public sealed class GlobalSettings
     public string PopOutFontFamily { get => store.GetString(nameof(PopOutFontFamily), string.Empty); set => store.Set(nameof(PopOutFontFamily), value); }
     public string PopOutTextColorHex { get => store.GetString(nameof(PopOutTextColorHex), DefaultPopOutTextColorHex); set => store.Set(nameof(PopOutTextColorHex), value); }
     public string PopOutBackgroundColorHex { get => store.GetString(nameof(PopOutBackgroundColorHex), DefaultPopOutBackgroundColorHex); set => store.Set(nameof(PopOutBackgroundColorHex), value); }
-    public bool HasSeenWelcomeBackV1 { get => store.GetBool(nameof(HasSeenWelcomeBackV1), false); set => store.Set(nameof(HasSeenWelcomeBackV1), value); }
+    /// <summary>The version suffix is part of the stored key: bump it to show the welcome-back sheet once more to everyone.</summary>
+    public bool HasSeenWelcomeBackV2 { get => store.GetBool(nameof(HasSeenWelcomeBackV2), false); set => store.Set(nameof(HasSeenWelcomeBackV2), value); }
     public string LastSelectedPage { get => store.GetString(nameof(LastSelectedPage), string.Empty); set => store.Set(nameof(LastSelectedPage), value); }
     public string MainWindowBounds { get => store.GetString(nameof(MainWindowBounds), string.Empty); set => store.Set(nameof(MainWindowBounds), value); }
 }
