@@ -48,7 +48,7 @@ For **Custom**, choose an MP3 or WAV file (`.mp3`, `.wav`, or `.wave`) for that 
 
 On macOS, any timer can have its own menu bar item. Turn on **Show in menu bar** on a timer's page, or pick several at once under **Settings › Menu bar timers**.
 
-- An idle timer shows its icon. A running timer shows the icon and a compact time such as `4:59`, and a paused timer shows a pause icon with the time it stopped at. The time ticks every second whatever the timer's output format is.
+- An idle timer shows its icon. A running timer shows the icon and the timer's output, in the format you set for it, so it matches the timer's output file. A paused timer shows a pause icon with the output it stopped at. Output longer than 32 characters is cut off with an ellipsis.
 - Click the item to start, stop, pause, resume, add a minute, reset, open the app on that timer, or hide the item.
 - While at least one timer is in the menu bar, My Stream Timer keeps running after you close its window, and timers keep writing their output files. Use **Quit My Stream Timer** in the menu to quit.
 

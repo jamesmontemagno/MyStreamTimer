@@ -4,94 +4,39 @@ import XCTest
 
 @MainActor
 final class MenuBarTimerTests: XCTestCase {
-    func testIntervalUsesMinutesAndSecondsBelowAnHour() {
-        XCTAssertEqual(MenuBarTimeFormatter.string(for: 0), "0:00")
-        XCTAssertEqual(MenuBarTimeFormatter.string(for: 9), "0:09")
-        XCTAssertEqual(MenuBarTimeFormatter.string(for: 59), "0:59")
-        XCTAssertEqual(MenuBarTimeFormatter.string(for: 60), "1:00")
-        XCTAssertEqual(MenuBarTimeFormatter.string(for: 299), "4:59")
-        XCTAssertEqual(MenuBarTimeFormatter.string(for: 3_599), "59:59")
-    }
-
-    func testIntervalAddsHoursFromOneHour() {
-        XCTAssertEqual(MenuBarTimeFormatter.string(for: 3_600), "1:00:00")
-        XCTAssertEqual(MenuBarTimeFormatter.string(for: 3_899), "1:04:59")
-        XCTAssertEqual(MenuBarTimeFormatter.string(for: 86_399), "23:59:59")
-        XCTAssertEqual(MenuBarTimeFormatter.string(for: 86_400), "24:00:00")
-        XCTAssertEqual(MenuBarTimeFormatter.string(for: 360_000), "100:00:00")
-    }
-
-    func testIntervalFloorsSecondsLikeTheTimerOutput() {
-        XCTAssertEqual(MenuBarTimeFormatter.string(for: 59.99), "0:59")
-        XCTAssertEqual(MenuBarTimeFormatter.string(for: 299.01), "4:59")
-        XCTAssertEqual(MenuBarTimeFormatter.string(for: 0.99), "0:00")
-    }
-
-    func testIntervalTreatsInvalidValuesAsZero() {
-        XCTAssertEqual(MenuBarTimeFormatter.string(for: -5), "0:00")
-        XCTAssertEqual(MenuBarTimeFormatter.string(for: .nan), "0:00")
-        XCTAssertEqual(MenuBarTimeFormatter.string(for: .infinity), "0:00")
-    }
-
-    func testClockFollowsHourStyleAndAMPMSetting() throws {
-        let utc = try XCTUnwrap(TimeZone(identifier: "UTC"))
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = utc
-        let afternoon = try XCTUnwrap(
-            calendar.date(from: DateComponents(year: 2026, month: 1, day: 5, hour: 15, minute: 4, second: 37))
-        )
-
+    func testItemTitleIsTheTimerOutputWhileRunning() {
+        XCTAssertEqual(MenuBarController.itemTitle(output: "04:59", isRunning: true), "04:59")
+        XCTAssertEqual(MenuBarController.itemTitle(output: "299", isRunning: true), "299")
         XCTAssertEqual(
-            MenuBarTimeFormatter.clockString(for: afternoon, uses24Hour: false, showAMPM: false, timeZone: utc),
-            "3:04"
+            MenuBarController.itemTitle(output: "Starting in 04 min", isRunning: true),
+            "Starting in 04 min"
         )
+        XCTAssertEqual(MenuBarController.itemTitle(output: "9:41 AM", isRunning: true), "9:41 AM")
+    }
+
+    func testItemTitleIsEmptyWhileStopped() {
+        XCTAssertEqual(MenuBarController.itemTitle(output: "Finished!", isRunning: false), "")
+        XCTAssertEqual(MenuBarController.itemTitle(output: "", isRunning: true), "")
+    }
+
+    func testItemTitleStaysOnOneLine() {
         XCTAssertEqual(
-            MenuBarTimeFormatter.clockString(for: afternoon, uses24Hour: false, showAMPM: true, timeZone: utc),
-            "3:04 PM"
-        )
-        XCTAssertEqual(
-            MenuBarTimeFormatter.clockString(for: afternoon, uses24Hour: true, showAMPM: false, timeZone: utc),
-            "15:04"
+            MenuBarController.itemTitle(output: "  Back in\n04:59  \n", isRunning: true),
+            "Back in 04:59"
         )
     }
 
-    func testNextChangeForCountdownIsTheFractionLeftInTheCurrentSecond() {
-        XCTAssertEqual(
-            MenuBarTimeFormatter.secondsUntilNextChange(of: 299.25, countingDown: true),
-            0.25,
-            accuracy: 0.0001
-        )
-        XCTAssertEqual(
-            MenuBarTimeFormatter.secondsUntilNextChange(of: 5, countingDown: true),
-            0,
-            accuracy: 0.0001
-        )
-        XCTAssertEqual(
-            MenuBarTimeFormatter.secondsUntilNextChange(of: 0, countingDown: true),
-            1,
-            accuracy: 0.0001
-        )
-    }
+    func testItemTitleIsCutOffWhenTooLongForTheMenuBar() {
+        let limit = MenuBarController.maximumTitleLength
+        let exact = String(repeating: "8", count: limit)
+        XCTAssertEqual(MenuBarController.itemTitle(output: exact, isRunning: true), exact)
 
-    func testNextChangeForCountUpIsTheRestOfTheCurrentSecond() {
-        XCTAssertEqual(
-            MenuBarTimeFormatter.secondsUntilNextChange(of: 12.25, countingDown: false),
-            0.75,
-            accuracy: 0.0001
+        let long = MenuBarController.itemTitle(
+            output: "The stream is starting in 04:59, grab a drink and say hello",
+            isRunning: true
         )
-        XCTAssertEqual(
-            MenuBarTimeFormatter.secondsUntilNextChange(of: 12, countingDown: false),
-            1,
-            accuracy: 0.0001
-        )
-    }
-
-    func testNextMinuteIsTheWallClockBoundary() {
-        let date = Date(timeIntervalSinceReferenceDate: 600 + 37.5)
-        XCTAssertEqual(MenuBarTimeFormatter.secondsUntilNextMinute(after: date), 22.5, accuracy: 0.0001)
-
-        let onTheMinute = Date(timeIntervalSinceReferenceDate: 600)
-        XCTAssertEqual(MenuBarTimeFormatter.secondsUntilNextMinute(after: onTheMinute), 60, accuracy: 0.0001)
+        XCTAssertEqual(long, "The stream is starting in 04:59…")
+        XCTAssertLessThanOrEqual(long.count, limit)
     }
 
     func testItemIsShownOnlyWhenEnabledAndPro() {
@@ -122,20 +67,37 @@ final class MenuBarTimerTests: XCTestCase {
 
     func testStaleStartActionDoesNotRestartARunningTimer() async throws {
         try await withController(.countdown) { controller in
+            controller.output = "{0:mm:ss}"
+            controller.minutes = 5
+            controller.seconds = 0
+
             let actions = MenuBarTimerActions(controller: controller)
             XCTAssertTrue(actions.start())
             controller.adjustBy(minutes: 10)
-            let adjusted = try XCTUnwrap(controller.displayInterval())
+            try await self.waitForOutput(of: controller) { $0.hasPrefix("14:") }
 
             XCTAssertTrue(actions.start(), "Start on a running timer reports it as running")
-            XCTAssertEqual(
-                try XCTUnwrap(controller.displayInterval()),
-                adjusted,
-                accuracy: 5,
-                "Start on a running timer should not restart it"
+            try await Task.sleep(nanoseconds: 300_000_000)
+            XCTAssertTrue(
+                controller.currentText.hasPrefix("14:"),
+                "Start on a running timer should not restart it, but it shows \(controller.currentText)"
             )
 
             await actions.stop()?.value
+        }
+    }
+
+    private func waitForOutput(
+        of controller: TimerController,
+        timeout: TimeInterval = 5,
+        until matches: (String) -> Bool
+    ) async throws {
+        let deadline = Date().addingTimeInterval(timeout)
+        while !matches(controller.currentText) {
+            guard Date() < deadline else {
+                return XCTFail("Timed out waiting for output; last was \(controller.currentText)")
+            }
+            try await Task.sleep(nanoseconds: 20_000_000)
         }
     }
 

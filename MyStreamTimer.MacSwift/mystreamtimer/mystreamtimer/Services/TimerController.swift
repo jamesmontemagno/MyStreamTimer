@@ -348,9 +348,6 @@ final class TimerController: ObservableObject, Identifiable {
     func adjustBy(minutes delta: Double) {
         guard isRunning else { return }
 
-        // The dates below aren't published, so tell observers that read displayInterval(at:).
-        objectWillChange.send()
-
         if kind.isCountdown {
             if isPaused {
                 pausedRemaining = max(0, pausedRemaining + (delta * 60))
@@ -366,21 +363,6 @@ final class TimerController: ObservableObject, Identifiable {
                 launchTimerEngine()
             }
         }
-    }
-
-    /// The time this timer is showing right now, independent of its output format:
-    /// time remaining for a countdown, time elapsed for a count-up.
-    /// Nil when the timer is stopped, and always nil for the clock.
-    func displayInterval(at date: Date = Date()) -> TimeInterval? {
-        guard isRunning else { return nil }
-
-        if kind.isCountdown {
-            return isPaused ? pausedRemaining : max(0, endDate.timeIntervalSince(date))
-        }
-        if kind.isCountUp {
-            return isPaused ? pausedElapsed : currentCountUpElapsed(at: date)
-        }
-        return nil
     }
 
     func refreshOutputDestination() {

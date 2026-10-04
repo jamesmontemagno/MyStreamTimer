@@ -24,6 +24,23 @@ final class MenuBarController {
         isEnabled && isPro
     }
 
+    /// Longest text an item shows. macOS hides menu bar items entirely when they don't fit.
+    static let maximumTitleLength = 32
+
+    /// The text beside an item's icon: the timer's output, exactly as it is formatted for
+    /// its file, kept to one line. Empty while the timer is stopped, so an idle item is
+    /// just its icon.
+    static func itemTitle(output: String, isRunning: Bool) -> String {
+        guard isRunning else { return "" }
+
+        let singleLine = output
+            .split(whereSeparator: \.isWhitespace)
+            .joined(separator: " ")
+        guard singleLine.count > maximumTitleLength else { return singleLine }
+        return singleLine.prefix(maximumTitleLength - 1)
+            .trimmingCharacters(in: .whitespaces) + "…"
+    }
+
     init(
         controllers: [TimerController],
         purchaseManager: PurchaseManager,
@@ -134,7 +151,6 @@ private final class MenuBarTimerItem: NSObject, NSMenuDelegate {
     private let showMainWindow: () -> Void
     private let statusItem: NSStatusItem
     private var visibilityObservation: NSKeyValueObservation?
-    private var tickTimer: Timer?
     private var currentSymbolName: String?
 
     init(controller: TimerController, showMainWindow: @escaping () -> Void) {
@@ -177,78 +193,33 @@ private final class MenuBarTimerItem: NSObject, NSMenuDelegate {
     func remove() {
         visibilityObservation?.invalidate()
         visibilityObservation = nil
-        tickTimer?.invalidate()
-        tickTimer = nil
         NSStatusBar.system.removeStatusItem(statusItem)
     }
 
+    /// Called whenever the timer publishes a change, which includes every new output text,
+    /// so the item changes together with the timer's file.
     func update() {
-        let now = Date()
-        let timeText = timeText(at: now)
+        let title = MenuBarController.itemTitle(
+            output: controller.currentText,
+            isRunning: controller.isRunning
+        )
         let symbolName = controller.isPaused ? "pause.fill" : controller.effectiveSystemImage
 
-        if let button = statusItem.button {
-            if symbolName != currentSymbolName {
-                currentSymbolName = symbolName
-                button.image = Self.symbolImage(named: symbolName, fallback: controller.kind.systemImage)
-            }
-            if button.title != timeText {
-                button.title = timeText
-            }
+        guard let button = statusItem.button else { return }
 
-            let summary = "\(controller.effectiveTitle): \(controller.statusLabel)"
-            if button.toolTip != summary {
-                button.toolTip = summary
-            }
-            button.setAccessibilityLabel(timeText.isEmpty ? summary : "\(summary), \(timeText)")
+        if symbolName != currentSymbolName {
+            currentSymbolName = symbolName
+            button.image = Self.symbolImage(named: symbolName, fallback: controller.kind.systemImage)
+        }
+        if button.title != title {
+            button.title = title
         }
 
-        scheduleTick(after: now)
-    }
-
-    /// Empty while the timer is stopped, so an idle item is just its icon.
-    private func timeText(at date: Date) -> String {
-        guard controller.isRunning else { return "" }
-
-        if controller.kind == .time {
-            let style = controller.effectiveOutputStyle
-            return MenuBarTimeFormatter.clockString(
-                for: date,
-                uses24Hour: style == 2 || style == 3,
-                showAMPM: controller.showAMPM
-            )
+        let summary = "\(controller.effectiveTitle): \(controller.statusLabel)"
+        if button.toolTip != summary {
+            button.toolTip = summary
         }
-        return MenuBarTimeFormatter.string(for: controller.displayInterval(at: date) ?? 0)
-    }
-
-    /// Wakes on this timer's own next second (or the clock's next minute) instead of a
-    /// shared tick, so the item changes at the same moment as the timer's output file.
-    private func scheduleTick(after date: Date) {
-        tickTimer?.invalidate()
-        tickTimer = nil
-
-        guard controller.isRunning, !controller.isPaused else { return }
-
-        let delay: TimeInterval
-        if controller.kind == .time {
-            delay = MenuBarTimeFormatter.secondsUntilNextMinute(after: date)
-        } else if let interval = controller.displayInterval(at: date) {
-            delay = MenuBarTimeFormatter.secondsUntilNextChange(
-                of: interval,
-                countingDown: controller.kind.isCountdown
-            )
-        } else {
-            return
-        }
-
-        let timer = Timer(timeInterval: delay + 0.02, repeats: false) { [weak self] _ in
-            MainActor.assumeIsolated {
-                self?.update()
-            }
-        }
-        // Common modes keep the time moving while a menu is open.
-        RunLoop.main.add(timer, forMode: .common)
-        tickTimer = timer
+        button.setAccessibilityLabel(title.isEmpty ? summary : "\(summary), \(title)")
     }
 
     private static func symbolImage(named name: String, fallback: String) -> NSImage? {
