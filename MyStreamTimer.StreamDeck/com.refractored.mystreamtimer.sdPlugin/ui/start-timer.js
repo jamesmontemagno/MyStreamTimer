@@ -14,7 +14,6 @@ function setSelectValue(element, value) {
 
 function updateFields() {
   const targetValue = target.value ?? "countdown";
-  const isTime = targetValue === "time";
   const isCountdown = targetValue.startsWith("countdown");
 
   // Start mode only applies to countdowns; count-ups use a start-at offset.

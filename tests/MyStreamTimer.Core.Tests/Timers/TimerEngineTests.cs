@@ -152,31 +152,31 @@ public class TimerEngineTests
                 Assert.Equal(new EndSoundSelection("chime", ""), Assert.Single(platform.Sounds));
             }
 
-            [Fact]
-            public async Task Count_up_URL_start_at_zero_overrides_saved_start_value()
-            {
-                var (engine, clock, files, _, _) = Create(
-                    TimerKind.Countup,
-                    settings =>
-                    {
-                        settings.Minutes = 5;
-                        settings.UseMinutes = true;
-                    });
-                using (engine)
-                {
-                    engine.Apply(UrlCommandParser.Parse("mystreamtimer://countup/?mins=0"));
-                    await WaitFor(() => files.Last == "00:00:00");
-
-                    clock.Advance(TimeSpan.FromSeconds(1));
-                    await WaitFor(() => files.Last == "00:00:01");
-                }
-            }
-
             clock.Advance(TimeSpan.FromSeconds(5));
             await WaitFor(() => files.Last == "00:00:08");
             await Task.Delay(300);
             Assert.Equal(makeSound ? 1 : 0, platform.Beeps);
             Assert.Equal(TimerState.Running, engine.State);
+        }
+    }
+
+    [Fact]
+    public async Task Count_up_URL_start_at_zero_overrides_saved_start_value()
+    {
+        var (engine, clock, files, _, _) = Create(
+            TimerKind.Countup,
+            settings =>
+            {
+                settings.Minutes = 5;
+                settings.UseMinutes = true;
+            });
+        using (engine)
+        {
+            engine.Apply(UrlCommandParser.Parse("mystreamtimer://countup/?mins=0"));
+            await WaitFor(() => files.Last == "00:00:00");
+
+            clock.Advance(TimeSpan.FromSeconds(1));
+            await WaitFor(() => files.Last == "00:00:01");
         }
     }
 
@@ -540,7 +540,6 @@ public class TimerEngineTests
         e.StartStop();
     }
 }
-
 
 
 

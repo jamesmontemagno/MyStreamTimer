@@ -66,7 +66,7 @@ describe("settings", () => {
       normalizeStartSettings({
         target: "countup",
         startMode: "top-of-hour",
-        amount: 3,
+        startAt: 3,
       }),
     ).toMatchObject({ startMode: "duration", startAt: 3 });
     expect(
