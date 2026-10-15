@@ -53,6 +53,7 @@ const durationTargets = new Set<TimerTarget>([
   "countup",
   "countup2",
 ]);
+const countUpTargets = new Set<TimerTarget>(["countup", "countup2"]);
 const amountOperations = new Set<ControlOperation>(["add", "subtract"]);
 
 export function isTimerTarget(value: unknown): value is TimerTarget {
@@ -83,7 +84,9 @@ export function buildStartUrl(command: StartCommand): string {
       throw new Error("This timer does not support a duration.");
     }
 
-    const amount = requirePositiveAmount(command.amount);
+    const amount = countUpTargets.has(command.target)
+      ? requireNonNegativeAmount(command.amount)
+      : requirePositiveAmount(command.amount);
     const duration = formatDuration(amount, command.unit);
     return `mystreamtimer://${command.target}/?${duration.parameter}=${duration.value}`;
   }
@@ -163,10 +166,25 @@ function requirePositiveAmount(value: number | undefined): number {
   return value;
 }
 
+function requireNonNegativeAmount(value: number | undefined): number {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+    throw new Error("Amount must be zero or greater.");
+  }
+
+  return value;
+}
+
 function formatDuration(
   value: number,
   unit: DurationUnit | undefined,
 ): { parameter: "mins" | "secs"; value: string } {
+  if (value === 0) {
+    return {
+      parameter: unit === "seconds" ? "secs" : "mins",
+      value: "0",
+    };
+  }
+
   if (unit !== "seconds" && Number.isInteger(value)) {
     return { parameter: "mins", value: value.toString() };
   }

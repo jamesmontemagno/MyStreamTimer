@@ -16,6 +16,7 @@ describe("settings", () => {
     const settings = normalizeStartSettings({});
     expect(settings.target).toBe("countdown");
     expect(settings.amount).toBe(5);
+    expect(settings.startAt).toBe(0);
     expect(settings.startMode).toBe("duration");
   });
 
@@ -52,11 +53,13 @@ describe("settings", () => {
         target: "time",
         startMode: "duration",
         amount: "invalid",
+        startAt: "invalid",
         clockTime: "25:00",
       }),
     ).toMatchObject({
       startMode: "current-time",
       amount: 5,
+      startAt: 0,
       clockTime: "12:00",
     });
     expect(
@@ -65,7 +68,13 @@ describe("settings", () => {
         startMode: "top-of-hour",
         amount: 3,
       }),
-    ).toMatchObject({ startMode: "duration", amount: 3 });
+    ).toMatchObject({ startMode: "duration", startAt: 3 });
+    expect(
+      normalizeStartSettings({ target: "countup", startAt: "90" }).startAt,
+    ).toBe(90);
+    expect(() =>
+      normalizeStartSettings({ target: "countup", startAt: -1 }),
+    ).toThrow("Start-at value must be zero or greater.");
     expect(() =>
       normalizeStartSettings({
         target: "countdown",

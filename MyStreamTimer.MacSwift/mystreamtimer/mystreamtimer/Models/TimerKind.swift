@@ -211,13 +211,15 @@ struct URLCommand {
 
         self.kind = kind
 
-        if let mins = value(for: "mins"), let parsed = Double(mins), parsed > 0 {
+        if let mins = value(for: "mins"), let parsed = Double(mins),
+           parsed > 0 || (parsed == 0 && kind.isCountUp) {
             self.action = .start
             self.minutes = parsed
             return
         }
 
-        if let secs = value(for: "secs"), let parsed = Double(secs), parsed > 0 {
+        if let secs = value(for: "secs"), let parsed = Double(secs),
+           parsed > 0 || (parsed == 0 && kind.isCountUp) {
             self.action = .start
             self.minutes = parsed / 60
             return

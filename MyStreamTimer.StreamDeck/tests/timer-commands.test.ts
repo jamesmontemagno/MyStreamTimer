@@ -24,6 +24,14 @@ describe("buildStartUrl", () => {
       { target: "countup", mode: "duration", amount: 1, unit: "minutes" },
       "mystreamtimer://countup/?mins=1",
     ],
+    [
+      { target: "countup", mode: "duration", amount: 0, unit: "minutes" },
+      "mystreamtimer://countup/?mins=0",
+    ],
+    [
+      { target: "countup2", mode: "duration", amount: 0, unit: "seconds" },
+      "mystreamtimer://countup2/?secs=0",
+    ],
     [{ target: "time", mode: "current-time" }, "mystreamtimer://time/?start"],
     [
       { target: "countdown", mode: "duration", amount: 1.5, unit: "minutes" },
@@ -42,6 +50,9 @@ describe("buildStartUrl", () => {
     ).toThrow();
     expect(() =>
       buildStartUrl({ target: "countdown", mode: "duration", amount: 0 }),
+    ).toThrow();
+    expect(() =>
+      buildStartUrl({ target: "countup", mode: "duration", amount: -1 }),
     ).toThrow();
     expect(() =>
       buildStartUrl({
