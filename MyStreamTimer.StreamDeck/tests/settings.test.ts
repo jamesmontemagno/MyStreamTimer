@@ -70,6 +70,10 @@ describe("settings", () => {
       }),
     ).toMatchObject({ startMode: "duration", startAt: 3 });
     expect(
+      normalizeStartSettings({ target: "countup", amount: 3 }).startAt,
+    ).toBe(3);
+    expect(normalizeStartSettings({ target: "countup" }).startAt).toBe(0);
+    expect(
       normalizeStartSettings({ target: "countup", startAt: "90" }).startAt,
     ).toBe(90);
     expect(() =>

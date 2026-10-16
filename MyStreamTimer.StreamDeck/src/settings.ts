@@ -106,7 +106,9 @@ export function normalizeStartSettings(
   const isCountUp = target === "countup" || target === "countup2";
   const usesDuration = isCountdownTarget(target) && startMode === "duration";
   const amount = usesDuration ? normalizeAmount(settings.amount, 5) : 5;
-  const startAt = isCountUp ? normalizeStartAt(settings.startAt) : 0;
+  const startAt = isCountUp
+    ? normalizeStartAt(settings.startAt ?? settings.amount)
+    : 0;
   const unit =
     usesDuration || isCountUp ? normalizeUnit(settings.unit) : "minutes";
   const clockTime =

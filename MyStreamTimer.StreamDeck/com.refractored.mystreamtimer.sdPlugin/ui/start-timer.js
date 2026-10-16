@@ -33,6 +33,21 @@ function updateFields() {
   setVisible("#clock-item", isCountdown && effectiveMode === "clock-time");
 }
 
+async function migrateLegacyStartAt() {
+  const client = SDPIComponents.streamDeckClient;
+  const settings = await client.getSettings();
+  const isCountUp =
+    settings.target === "countup" || settings.target === "countup2";
+
+  if (
+    isCountUp &&
+    settings.startAt === undefined &&
+    settings.amount !== undefined
+  ) {
+    await client.setSettings({ ...settings, startAt: settings.amount });
+  }
+}
+
 Promise.all([
   customElements.whenDefined("sdpi-select"),
   customElements.whenDefined("sdpi-textfield"),
@@ -40,4 +55,5 @@ Promise.all([
   target.addEventListener("valuechange", updateFields);
   startMode.addEventListener("valuechange", updateFields);
   updateFields();
+  void migrateLegacyStartAt();
 });
