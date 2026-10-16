@@ -34,7 +34,10 @@ export class StartTimerAction extends SingletonAction<StartTimerSettings> {
       const url = buildStartUrl({
         target: settings.target,
         mode: settings.startMode,
-        amount: settings.amount,
+        amount:
+          settings.target === "countup" || settings.target === "countup2"
+            ? settings.startAt
+            : settings.amount,
         unit: settings.unit,
         clockTime: settings.clockTime,
       });
@@ -60,7 +63,13 @@ export class StartTimerAction extends SingletonAction<StartTimerSettings> {
             ? "Top Hour"
             : settings.startMode === "clock-time"
               ? settings.clockTime
-              : formatDuration(settings.amount, settings.unit);
+              : formatDuration(
+                  settings.target === "countup" ||
+                    settings.target === "countup2"
+                    ? settings.startAt
+                    : settings.amount,
+                  settings.unit,
+                );
       await ev.action.setTitle(`${timerLabel(settings.target)}\n${mode}`);
     } catch (error) {
       logger.warn("Invalid App Timer Start settings.", error);

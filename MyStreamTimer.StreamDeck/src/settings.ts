@@ -29,6 +29,7 @@ export interface StartTimerSettings {
   target?: TimerTarget;
   startMode?: StartMode;
   amount?: number | string;
+  startAt?: number | string;
   unit?: DurationUnit;
   clockTime?: string;
 }
@@ -62,6 +63,7 @@ export interface NormalizedStartTimerSettings {
   target: TimerTarget;
   startMode: StartMode;
   amount: number;
+  startAt: number;
   unit: DurationUnit;
   clockTime: string;
 }
@@ -93,17 +95,22 @@ export function normalizeStartSettings(
   settings: StartTimerSettings,
 ): NormalizedStartTimerSettings {
   const target = normalizeTarget(settings.target);
-  // Start mode only applies to countdowns: count-ups always take a duration
-  // and Current Time simply starts, so stored modes for those are ignored.
+  // Countdown modes select a duration or clock time; count-ups use a start-at offset.
+  // Current Time simply starts, so stored modes are ignored.
   const startMode: StartMode =
     target === "time"
       ? "current-time"
       : isCountdownTarget(target)
         ? normalizeStartMode(settings.startMode)
         : "duration";
-  const usesDuration = startMode === "duration";
+  const isCountUp = target === "countup" || target === "countup2";
+  const usesDuration = isCountdownTarget(target) && startMode === "duration";
   const amount = usesDuration ? normalizeAmount(settings.amount, 5) : 5;
-  const unit = usesDuration ? normalizeUnit(settings.unit) : "minutes";
+  const startAt = isCountUp
+    ? normalizeStartAt(settings.startAt ?? settings.amount)
+    : 0;
+  const unit =
+    usesDuration || isCountUp ? normalizeUnit(settings.unit) : "minutes";
   const clockTime =
     startMode === "clock-time"
       ? settings.clockTime?.trim() || "12:00"
@@ -112,6 +119,7 @@ export function normalizeStartSettings(
     target,
     startMode,
     amount,
+    startAt,
     unit,
     clockTime,
   };
@@ -119,7 +127,7 @@ export function normalizeStartSettings(
   buildStartUrl({
     target,
     mode: startMode,
-    amount,
+    amount: isCountUp ? startAt : amount,
     unit,
     clockTime,
   });
@@ -214,6 +222,14 @@ function normalizeAmount(
     throw new Error("Amount must be a number.");
   }
 
+  return parsed;
+}
+
+function normalizeStartAt(value: number | string | undefined): number {
+  const parsed = normalizeAmount(value, 0);
+  if (parsed < 0) {
+    throw new Error("Start-at value must be zero or greater.");
+  }
   return parsed;
 }
 
