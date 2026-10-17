@@ -2,7 +2,8 @@ name: Diagnose Partner Center credentials
 description: >-
   Reproduces the two calls the Microsoft Store Developer CLI makes during
   `msstore reconfigure` so an authentication failure points at a specific cause
-  instead of the CLI's generic "Really failed to auth" message.
+  instead of the CLI's generic "Really failed to auth" message. When a product ID
+  is supplied, also resolves an existing package flight without modifying it.
 
 inputs:
   tenant-id:
@@ -17,17 +18,31 @@ inputs:
   client-secret:
     description: Client secret for the Entra application.
     required: true
+  product-id:
+    description: Optional Store product ID whose package flight should be resolved.
+    required: false
+  flight-id:
+    description: Optional package flight ID override. Otherwise the app must have exactly one flight.
+    required: false
+
+outputs:
+  flight-id:
+    description: The selected existing package flight ID, when a product ID was supplied.
+    value: ${{ steps.diagnose.outputs.flight-id }}
 
 runs:
   using: composite
   steps:
     - name: Check Partner Center credentials
+      id: diagnose
       shell: pwsh
       env:
         PARTNER_CENTER_TENANT_ID: ${{ inputs.tenant-id }}
         PARTNER_CENTER_SELLER_ID: ${{ inputs.seller-id }}
         PARTNER_CENTER_CLIENT_ID: ${{ inputs.client-id }}
         PARTNER_CENTER_CLIENT_SECRET: ${{ inputs.client-secret }}
+        STORE_PRODUCT_ID: ${{ inputs.product-id }}
+        STORE_FLIGHT_ID: ${{ inputs.flight-id }}
       run: |
         # The secret and the access token are never written to the log.
         $tenantId = "$env:PARTNER_CENTER_TENANT_ID".Trim()
@@ -103,3 +118,16 @@ runs:
           if ($_.ErrorDetails.Message) { Write-Host $_.ErrorDetails.Message }
           throw "Partner Center diagnosis failed at the submission API step."
         }
+
+        $productId = "$env:STORE_PRODUCT_ID".Trim()
+        if (-not $productId) {
+          return
+        }
+        if ([string]::IsNullOrWhiteSpace($accessToken)) {
+          throw "Partner Center returned no access token for flight discovery."
+        }
+
+        Write-Host "`n--- Step 3: discover an existing package flight for $productId ---"
+        $flightId = & (Join-Path $env:GITHUB_ACTION_PATH 'Resolve-StoreFlight.ps1') `
+          -ProductId $productId -AccessToken $accessToken -FlightId "$env:STORE_FLIGHT_ID"
+        Add-Content -LiteralPath $env:GITHUB_OUTPUT -Value "flight-id=$flightId"
