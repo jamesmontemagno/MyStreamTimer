@@ -133,6 +133,9 @@ public static class UrlCommandParser
             // legacy swallowed everything and returned whatever was parsed so far
         }
 
+        if (!float.IsFinite(mins))
+            action = CommandAction.None;
+
         return new UrlCommand(action, mins, host);
     }
 

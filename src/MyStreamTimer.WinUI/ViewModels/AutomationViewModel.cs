@@ -210,16 +210,15 @@ public sealed partial class AutomationViewModel : ObservableObject
             return;
         }
 
-        if (_timers.Dispatch(command))
+        var result = _timers.Dispatch(command);
+        if (result.Applied)
         {
             ShowRunStatus($"Sent \"{SelectedAction?.Label}\" to {SelectedTimer?.Title}.", InfoBarSeverity.Success);
         }
         else
         {
-            var reason = SelectedTimer?.Kind.RequiresPro() == true
-                ? $"{SelectedTimer.Title} is a Pro timer. Unlock Pro to control it."
-                : "The command was ignored. Make sure the timer is in a state that accepts it.";
-            ShowRunStatus(reason, InfoBarSeverity.Error);
+            ShowRunStatus(result.Message ?? "The command was ignored.",
+                result.Status == CommandStatus.Ignored ? InfoBarSeverity.Warning : InfoBarSeverity.Error);
         }
     }
 

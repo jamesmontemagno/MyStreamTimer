@@ -93,12 +93,15 @@ jobs:
         run: |
           $packageDir = Join-Path (Resolve-Path ".") "artifacts/store/"
           New-Item -ItemType Directory -Force -Path $packageDir | Out-Null
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+          $pdbTool = & $vswhere -latest -products * -find 'VC\Tools\MSVC\**\bin\Hostx64\x64\mspdbcmf.exe' | Select-Object -First 1
+          if (-not $pdbTool) { throw "Visual C++ symbol tools (mspdbcmf.exe) are required for Store symbols." }
 
           dotnet build $env:APP_PROJECT `
             -c Release `
             -p:Platform=x64 `
             -p:MyStreamTimerStoreBuild=true `
-            -p:SelfContained=false `
+            -p:SelfContained=true `
             -p:WindowsAppSDKSelfContained=false `
             -p:EnableMsixTooling=true `
             -p:GenerateAppxPackageOnBuild=true `
@@ -107,15 +110,19 @@ jobs:
             -p:AppxBundlePlatforms="x64|ARM64" `
             -p:UapAppxPackageBuildMode=StoreUpload `
             -p:AppxPackageSigningEnabled=false `
-            -p:AppxSymbolPackageEnabled=false `
+            -p:AppxSymbolPackageEnabled=true `
+            "-p:PdbCmfx64ExeFullPath=$pdbTool" `
+            -p:SourceRevisionId=${{ github.sha }} `
             -v:minimal
           if ($LASTEXITCODE -ne 0) { throw "Microsoft Store package build failed." }
 
-          $upload = Get-ChildItem $packageDir -Recurse -Filter *.msixupload | Select-Object -First 1
-          if (-not $upload) {
-            throw "The Store build did not produce an .msixupload package."
+          $uploads = @(Get-ChildItem $packageDir -Recurse -File -Filter *.msixupload)
+          if ($uploads.Count -ne 1) {
+            throw "Expected exactly one .msixupload package; found $($uploads.Count)."
           }
+          $upload = $uploads[0]
 
+          & .\scripts\Test-StorePackage.ps1 -PackagePath $upload.FullName -SymbolsDirectory artifacts\store-symbols
           Copy-Item $upload.FullName "artifacts/store/MyStreamTimer-$env:PACKAGE_VERSION.msixupload" -Force
 
       - name: Upload Store package
@@ -124,6 +131,14 @@ jobs:
           name: windows-store-package
           path: artifacts/store/MyStreamTimer-*.msixupload
           if-no-files-found: error
+
+      - name: Retain matching symbols and build provenance
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-store-symbols-${{ env.PACKAGE_VERSION }}
+          path: artifacts/store-symbols
+          if-no-files-found: error
+          retention-days: 90
 
   publish:
     name: Submit to Microsoft Store
@@ -191,13 +206,19 @@ jobs:
         env:
           STORE_PRODUCT_ID: ${{ vars.MICROSOFT_STORE_PRODUCT_ID }}
         run: |
-          $upload = Get-ChildItem artifacts/store -Filter *.msixupload | Select-Object -First 1
-          if (-not $upload) {
-            throw "The downloaded Store package is missing."
+          $uploads = @(Get-ChildItem artifacts/store -File -Filter *.msixupload)
+          if ($uploads.Count -ne 1) {
+            throw "Expected exactly one downloaded .msixupload package; found $($uploads.Count)."
           }
+          $upload = $uploads[0]
+
+          & .\scripts\Test-StorePackage.ps1 -PackagePath $upload.FullName
+          $hash = (Get-FileHash -LiteralPath $upload.FullName -Algorithm SHA256).Hash
+          Write-Host "Uploading symbol-validated Store package: $($upload.Name); SHA256=$hash"
 
           # Pass the package file itself. Pointing msstore at a directory makes it look for a
           # project to infer a publisher from, which does not exist in this workflow.
+          # Upload the whole .msixupload, including its .appxsym files, not the inner bundle.
           # --uploadTimeout must be set explicitly: when omitted the CLI has defaulted it to 0,
           # which cancels the blob upload immediately. See microsoft/msstore-cli#162.
           msstore publish $upload.FullName --appId $env:STORE_PRODUCT_ID --uploadTimeout 900

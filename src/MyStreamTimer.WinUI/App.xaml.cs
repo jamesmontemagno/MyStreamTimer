@@ -1,11 +1,9 @@
-using System.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using MyStreamTimer.Core.Purchases;
 using MyStreamTimer.Core.Services;
 using MyStreamTimer.Core.Settings;
 using MyStreamTimer.WinUI.Services;
-using Windows.Storage;
 
 namespace MyStreamTimer.WinUI;
 
@@ -31,10 +29,12 @@ public partial class App : Application
 
     public App()
     {
+        UnhandledException += OnUnhandledException;
+        AppDiagnostics.Record("app-construction");
         InitializeComponent();
         DispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
-        UnhandledException += OnUnhandledException;
         Services = ConfigureServices();
+        AppDiagnostics.Record("services-ready");
     }
 
     private static ServiceProvider ConfigureServices()
@@ -76,6 +76,7 @@ public partial class App : Application
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
+        AppDiagnostics.Record("launch-services");
         var activation = GetService<ActivationService>();
         var timers = GetService<TimerHost>();
         var settings = GetService<GlobalSettings>();
@@ -87,15 +88,19 @@ public partial class App : Application
         activation.CommandReceived += (_, command) => timers.Dispatch(command);
         activation.Start();
 
+        AppDiagnostics.Record("timer-autostart");
         timers.AutoStart();
         if (activation.TakePendingCommand() is { } pending)
         {
             timers.Dispatch(pending);
         }
 
+        AppDiagnostics.Record("window-construction");
         Window = new MainWindow();
         windowService.Initialize(Window);
         Window.Activate();
+        AppDiagnostics.Record("window-activated");
+        AppDiagnostics.RecordEnvironment();
 
         settings.TimesUsed++;
         if (settings.TimesUsed == 10)
@@ -112,17 +117,6 @@ public partial class App : Application
 
     private void OnUnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
     {
-        try
-        {
-            var logs = Path.Combine(ApplicationData.Current.LocalFolder.Path, "logs");
-            Directory.CreateDirectory(logs);
-            var file = Path.Combine(logs, $"crash-{DateTime.Now:yyyyMMdd-HHmmss}.txt");
-            File.WriteAllText(file, $"{DateTime.Now:O}{Environment.NewLine}{e.Message}{Environment.NewLine}{e.Exception}");
-            Debug.WriteLine($"[App] Unhandled exception logged to {file}");
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"[App] Failed to write crash log: {ex.Message}");
-        }
+        AppDiagnostics.Record("xaml-unhandled", exception: e.Exception);
     }
 }

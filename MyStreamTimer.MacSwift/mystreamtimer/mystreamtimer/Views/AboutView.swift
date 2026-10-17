@@ -20,17 +20,12 @@ struct AboutWorkspaceView: View {
             SectionCard(title: versionText, subtitle: "Built for OBS, Stream Deck, and desktop automation.") {
                 HStack {
                     Link(destination: URL(string: "https://github.com/jamesmontemagno/mystreamtimer")!) {
-                        Label("GitHub", systemImage: "chevron.left.forwardslash.chevron.right")
+                        Label("Source on GitHub", systemImage: "chevron.left.forwardslash.chevron.right")
                     }
                     .buttonStyle(AppActionButtonStyle())
 
-                    Link(destination: URL(string: "https://www.mystreamtimer.com")!) {
-                        Label("Website", systemImage: "globe")
-                    }
-                    .buttonStyle(AppActionButtonStyle())
-
-                    Link(destination: URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!) {
-                        Label("Terms of Use", systemImage: "doc.text")
+                    Link(destination: URL(string: "https://refractored.com/about/")!) {
+                        Label("Privacy policy", systemImage: "hand.raised")
                     }
                     .buttonStyle(AppActionButtonStyle())
                 }

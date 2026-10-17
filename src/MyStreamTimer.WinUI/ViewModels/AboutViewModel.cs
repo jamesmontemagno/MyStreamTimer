@@ -2,7 +2,10 @@ using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MyStreamTimer.WinUI.Services;
-using Windows.Storage;
+using Microsoft.UI.Xaml.Controls;
+using System.Runtime.InteropServices;
+using System.Security;
+using Microsoft.Windows.Storage.Pickers;
 
 namespace MyStreamTimer.WinUI.ViewModels;
 
@@ -16,10 +19,6 @@ public sealed record LinkItem(string Title, string Glyph, string Url, IAsyncRela
 public sealed partial class AboutViewModel : ObservableObject
 {
     public const string RepositoryUrl = "https://github.com/jamesmontemagno/mystreamtimer";
-    public const string GitHubUrl = "http://www.github.com/jamesmontemagno";
-    public const string TwitterUrl = "http://www.twitter.com/jamesmontemagno";
-    public const string YouTubeUrl = "http://www.youtube.com/jamesmontemagno";
-    public const string BlogUrl = "http://www.montemagno.com";
 
     private readonly LauncherService _launcher;
     private readonly ClipboardService _clipboard;
@@ -32,10 +31,6 @@ public sealed partial class AboutViewModel : ObservableObject
         Links =
         [
             new("Source on GitHub", "\uE943", RepositoryUrl, OpenUrlCommand),
-            new("GitHub", "\uE716", GitHubUrl, OpenUrlCommand),
-            new("X / Twitter", "\uE8BD", TwitterUrl, OpenUrlCommand),
-            new("YouTube", "\uE714", YouTubeUrl, OpenUrlCommand),
-            new("Blog", "\uE736", BlogUrl, OpenUrlCommand),
             new("Privacy policy", "\uE72E", ProViewModel.PrivacyUrl, OpenUrlCommand),
         ];
     }
@@ -59,7 +54,7 @@ public sealed partial class AboutViewModel : ObservableObject
     }
 
     public string Blurb =>
-        "My Stream Timer is an open source project by James Montemagno and Refractored LLC. " +
+        "My Stream Timer is an open source project. " +
         "It writes countdowns, count-ups and the current time to text files so OBS, Streamlabs and other tools can show them live on stream.";
 
     public IReadOnlyList<LinkItem> Links { get; }
@@ -69,6 +64,9 @@ public sealed partial class AboutViewModel : ObservableObject
 
     [ObservableProperty]
     public partial string StatusMessage { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial InfoBarSeverity StatusSeverity { get; set; } = InfoBarSeverity.Informational;
 
     [RelayCommand]
     private async Task OpenUrlAsync(string? url)
@@ -84,18 +82,64 @@ public sealed partial class AboutViewModel : ObservableObject
     {
         try
         {
-            var logs = Path.Combine(ApplicationData.Current.LocalFolder.Path, "logs");
+            var logs = AppDiagnostics.DirectoryPath;
+            if (string.IsNullOrEmpty(logs))
+            {
+                AppDiagnostics.Record("diagnostics-folder-unavailable");
+                StatusMessage = "Local diagnostics are unavailable. Try restarting the app.";
+                StatusSeverity = InfoBarSeverity.Error;
+                IsStatusOpen = true;
+                return;
+            }
             Directory.CreateDirectory(logs);
             if (!await _launcher.OpenFolderAsync(logs))
             {
                 StatusMessage = $"Couldn't open {logs}";
+                StatusSeverity = InfoBarSeverity.Error;
                 IsStatusOpen = true;
             }
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[AboutViewModel] OpenLogsFolder failed: {ex.Message}");
+            AppDiagnostics.Record("diagnostics-folder-failed", exception: ex);
             StatusMessage = "Couldn't open the crash logs folder.";
+            StatusSeverity = InfoBarSeverity.Error;
+            IsStatusOpen = true;
+        }
+    }
+
+    [RelayCommand]
+    private async Task ExportDiagnosticsAsync()
+    {
+        IsStatusOpen = false;
+        try
+        {
+            var picker = new FileSavePicker(App.Window.AppWindow.Id)
+            {
+                SuggestedFileName = $"MyStreamTimer-diagnostics-{DateTime.UtcNow:yyyyMMdd-HHmmss}",
+                SuggestedStartLocation = PickerLocationId.DocumentsLibrary,
+            };
+            picker.FileTypeChoices.Add("ZIP archive", new List<string> { ".zip" });
+            var file = await picker.PickSaveFileAsync();
+            if (file is null)
+                return;
+            AppDiagnostics.Record("diagnostics-export");
+            var result = await Task.Run(() =>
+            {
+                var saved = AppDiagnostics.TryExport(file.Path, out var error);
+                return (Saved: saved, Error: error);
+            });
+            StatusMessage = result.Saved
+                ? "Report saved. Review it before sharing privately with support."
+                : result.Error ?? "Couldn't save the diagnostics report.";
+            StatusSeverity = result.Saved ? InfoBarSeverity.Success : InfoBarSeverity.Error;
+            IsStatusOpen = true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SecurityException or COMException or InvalidOperationException)
+        {
+            AppDiagnostics.Record("diagnostics-export-failed", exception: ex);
+            StatusMessage = "Couldn't save the report. Choose a writable local folder and try again.";
+            StatusSeverity = InfoBarSeverity.Error;
             IsStatusOpen = true;
         }
     }

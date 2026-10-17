@@ -68,7 +68,7 @@ public sealed class ActivationService
         }
 
         var uri = protocol.Uri.AbsoluteUri;
-        Debug.WriteLine($"[ActivationService] Protocol activation: {uri}");
+        AppDiagnostics.Record("protocol-received");
         command = UrlCommandParser.Parse(uri);
         return true;
     }

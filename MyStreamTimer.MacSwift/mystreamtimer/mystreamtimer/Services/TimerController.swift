@@ -209,9 +209,6 @@ final class TimerController: ObservableObject, Identifiable {
     func apply(_ command: URLCommand) async {
         switch command.action {
         case .start:
-            if isRunning {
-                await stop(clearOutput: false)
-            }
             start(overrideMinutes: command.minutes)
 
         case .stop:
@@ -245,25 +242,21 @@ final class TimerController: ObservableObject, Identifiable {
         }
 
         if effectiveOutputStyle == 0, kind != .time, renderCustomOutput(for: 5).isEmpty {
-            currentText = "Invalid time format. Use {0:hh:mm:ss}"
-            lastError = currentText
+            let message = "Invalid time format. Use {0:hh:mm:ss}"
+            lastError = message
+            if !isRunning {
+                currentText = message
+            }
             return
         }
 
-        invalidateTimerEngine()
-        lastError = nil
-        isRunning = true
-        isPaused = false
-        pausedRemaining = 0
-        pausedElapsed = 0
-
         let now = Date()
+        let duration: TimeInterval
         if kind.isCountdown {
-            let duration: TimeInterval
             if let overrideMinutes {
-                duration = max(0, overrideMinutes) * 60
+                duration = overrideMinutes * 60
             } else if useMinutes {
-                duration = TimeInterval((minutes * 60) + seconds)
+                duration = TimeInterval(minutes) * 60 + TimeInterval(seconds)
             } else {
                 let chosenTime = Calendar.current.dateComponents([.hour, .minute], from: finishAt)
                 var target = Calendar.current.dateComponents([.year, .month, .day], from: now)
@@ -276,13 +269,37 @@ final class TimerController: ObservableObject, Identifiable {
                     : Calendar.current.date(byAdding: .day, value: 1, to: targetToday) ?? targetToday
                 duration = max(0, effectiveTarget.timeIntervalSince(now))
             }
+        } else if kind.isCountUp {
+            duration = overrideMinutes.map { $0 * 60 }
+                ?? TimeInterval(minutes) * 60 + TimeInterval(seconds)
+        } else {
+            duration = 0
+        }
 
+        guard TimerInterval.isSupported(duration) else {
+            lastError = "The timer duration is outside the supported range."
+            return
+        }
+        let targetEndDate = now.addingTimeInterval(duration)
+        guard !kind.isCountdown || TimerInterval.isSupported(targetEndDate.timeIntervalSince(now)) else {
+            lastError = "The timer duration is outside the supported range."
+            return
+        }
+
+        invalidateTimerEngine()
+        endActivity()
+        lastError = nil
+        isRunning = true
+        isPaused = false
+        pausedRemaining = 0
+        pausedElapsed = 0
+
+        if kind.isCountdown {
             startDate = now
-            endDate = now.addingTimeInterval(duration)
+            endDate = targetEndDate
         } else if kind.isCountUp {
             startDate = now
-            pausedElapsed = overrideMinutes.map { max(0, $0) * 60 }
-                ?? TimeInterval((minutes * 60) + seconds)
+            pausedElapsed = duration
         }
 
         captureEndSoundSettings(startingElapsed: kind.isCountUp ? currentCountUpElapsed(at: now) : 0)
@@ -341,23 +358,42 @@ final class TimerController: ObservableObject, Identifiable {
 
     func reset() async {
         guard isRunning else { return }
-        await stop(clearOutput: true)
         start()
     }
 
     func adjustBy(minutes delta: Double) {
         guard isRunning else { return }
 
+        let adjustment = delta * 60
+        guard TimerInterval.isSupported(abs(adjustment)) else {
+            lastError = "The timer adjustment is outside the supported range."
+            return
+        }
+
         if kind.isCountdown {
+            let adjustedEndDate = endDate.addingTimeInterval(adjustment)
+            let remaining = isPaused
+                ? pausedRemaining + adjustment
+                : adjustedEndDate.timeIntervalSinceNow
+            guard TimerInterval.isSupported(abs(remaining)) else {
+                lastError = "The adjusted timer duration is outside the supported range."
+                return
+            }
             if isPaused {
-                pausedRemaining = max(0, pausedRemaining + (delta * 60))
+                pausedRemaining = max(0, remaining)
             } else {
-                endDate = endDate.addingTimeInterval(delta * 60)
+                endDate = adjustedEndDate
                 launchTimerEngine()
             }
         } else if kind.isCountUp {
             let previousElapsed = currentCountUpElapsed()
-            pausedElapsed = max(0, pausedElapsed + (delta * 60))
+            let adjustedElapsed = max(0, pausedElapsed + adjustment)
+            let elapsed = isPaused ? adjustedElapsed : Date().timeIntervalSince(startDate) + adjustedElapsed
+            guard TimerInterval.isSupported(max(0, elapsed)) else {
+                lastError = "The adjusted timer duration is outside the supported range."
+                return
+            }
+            pausedElapsed = adjustedElapsed
             observeCountUpSoundCrossing(from: previousElapsed, to: currentCountUpElapsed())
             if !isPaused {
                 launchTimerEngine()
@@ -414,6 +450,7 @@ final class TimerController: ObservableObject, Identifiable {
         case let .rendered(generation, _, _),
              let .writeSucceeded(generation, _, _),
              let .writeFailed(generation, _),
+             let .failed(generation, _),
              let .completed(generation):
             eventGeneration = generation
         }
@@ -438,6 +475,13 @@ final class TimerController: ObservableObject, Identifiable {
 
         case let .writeFailed(_, message):
             lastError = "Unable to save timer output: \(message)"
+
+        case let .failed(_, message):
+            isRunning = false
+            isPaused = false
+            activeGeneration = nil
+            endActivity()
+            lastError = message
 
         case .completed:
             isRunning = false
@@ -480,7 +524,7 @@ final class TimerController: ObservableObject, Identifiable {
         activeSoundEnabled = kind != .time && beepAtZero
         activeEndSound = endSound
         activeCustomEndSoundBookmark = customEndSoundBookmark
-        activeCountUpSoundTarget = TimeInterval((soundMinutes * 60) + min(59, max(0, soundSeconds)))
+        activeCountUpSoundTarget = TimeInterval(soundMinutes) * 60 + TimeInterval(min(59, max(0, soundSeconds)))
         previousCountUpSoundElapsed = startingElapsed
         didPlayCountUpSound = false
     }

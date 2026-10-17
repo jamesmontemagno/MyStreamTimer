@@ -45,6 +45,7 @@ public sealed class TimerEngine : IDisposable
     long extraTicksForUp;
     bool firstTime = true;
     int errors;
+    long lastFaultTimestamp;
     TimeSpan prevTime = TimeSpan.FromDays(1);
     DateTime prevDateTime;
     CancellationTokenSource? loopCts;
@@ -97,6 +98,7 @@ public sealed class TimerEngine : IDisposable
     public event EventHandler? StateChanged;
     /// <summary>Raised when a countdown reaches zero (after the finish text is written).</summary>
     public event EventHandler? Completed;
+    public event EventHandler<Exception>? Faulted;
 
     // ---------------- Commands ----------------
 
@@ -169,77 +171,153 @@ public sealed class TimerEngine : IDisposable
         ExecuteStartStop(true);
     }
 
-    public void AddMinutes(double minutes)
+    public CommandResult AddMinutes(double minutes)
     {
         if (!IsBusy || minutes == 0)
-            return;
-        lock (locker)
-        {
-            if (IsDown)
-                endTime = endTime.AddMinutes(minutes);
-            else
-                extraTicksForUp += TimeSpan.FromMinutes(minutes).Ticks;
-        }
+            return new(CommandStatus.Ignored, "Start the timer before adjusting its time.");
+        return AdjustMinutes(minutes);
     }
 
     /// <summary>Apply a parsed URL command (legacy <c>Init</c>).</summary>
-    public void Apply(UrlCommand command)
+    public CommandResult Apply(UrlCommand command)
     {
+        if (!command.IsValid || command.Kind != Kind || !float.IsFinite(command.Minutes))
+            return new(CommandStatus.Rejected, "The timer command is invalid.");
+
         switch (command.Action)
         {
             case CommandAction.Start:
+                if (command.Minutes < 0 && command.Minutes != -1)
+                    return InvalidDuration;
+                if (!TryCalculateTiming(command.Minutes, extraTicksForUp, out _))
+                    return InvalidDuration;
                 if (IsBusy)
                     ExecuteStartStop();
                 bootMins = command.Minutes;
-                ExecuteStartStop();
-                break;
+                return ExecuteStartStop();
             case CommandAction.Pause:
                 if (IsBusy)
+                {
                     PauseResume();
+                    return CommandResult.Success;
+                }
                 break;
             case CommandAction.Resume:
                 if (!IsBusy)
+                {
+                    if (!TryCalculateTiming(bootMins, extraTicksForUp, out _))
+                        return InvalidDuration;
                     PauseResume();
+                    return CommandResult.Success;
+                }
                 break;
             case CommandAction.Reset:
+                if (!IsBusy)
+                    break;
+                if (!TryCalculateTiming(-1, 0, out _))
+                    return InvalidDuration;
                 Reset();
-                break;
+                return CommandResult.Success;
             case CommandAction.Add when command.Minutes > 0:
-                AddMinutesUnconditional(command.Minutes);
-                break;
+                return AdjustMinutes(command.Minutes);
             case CommandAction.Subtract when command.Minutes > 0:
-                AddMinutesUnconditional(-command.Minutes);
-                break;
+                return AdjustMinutes(-command.Minutes);
             case CommandAction.Stop:
                 if (IsBusy)
-                    ExecuteStartStop(true);
+                    return ExecuteStartStop(true);
                 break;
         }
+        return new(CommandStatus.Ignored, "The timer is not in a state that accepts this command.");
     }
 
-    // legacy Init() adjusted end time even when not running
-    void AddMinutesUnconditional(double minutes)
+    static CommandResult InvalidDuration => new(CommandStatus.Rejected, "The duration is outside the supported date range.");
+
+    CommandResult AdjustMinutes(double minutes)
     {
+        if (!double.IsFinite(minutes))
+            return InvalidDuration;
         lock (locker)
         {
-            if (IsDown)
-                endTime = endTime.AddMinutes(minutes);
-            else
-                extraTicksForUp += TimeSpan.FromMinutes(minutes).Ticks;
+            if (IsDown && endTime == default)
+                return new(CommandStatus.Ignored, "Start this countdown before adjusting its time.");
+            try
+            {
+                if (IsDown)
+                    endTime = endTime.AddMinutes(minutes);
+                else
+                {
+                    var ticks = checked(extraTicksForUp + TimeSpan.FromMinutes(minutes).Ticks);
+                    _ = clock.Now.AddTicks(ticks);
+                    extraTicksForUp = ticks;
+                }
+                return CommandResult.Success;
+            }
+            catch (Exception ex) when (ex is ArgumentOutOfRangeException or OverflowException)
+            {
+                return InvalidDuration;
+            }
         }
     }
 
     /// <summary>Used for auto-start / boot-from-URL at construction time.</summary>
-    public void StartAtBoot(float minutes = -1)
+    public CommandResult StartAtBoot(float minutes = -1)
     {
+        if (!TryCalculateTiming(minutes, extraTicksForUp, out _))
+            return InvalidDuration;
         bootMins = minutes;
-        ExecuteStartStop();
+        return ExecuteStartStop();
     }
 
     // ---------------- Core start/stop ----------------
 
-    void ExecuteStartStop(bool forceReset = false)
+    readonly record struct RunTiming(float Minutes, DateTime Start, DateTime End);
+
+    bool TryCalculateTiming(float minutes, long extraTicks, out RunTiming timing)
     {
+        timing = default;
+        if (!float.IsFinite(minutes))
+            return false;
+        try
+        {
+            var now = clock.Now;
+            var effectiveExtraTicks = minutes >= 0 ? 0 : extraTicks;
+            var seconds = 0;
+            if (minutes < 0)
+            {
+                if (effectiveExtraTicks > 0)
+                    minutes = 0;
+                else if (settings.UseMinutes)
+                {
+                    minutes = settings.Minutes;
+                    seconds = settings.Seconds;
+                }
+                else
+                {
+                    var finishAt = settings.FinishAtTime;
+                    minutes = (float)(finishAt > now.TimeOfDay
+                        ? finishAt.TotalMinutes - now.TimeOfDay.TotalMinutes
+                        : 1440.0 - now.TimeOfDay.TotalMinutes + finishAt.TotalMinutes);
+                }
+            }
+            _ = now.AddTicks(effectiveExtraTicks);
+            var start = !IsDown && !IsTime ? now.AddMinutes(-minutes).AddSeconds(-seconds) : now;
+            timing = new(minutes, start, now.AddMinutes(minutes).AddSeconds(seconds));
+            return true;
+        }
+        catch (Exception ex) when (ex is ArgumentOutOfRangeException or OverflowException)
+        {
+            return false;
+        }
+    }
+
+    CommandResult ExecuteStartStop(bool forceReset = false)
+    {
+        RunTiming timing = default;
+        if (!IsBusy && !TryCalculateTiming(forceReset ? -1 : bootMins, forceReset ? 0 : extraTicksForUp, out timing))
+        {
+            CountdownOutput = $"INIT: {InvalidDuration.Message}";
+            return InvalidDuration;
+        }
         if (forceReset)
         {
             bootMins = -1;
@@ -251,7 +329,7 @@ public sealed class TimerEngine : IDisposable
         if (EffectiveOutputStyle == 0 && !IsTime && !OutputFormatter.IsValidTemplate(settings.Output))
         {
             CountdownOutput = OutputFormatter.InvalidFormatMessage;
-            return;
+            return new(CommandStatus.Rejected, OutputFormatter.InvalidFormatMessage);
         }
 
         try
@@ -261,7 +339,7 @@ public sealed class TimerEngine : IDisposable
         catch (Exception ex)
         {
             CountdownOutput = $"INIT: {ex.Message} | Ensure app has access to this directory. Go to Settings to set a valid directory.";
-            return;
+            return new(CommandStatus.Rejected, "The output directory could not be accessed. Check Settings.");
         }
 
         var wasBusy = IsBusy;
@@ -285,7 +363,7 @@ public sealed class TimerEngine : IDisposable
         if (!IsBusy)
         {
             StateChanged?.Invoke(this, EventArgs.Empty);
-            return;
+            return CommandResult.Success;
         }
 
         CanPauseResume = !IsTime;
@@ -293,37 +371,15 @@ public sealed class TimerEngine : IDisposable
         currentFinished = settings.Finish;
         currentIsDown = IsDown;
         currentShowAmPm = settings.ShowAmPm;
-        var currentSeconds = 0;
         var isResume = bootMins < 0 && extraTicksForUp > 0;
         if (!isResume)
             countUpSoundPlayed = false; // once per run; a resumed count-up keeps its played state
         if (bootMins >= 0)
         {
-            currentMinutes = bootMins;
             extraTicksForUp = 0;
             bootMins = -1;
         }
-        else if (isResume)
-        {
-            currentMinutes = 0; // resuming a count-up
-        }
-        else if (settings.UseMinutes)
-        {
-            currentMinutes = settings.Minutes;
-            currentSeconds = settings.Seconds;
-        }
-        else
-        {
-            var now = clock.Now;
-            var finishAt = settings.FinishAtTime;
-            if (finishAt > now.TimeOfDay)
-                currentMinutes = (float)(finishAt.TotalMinutes - now.TimeOfDay.TotalMinutes);
-            else
-            {
-                currentMinutes = (float)(1440.0 - now.TimeOfDay.TotalMinutes);
-                currentMinutes += (float)finishAt.TotalMinutes;
-            }
-        }
+        currentMinutes = timing.Minutes;
 
         currentOutput = OutputFormatter.NormalizeTemplate(settings.Output);
         currentBeepAtZero = settings.MakeSound;
@@ -332,13 +388,8 @@ public sealed class TimerEngine : IDisposable
         hasPrevUpElapsed = false;
         currentOutputStyle = EffectiveOutputStyle;
 
-        var start = clock.Now;
-        if (currentIsDown)
-            startTime = start;
-        else if (!IsTime)
-            startTime = start.AddMinutes(-currentMinutes).AddSeconds(-currentSeconds);
-
-        endTime = start.AddMinutes(currentMinutes).AddSeconds(currentSeconds);
+        startTime = timing.Start;
+        endTime = timing.End;
         prevTime = TimeSpan.FromDays(1);
         firstTime = true;
 
@@ -347,6 +398,7 @@ public sealed class TimerEngine : IDisposable
         loopCts = new CancellationTokenSource();
         var token = loopCts.Token;
         loopTask = Task.Run(() => UpdateLoop(token), CancellationToken.None);
+        return CommandResult.Success;
     }
 
     void StopLoop()
@@ -442,6 +494,7 @@ public sealed class TimerEngine : IDisposable
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"TimerEngine[{Kind}] loop error: {ex}");
+                ReportFault(ex);
             }
 
         Delay:
@@ -481,11 +534,22 @@ public sealed class TimerEngine : IDisposable
         {
             errors++;
             if (errors == 1)
+                ReportFault(ex);
+            if (errors == 1)
                 return WriteTimeToDisk(text);
             if (errors > 5)
                 CountdownOutput = $"{ex.Message} | Ensure app has access to this directory. Go to Settings to set a valid directory.";
             return false;
         }
+    }
+
+    void ReportFault(Exception exception)
+    {
+        var now = System.Diagnostics.Stopwatch.GetTimestamp();
+        if (lastFaultTimestamp != 0 && System.Diagnostics.Stopwatch.GetElapsedTime(lastFaultTimestamp, now) < TimeSpan.FromMinutes(1))
+            return;
+        lastFaultTimestamp = now;
+        Faulted?.Invoke(this, exception);
     }
 
     public void Dispose()

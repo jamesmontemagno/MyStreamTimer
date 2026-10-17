@@ -2,6 +2,28 @@
 
 Run on **two machines** (Windows 10 1809+ and Windows 11). Record results in the PR.
 
+## Store stability and diagnostics gate
+
+Use a disposable Windows 11 25H2 **x64 build 26200** VM and record its full OS revision. Do not remove runtimes or alter the Store app on the development host. Provision the VM and a licensed OS image before claiming target-OS validation.
+
+- [ ] Snapshot the VM without .NET 10 installed. Record installed Windows App Runtime package versions.
+- [ ] On a separate snapshot, compare a retained 3.0/3.1 package before/after installing its required architecture-specific .NET runtime. Record startup errors separately from crashes.
+- [ ] Install the new package through a Store flight or properly signed MSIX. Launch without separately installing .NET; verify the app and actual loaded runtimes, not just a successful build.
+- [ ] Run `scripts\Test-StorePackage.ps1 -PackagePath <upload.msixupload>` against the exact upload. Verify x64 and ARM64 bundled runtime payloads and binary/PDB identity.
+- [ ] Confirm publication revalidates the downloaded upload, logs its SHA-256, and submits the complete `.msixupload` containing `.appxsym` archives, not just the app bundle or a GitHub-only symbols artifact.
+- [ ] Before starting any countdown, send `?subtractmins=1` and `?subtractsecs=30` to each countdown. No crash, timer start, output mutation, or false success message. Automation shows an ignored/warning result.
+- [ ] Start a countdown, then add/subtract, pause/resume, reset and stop. Confirm existing paused/stopped command behavior is preserved.
+- [ ] Reject nonfinite and date-overflowing numeric commands without stopping/replacing an already running timer or acquiring a new power request.
+- [ ] Exercise cold/warm protocol activation, repeated launches, and a primary process closing normally during redirection. Record hangs separately. Confirm no duplicate app window. Cover redirection failures with isolated test doubles rather than deliberately faulting a running app.
+- [ ] Check timer completion, sleep/resume, pop-out close, display/DPI changes, and offline Pro entitlement.
+- [ ] Use isolated unit-test fakes for recoverable startup, command, and diagnostics failures. Confirm useful error outcomes and no automatic upload. Do not inject crashes into a running app or ship a crash-injection switch; do not blanket-handle fatal XAML errors.
+- [ ] Generate enough diagnostic records to verify six-file/128-KiB-per-file retention; repeating engine faults are throttled.
+- [ ] Run the four seeded `RandomizedCommandTests` (100,000 Core operations), then use `scripts\Test-WindowsRandomizedSmoke.ps1` against only a uniquely named temporary package. Retain seeds/results, distinguish disabled-action skips and activation attempts from executed actions, review screenshots, and remove only the temporary registration.
+- [ ] About > Save diagnostics report: cancel, save successfully, and attempt an unwritable destination. Verify visible success/failure, excluded legacy crash logs/settings/timer content, and no source paths or exception messages in the ZIP.
+- [ ] Verify the diagnostics actions at narrow widths, keyboard-only, Light/Dark, and High Contrast.
+- [ ] With explicit consent, configure per-app WER capture for naturally occurring native failures. Analyze collected evidence with the release's retained binaries/symbols; remove only the test's per-app dump configuration afterward. Do not deliberately trigger a native crash.
+- [ ] Retain the upload hash, commit, symbols and evidence before recommending a Store flight. Publication requires separate authorization. Do not claim a Partner Center rate reduction until comparable post-flight cohorts support it.
+
 ## Preparation
 - [ ] Install the current Store build (`winget install 9N5NXX3WK7K7 --source msstore`) and launch once.
 - [ ] Configure **every** timer with non-default values (see table), run Countdown 1 for a few seconds, stop.

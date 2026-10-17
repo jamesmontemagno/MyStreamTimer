@@ -135,21 +135,23 @@
             <!--  ======================= Diagnostics ======================= -->
             <TextBlock Style="{StaticResource SectionHeaderStyle}" Text="Diagnostics" />
             <Border Style="{StaticResource CardStyle}">
-                <Grid ColumnSpacing="16">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
+                <StackPanel Spacing="12">
                     <StackPanel Spacing="2">
-                        <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="Crash logs" />
+                        <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="Local diagnostics" />
                         <TextBlock
                             Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                             Style="{StaticResource CaptionTextBlockStyle}"
-                            Text="If something goes wrong, a log is written here. Attach it when reporting an issue on GitHub."
+                            Text="Save startup steps, exception stacks and version information. Timer content is excluded and nothing is uploaded automatically. Review the report before sharing privately with support."
                             TextWrapping="Wrap" />
                     </StackPanel>
                     <Button
-                        Grid.Column="1"
+                        HorizontalAlignment="Left"
+                        AutomationProperties.AutomationId="ExportDiagnosticsButton"
+                        AutomationProperties.Name="Save diagnostics report"
+                        Command="{x:Bind ViewModel.ExportDiagnosticsCommand}"
+                        Content="Save diagnostics report" />
+                    <Button
+                        HorizontalAlignment="Left"
                         VerticalAlignment="Center"
                         AutomationProperties.AutomationId="OpenCrashLogsButton"
                         AutomationProperties.Name="Open crash logs folder"
@@ -159,14 +161,14 @@
                             <TextBlock Text="Open crash logs folder" />
                         </StackPanel>
                     </Button>
-                </Grid>
+                </StackPanel>
             </Border>
 
             <InfoBar
                 AutomationProperties.AutomationId="AboutStatusInfoBar"
                 IsOpen="{x:Bind ViewModel.IsStatusOpen, Mode=TwoWay}"
                 Message="{x:Bind ViewModel.StatusMessage, Mode=OneWay}"
-                Severity="Warning" />
+                Severity="{x:Bind ViewModel.StatusSeverity, Mode=OneWay}" />
 
             <TextBlock
                 Margin="0,24,0,0"
