@@ -11,12 +11,12 @@ on:
         required: false
         type: string
       publish:
-        description: 'Publish the package after the protected-environment approval'
+        description: 'Submit to the configured tester flight after the protected-environment approval (never production)'
         required: true
         default: false
         type: boolean
       diagnose_only:
-        description: 'Only check the Partner Center credentials. Skips packaging and publishing.'
+        description: 'Check credentials and discover the package flight when a product ID is configured. Skips packaging and publishing.'
         required: false
         default: false
         type: boolean
@@ -49,6 +49,8 @@ jobs:
           seller-id: ${{ secrets.PARTNER_CENTER_SELLER_ID }}
           client-id: ${{ secrets.PARTNER_CENTER_CLIENT_ID }}
           client-secret: ${{ secrets.PARTNER_CENTER_CLIENT_SECRET }}
+          product-id: ${{ vars.MICROSOFT_STORE_PRODUCT_ID }}
+          flight-id: ${{ vars.MICROSOFT_STORE_FLIGHT_ID }}
 
   package:
     name: Package Microsoft Store upload
@@ -141,7 +143,7 @@ jobs:
           retention-days: 90
 
   publish:
-    name: Submit to Microsoft Store
+    name: Submit to Microsoft Store flight
     needs: package
     if: github.event_name == 'push' || inputs.publish
     runs-on: windows-latest
@@ -178,16 +180,19 @@ jobs:
             ForEach-Object Key
 
           if ($missing) {
-            throw "Configure the following before enabling Store publication: $($missing -join ', ')."
+            throw "Configure the following before enabling Store flight publication: $($missing -join ', ')."
           }
 
-      - name: Diagnose Partner Center credentials
+      - name: Diagnose Partner Center credentials and select flight
+        id: partner-center
         uses: ./.github/actions/diagnose-partner-center
         with:
           tenant-id: ${{ secrets.PARTNER_CENTER_TENANT_ID }}
           seller-id: ${{ secrets.PARTNER_CENTER_SELLER_ID }}
           client-id: ${{ secrets.PARTNER_CENTER_CLIENT_ID }}
           client-secret: ${{ secrets.PARTNER_CENTER_CLIENT_SECRET }}
+          product-id: ${{ vars.MICROSOFT_STORE_PRODUCT_ID }}
+          flight-id: ${{ vars.MICROSOFT_STORE_FLIGHT_ID }}
 
       - name: Setup Microsoft Store Developer CLI
         uses: microsoft/microsoft-store-apppublisher@v1.4
@@ -201,11 +206,16 @@ jobs:
             --clientId "${{ secrets.PARTNER_CENTER_CLIENT_ID }}" `
             --clientSecret "${{ secrets.PARTNER_CENTER_CLIENT_SECRET }}"
 
-      - name: Publish Store package
+      - name: Publish Store package to flight
         shell: pwsh
         env:
           STORE_PRODUCT_ID: ${{ vars.MICROSOFT_STORE_PRODUCT_ID }}
+          STORE_FLIGHT_ID: ${{ steps.partner-center.outputs.flight-id }}
         run: |
+          if ([string]::IsNullOrWhiteSpace($env:STORE_FLIGHT_ID)) {
+            throw "No package flight was resolved. Production publishing is disabled."
+          }
+
           $uploads = @(Get-ChildItem artifacts/store -File -Filter *.msixupload)
           if ($uploads.Count -ne 1) {
             throw "Expected exactly one downloaded .msixupload package; found $($uploads.Count)."
@@ -214,12 +224,12 @@ jobs:
 
           & .\scripts\Test-StorePackage.ps1 -PackagePath $upload.FullName
           $hash = (Get-FileHash -LiteralPath $upload.FullName -Algorithm SHA256).Hash
-          Write-Host "Uploading symbol-validated Store package: $($upload.Name); SHA256=$hash"
+          Write-Host "Uploading symbol-validated Store package to flight $($env:STORE_FLIGHT_ID): $($upload.Name); SHA256=$hash"
 
           # Pass the package file itself. Pointing msstore at a directory makes it look for a
           # project to infer a publisher from, which does not exist in this workflow.
           # Upload the whole .msixupload, including its .appxsym files, not the inner bundle.
           # --uploadTimeout must be set explicitly: when omitted the CLI has defaulted it to 0,
           # which cancels the blob upload immediately. See microsoft/msstore-cli#162.
-          msstore publish $upload.FullName --appId $env:STORE_PRODUCT_ID --uploadTimeout 900
-          if ($LASTEXITCODE -ne 0) { throw "msstore publish failed." }
+          msstore publish $upload.FullName --appId $env:STORE_PRODUCT_ID --flightId $env:STORE_FLIGHT_ID --uploadTimeout 900
+          if ($LASTEXITCODE -ne 0) { throw "msstore flight publish failed." }

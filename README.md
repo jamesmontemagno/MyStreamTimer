@@ -8,7 +8,7 @@ Download today on Windows or macOS:
 
 ![](Art/demo.png)
 
-The Windows app is distributed exclusively through the Microsoft Store (Pro features use Store licensing). Releases are submitted automatically by the [Windows Store Publish](.github/workflows/windows-store-publish.yml) workflow when a `vX.Y.Z-windows` tag is pushed.
+The Windows app is distributed exclusively through the Microsoft Store (Pro features use Store licensing). A `vX.Y.Z-windows` tag starts the [Windows Store Publish](.github/workflows/windows-store-publish.yml) workflow, which submits the release to an existing **tester package flight** after protected-environment approval. It automatically selects the app's only flight, or uses an explicit flight ID when configured. Public release is a separate manual step after testing; tags never submit directly to production.
 
 ## What's new in 3.0 (Windows)
 
@@ -147,6 +147,22 @@ Remove-Item -LiteralPath 'HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporti
 ```
 
 See [Microsoft's LocalDumps guidance](https://learn.microsoft.com/windows/win32/wer/collecting-user-mode-dumps) for collection limitations.
+
+### Windows: flight-first releases
+
+Create the flight once before publishing a new Windows tag:
+
+1. In Partner Center, open My Stream Timer's **Package flights** and create a flight linked to the **IAP Test** known user group, or use an existing flight linked to that group. The group selects the testers; its name is **not** the package flight ID.
+2. Keep `MICROSOFT_STORE_PRODUCT_ID` and the Partner Center credentials configured as described in the [publishing setup](winui-migration/winui-left-todo.md#4-github-repository-secrets--variables-10-min). The existing `microsoft-store` environment approval still gates submissions.
+3. If the app has exactly one package flight, no flight ID configuration is needed. After authentication, the workflow queries the Store submission API, reads all pages, and logs the flight's name, ID, and group IDs. With multiple flights, set the optional GitHub Actions repository variable `MICROSOFT_STORE_FLIGHT_ID` to the intended package flight ID shown in those logs. Do not use a group ID, group name, or flight display name. The configured ID must match an existing flight for this app.
+
+Both Windows tags and manual runs with `publish = true` submit only to that selected flight. Empty or whitespace-only overrides use automatic discovery. No flights, multiple flights without an override, invalid overrides, and discovery errors fail the job; there is no production fallback. The workflow never creates a new flight. Each release creates a new submission in the same existing flight. `publish = false` still builds an artifact without submitting it. Use `diagnose_only = true` to check credentials and discover the flight without packaging or submitting; discovery runs when the product ID is configured.
+
+After the flight passes Store certification, its testers receive the Store update under the existing app identity; other customers remain on the public version. Test upgrades, startup, timer/automation behavior, and purchases with those accounts before promoting. The workflow retains the complete symbol-validated upload and logs its SHA-256.
+
+For public release, create a regular (non-flighted) submission in Partner Center and select the **same tested packages** from the published flight. Review the normal release settings and submit for production certification; do not rebuild just to promote. Production promotion is intentionally not automated by this workflow. Flight certification can relax some WACK checks, so it does not replace production certification. See [Microsoft's package flights guidance](https://learn.microsoft.com/windows/apps/publish/package-flights) and the [Store CLI publish options](https://learn.microsoft.com/windows/apps/publish/msstore-dev-cli/commands#publish-command).
+
+This routing applies to runs using the updated workflow. It does not redirect submissions from older tags or already-running releases.
 
 ### Windows: validating a Store release
 
