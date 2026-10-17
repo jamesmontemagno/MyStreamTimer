@@ -294,10 +294,10 @@ public sealed class TimerEngine : IDisposable
         currentIsDown = IsDown;
         currentShowAmPm = settings.ShowAmPm;
         var currentSeconds = 0;
-        var isResume = bootMins <= 0 && extraTicksForUp > 0;
+        var isResume = bootMins < 0 && extraTicksForUp > 0;
         if (!isResume)
             countUpSoundPlayed = false; // once per run; a resumed count-up keeps its played state
-        if (bootMins > 0)
+        if (bootMins >= 0)
         {
             currentMinutes = bootMins;
             extraTicksForUp = 0;
@@ -494,4 +494,3 @@ public sealed class TimerEngine : IDisposable
         platform.StopActivity(Kind.Id());
     }
 }
-

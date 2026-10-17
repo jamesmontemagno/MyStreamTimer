@@ -161,6 +161,26 @@ public class TimerEngineTests
     }
 
     [Fact]
+    public async Task Count_up_URL_start_at_zero_overrides_saved_start_value()
+    {
+        var (engine, clock, files, _, _) = Create(
+            TimerKind.Countup,
+            settings =>
+            {
+                settings.Minutes = 5;
+                settings.UseMinutes = true;
+            });
+        using (engine)
+        {
+            engine.Apply(UrlCommandParser.Parse("mystreamtimer://countup/?mins=0"));
+            await WaitFor(() => files.Last == "00:00:00");
+
+            clock.Advance(TimeSpan.FromSeconds(1));
+            await WaitFor(() => files.Last == "00:00:01");
+        }
+    }
+
+    [Fact]
     public async Task Count_up_sound_does_not_replay_on_resume_but_replays_after_reset()
     {
         var (engine, clock, files, platform, _) = Create(TimerKind.Countup,
@@ -520,8 +540,6 @@ public class TimerEngineTests
         e.StartStop();
     }
 }
-
-
 
 
 

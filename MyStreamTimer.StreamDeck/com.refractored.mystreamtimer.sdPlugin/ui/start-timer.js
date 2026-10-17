@@ -14,10 +14,9 @@ function setSelectValue(element, value) {
 
 function updateFields() {
   const targetValue = target.value ?? "countdown";
-  const isTime = targetValue === "time";
   const isCountdown = targetValue.startsWith("countdown");
 
-  // Start mode only applies to countdowns; count-ups always use a duration.
+  // Start mode only applies to countdowns; count-ups use a start-at offset.
   if (!isCountdown) {
     setSelectValue(startMode, "duration");
   }
@@ -25,11 +24,28 @@ function updateFields() {
   const effectiveMode = isCountdown
     ? (startMode.value ?? "duration")
     : "duration";
-  const usesDuration = !isTime && effectiveMode === "duration";
+  const usesDuration = isCountdown && effectiveMode === "duration";
+  const usesStartAt = targetValue.startsWith("countup");
   setVisible("#mode-item", isCountdown);
   setVisible("#amount-item", usesDuration);
-  setVisible("#unit-item", usesDuration);
+  setVisible("#start-at-item", usesStartAt);
+  setVisible("#unit-item", usesDuration || usesStartAt);
   setVisible("#clock-item", isCountdown && effectiveMode === "clock-time");
+}
+
+async function migrateLegacyStartAt() {
+  const client = SDPIComponents.streamDeckClient;
+  const settings = await client.getSettings();
+  const isCountUp =
+    settings.target === "countup" || settings.target === "countup2";
+
+  if (
+    isCountUp &&
+    settings.startAt === undefined &&
+    settings.amount !== undefined
+  ) {
+    await client.setSettings({ ...settings, startAt: settings.amount });
+  }
 }
 
 Promise.all([
@@ -39,4 +55,5 @@ Promise.all([
   target.addEventListener("valuechange", updateFields);
   startMode.addEventListener("valuechange", updateFields);
   updateFields();
+  void migrateLegacyStartAt();
 });
