@@ -75,10 +75,10 @@ public sealed class RandomizedCommandTests(ITestOutputHelper output)
                         engine.StartStop();
                         break;
                     case 5:
-                        engine.PauseResume();
+                        result = engine.PauseResume();
                         break;
                     case 6:
-                        engine.Reset();
+                        result = engine.Reset();
                         break;
                     case 7:
                         engine.Stop();
