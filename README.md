@@ -8,7 +8,7 @@ Download today on Windows or macOS:
 
 ![](Art/demo.png)
 
-The Windows app is distributed exclusively through the Microsoft Store (Pro features use Store licensing). A `vX.Y.Z-windows` tag starts the [Windows Store Publish](.github/workflows/windows-store-publish.yml) workflow, which submits the release to a configured **tester package flight** after protected-environment approval. Public release is a separate manual step after testing; tags never submit directly to production.
+The Windows app is distributed exclusively through the Microsoft Store (Pro features use Store licensing). A `vX.Y.Z-windows` tag starts the [Windows Store Publish](.github/workflows/windows-store-publish.yml) workflow, which submits the release to an existing **tester package flight** after protected-environment approval. It automatically selects the app's only flight, or uses an explicit flight ID when configured. Public release is a separate manual step after testing; tags never submit directly to production.
 
 ## What's new in 3.0 (Windows)
 
@@ -150,13 +150,13 @@ See [Microsoft's LocalDumps guidance](https://learn.microsoft.com/windows/win32/
 
 ### Windows: flight-first releases
 
-Configure the flight once before publishing a new Windows tag:
+Create the flight once before publishing a new Windows tag:
 
 1. In Partner Center, open My Stream Timer's **Package flights** and create a flight linked to the **IAP Test** known user group, or use an existing flight linked to that group. The group selects the testers; its name is **not** the package flight ID.
-2. Obtain that package flight's ID. With the Store CLI authenticated for this app, `msstore flights list 9N5NXX3WK7K7` lists the flights and their IDs. Do not use a group ID, group name, or flight display name.
-3. Set the GitHub Actions repository variable `MICROSOFT_STORE_FLIGHT_ID` to that ID. Keep `MICROSOFT_STORE_PRODUCT_ID` and the Partner Center credentials configured as described in the [publishing setup](winui-migration/winui-left-todo.md#4-github-repository-secrets--variables-10-min). The existing `microsoft-store` environment approval still gates submissions.
+2. Keep `MICROSOFT_STORE_PRODUCT_ID` and the Partner Center credentials configured as described in the [publishing setup](winui-migration/winui-left-todo.md#4-github-repository-secrets--variables-10-min). The existing `microsoft-store` environment approval still gates submissions.
+3. If the app has exactly one package flight, no flight ID configuration is needed. After authentication, the workflow queries the Store submission API, reads all pages, and logs the flight's name, ID, and group IDs. With multiple flights, set the optional GitHub Actions repository variable `MICROSOFT_STORE_FLIGHT_ID` to the intended package flight ID shown in those logs. Do not use a group ID, group name, or flight display name. The configured ID must match an existing flight for this app.
 
-Both Windows tags and manual runs with `publish = true` submit only to that configured flight. Missing or whitespace-only flight IDs fail the job; there is no production fallback. `publish = false` still builds an artifact without submitting it, and `diagnose_only = true` still checks credentials without packaging or submitting.
+Both Windows tags and manual runs with `publish = true` submit only to that selected flight. Empty or whitespace-only overrides use automatic discovery. No flights, multiple flights without an override, invalid overrides, and discovery errors fail the job; there is no production fallback. The workflow never creates a new flight. Each release creates a new submission in the same existing flight. `publish = false` still builds an artifact without submitting it. Use `diagnose_only = true` to check credentials and discover the flight without packaging or submitting; discovery runs when the product ID is configured.
 
 After the flight passes Store certification, its testers receive the Store update under the existing app identity; other customers remain on the public version. Test upgrades, startup, timer/automation behavior, and purchases with those accounts before promoting. The workflow retains the complete symbol-validated upload and logs its SHA-256.
 

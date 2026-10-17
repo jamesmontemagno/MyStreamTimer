@@ -52,6 +52,7 @@ jobs:
               - 'nuget.config'
               - '.github/workflows/ci.yml'
               - '.github/workflows/windows-store-publish.yml'
+              - '.github/actions/diagnose-partner-center/**'
               - 'scripts/Test-StorePackage.ps1'
 
   test:
@@ -71,6 +72,10 @@ jobs:
       - name: Test Core
         if: ${{ needs.changes.outputs.windows == 'true' }}
         run: dotnet test tests/MyStreamTimer.Core.Tests/MyStreamTimer.Core.Tests.csproj -c Release --no-restore --collect:"XPlat Code Coverage" --results-directory TestResults -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura
+      - name: Test Store flight selection
+        if: ${{ needs.changes.outputs.windows == 'true' }}
+        shell: pwsh
+        run: .\.github\actions\diagnose-partner-center\Test-ResolveStoreFlight.ps1
       - name: Upload coverage
         if: ${{ always() && needs.changes.outputs.windows == 'true' }}
         uses: actions/upload-artifact@v7

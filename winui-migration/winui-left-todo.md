@@ -102,7 +102,7 @@ Lets `windows-store-publish.yml` submit the `.msixupload` to Partner Center auto
 
 Create an **Environment** named `microsoft-store` (`Settings → Environments → New environment`) and add yourself as a
 *required reviewer* so every Store submission waits for a manual approval. Put the secrets **on that environment**,
-and the product and package flight IDs as **repository variables**.
+and the product ID as a **repository variable**. A package flight ID override is optional.
 
 | Type | Name | Value |
 |---|---|---|
@@ -111,15 +111,18 @@ and the product and package flight IDs as **repository variables**.
 | Environment secret | `PARTNER_CENTER_CLIENT_ID` | Entra app (client) ID |
 | Environment secret | `PARTNER_CENTER_CLIENT_SECRET` | the client secret |
 | **Repository variable** | `MICROSOFT_STORE_PRODUCT_ID` | `9N5NXX3WK7K7` |
-| **Repository variable** | `MICROSOFT_STORE_FLIGHT_ID` | Package flight ID linked to the `IAP Test` known user group (not the group name/ID) |
+| Optional repository variable | `MICROSOFT_STORE_FLIGHT_ID` | Existing package flight ID; only needed to choose among multiple flights |
 
-Create or select that package flight in Partner Center. With the Store CLI authenticated, use
-`msstore flights list 9N5NXX3WK7K7` to find its ID. Missing flight configuration blocks submission; the workflow never
-falls back to production. See [flight-first releases](../README.md#windows-flight-first-releases) for setup and promotion.
+Create one package flight linked to the `IAP Test` known user group in Partner Center, then reuse it for future releases.
+The workflow discovers the app's only existing flight automatically; no portal ID lookup is needed. If multiple flights
+exist, the logs list their names and IDs so you can configure the override. No flights, ambiguous selection, an invalid
+override, or discovery errors block submission; the workflow never creates flights or falls back to production.
+See [flight-first releases](../README.md#windows-flight-first-releases) for setup and promotion.
 
 Verify before tagging: *Actions → Windows Store Publish → Run workflow* with **diagnose_only = true**. The
 `diagnose-partner-center` action requests an Entra token and calls the submission API, and tells you exactly which of
-the four values is wrong (expired secret, wrong tenant, app not associated with Partner Center, …).
+the four values is wrong (expired secret, wrong tenant, app not associated with Partner Center, …). When the product ID
+is configured, it also discovers the flight and logs its name, ID, and group IDs without submitting anything.
 
 Nothing else is required: `ci.yml` runs on pushes/PRs with no secrets. Store submissions are signed by Microsoft, so no
 signing certificate is involved.
@@ -142,7 +145,7 @@ signing certificate is involved.
    `v3.0.0.1-windows` → `3.0.0.1`) → build the x64 + ARM64 bundle with .NET included
    (`-p:MyStreamTimerStoreBuild=true … UapAppxPackageBuildMode=StoreUpload`) → upload the `.msixupload` artifact → wait
    for the `microsoft-store` environment approval → diagnose credentials → `msstore publish <file> --appId 9N5NXX3WK7K7
-   --flightId <configured-package-flight-id> --uploadTimeout 900`. Approve the gate in the Actions run; the flight
+   --flightId <resolved-package-flight-id> --uploadTimeout 900`. Approve the gate in the Actions run; the flight
    submission then goes through certification in Partner Center. This does **not** release to production.
 4. Test the certified flight with the `IAP Test` accounts. When ready, create a regular production submission in
    Partner Center, select the same packages from the flight, review release notes/settings, and submit for production
