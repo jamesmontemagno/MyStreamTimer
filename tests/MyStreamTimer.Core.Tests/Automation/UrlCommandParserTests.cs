@@ -6,6 +6,15 @@ namespace MyStreamTimer.Core.Tests.Automation;
 
 public class UrlCommandParserTests
 {
+    [Theory]
+    [InlineData("mins=1e100")]
+    [InlineData("secs=1e100")]
+    [InlineData("addmins=infinity")]
+    [InlineData("subtractmins=1e100")]
+    [InlineData("mins=NaN")]
+    public void Nonfinite_values_are_not_commands(string query) =>
+        Assert.False(UrlCommandParser.Parse($"mystreamtimer://countdown/?{query}").IsValid);
+
     public static IEnumerable<object[]> LegacyUrls()
     {
         var hosts = new[] { "countdown", "countdown1", "countdown2", "countdown3", "countdown4", "countup", "countup1", "countup2", "COUNTDOWN2", "giveaway", "bogus" };

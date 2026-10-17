@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.Windows.AppLifecycle;
+using MyStreamTimer.WinUI.Services;
 
 namespace MyStreamTimer.WinUI;
 
@@ -16,7 +17,26 @@ public static class Program
     [STAThread]
     private static int Main(string[] args)
     {
+        AppDiagnostics.Initialize();
+        try
+        {
+            return Run();
+        }
+        catch (Exception ex)
+        {
+            AppDiagnostics.Record("entry-point-failure", exception: ex);
+            _ = MessageBox(nint.Zero,
+                "My Stream Timer couldn't start or continue and needs to close. Try reopening the app. " +
+                "If the problem continues, collect the local diagnostics using the support guide.",
+                "My Stream Timer", 0x10);
+            return 1;
+        }
+    }
+
+    private static int Run()
+    {
         WinRT.ComWrappersSupport.InitializeComWrappers();
+        AppDiagnostics.Record("instancing");
 
         if (!DecideRedirection())
         {
@@ -35,6 +55,7 @@ public static class Program
     private static bool DecideRedirection()
     {
         var activatedArgs = AppInstance.GetCurrent().GetActivatedEventArgs();
+        AppDiagnostics.Record("activation", activatedArgs.Kind.ToString());
         var mainInstance = AppInstance.FindOrRegisterForKey(InstanceKey);
 
         if (mainInstance.IsCurrent)
@@ -62,6 +83,9 @@ public static class Program
 
     private const uint CWMO_DEFAULT = 0;
     private const uint INFINITE = 0xFFFFFFFF;
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern int MessageBox(nint hWnd, string text, string caption, uint type);
 
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern nint CreateEvent(nint lpEventAttributes, bool bManualReset, bool bInitialState, string? lpName);

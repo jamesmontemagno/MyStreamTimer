@@ -29,6 +29,7 @@ actor TimerEngine {
             destination: TimerOutputDestination
         )
         case writeFailed(generation: UInt64, message: String)
+        case failed(generation: UInt64, message: String)
         case completed(generation: UInt64)
     }
 
@@ -68,6 +69,24 @@ actor TimerEngine {
 
         while !Task.isCancelled, isCurrent(configuration.generation) {
             let now = Date()
+            let interval: TimeInterval
+            switch configuration.mode {
+            case .countdown:
+                interval = configuration.endDate.timeIntervalSince(now)
+            case .countUp:
+                interval = now.timeIntervalSince(configuration.startDate) + configuration.initialElapsed
+            case .time:
+                interval = 0
+            }
+            guard TimerInterval.isSupported(abs(interval)) else {
+                activeGeneration = nil
+                runTask = nil
+                emit(.failed(
+                    generation: configuration.generation,
+                    message: "The timer duration is outside the supported range."
+                ))
+                return
+            }
             let countUpElapsed = elapsedCountUpInterval(configuration, now: now)
             let text = formattedOutput(configuration, now: now)
             emit(.rendered(generation: configuration.generation, text: text, countUpElapsed: countUpElapsed))
@@ -122,7 +141,8 @@ actor TimerEngine {
                 ? now.addingTimeInterval(1)
                 : nextTransition
             let wakeDate = min(nextTransition, retryDate)
-            let delay = max(0.01, wakeDate.timeIntervalSinceNow)
+            // Long static countdowns must not overflow the nanosecond conversion.
+            let delay = min(86_400, max(0.01, wakeDate.timeIntervalSinceNow))
             try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
         }
     }
@@ -335,7 +355,7 @@ actor TimerEngine {
 
         if days > 0 {
             let padding = days >= 10_000 ? 5 : days >= 1_000 ? 4 : days >= 100 ? 3 : days >= 10 ? 2 : 1
-            return "\(String(format: "%0\(padding)d", days)):\(String(format: "%02d", hours)):\(String(format: "%02d", mins)):\(String(format: "%02d", secs))"
+            return "\(String(format: "%0\(padding)lld", Int64(days))):\(String(format: "%02d", hours)):\(String(format: "%02d", mins)):\(String(format: "%02d", secs))"
         }
         if hours > 0 {
             let hourText = hours >= 10 ? String(format: "%02d", hours) : "\(hours)"
@@ -379,10 +399,10 @@ actor TimerEngine {
         var value = token.replacingOccurrences(of: #"\\:"# , with: ":")
 
         for (needle, replacement) in [
-            ("ddddd", String(format: "%05d", days)),
-            ("dddd", String(format: "%04d", days)),
-            ("ddd", String(format: "%03d", days)),
-            ("dd", String(format: "%02d", days)),
+            ("ddddd", String(format: "%05lld", Int64(days))),
+            ("dddd", String(format: "%04lld", Int64(days))),
+            ("ddd", String(format: "%03lld", Int64(days))),
+            ("dd", String(format: "%02lld", Int64(days))),
             ("d", "\(days)"),
             ("hh", String(format: "%02d", hours)),
             ("h", "\(hours)"),
