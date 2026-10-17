@@ -102,7 +102,7 @@ Lets `windows-store-publish.yml` submit the `.msixupload` to Partner Center auto
 
 Create an **Environment** named `microsoft-store` (`Settings → Environments → New environment`) and add yourself as a
 *required reviewer* so every Store submission waits for a manual approval. Put the secrets **on that environment**,
-and the product id as a **repository variable**.
+and the product and package flight IDs as **repository variables**.
 
 | Type | Name | Value |
 |---|---|---|
@@ -111,6 +111,11 @@ and the product id as a **repository variable**.
 | Environment secret | `PARTNER_CENTER_CLIENT_ID` | Entra app (client) ID |
 | Environment secret | `PARTNER_CENTER_CLIENT_SECRET` | the client secret |
 | **Repository variable** | `MICROSOFT_STORE_PRODUCT_ID` | `9N5NXX3WK7K7` |
+| **Repository variable** | `MICROSOFT_STORE_FLIGHT_ID` | Package flight ID linked to the `IAP Test` known user group (not the group name/ID) |
+
+Create or select that package flight in Partner Center. With the Store CLI authenticated, use
+`msstore flights list 9N5NXX3WK7K7` to find its ID. Missing flight configuration blocks submission; the workflow never
+falls back to production. See [flight-first releases](../README.md#windows-flight-first-releases) for setup and promotion.
 
 Verify before tagging: *Actions → Windows Store Publish → Run workflow* with **diagnose_only = true**. The
 `diagnose-partner-center` action requests an Entra token and calls the submission API, and tells you exactly which of
@@ -134,12 +139,14 @@ signing certificate is involved.
    .\scripts\create-release-tags.ps1 v3.0.0 -Windows -Push
    ```
    `windows-store-publish.yml` will: stamp `Package.Store.appxmanifest` from the tag (`v3.0.0-windows` → `3.0.0.0`,
-   `v3.0.0.1-windows` → `3.0.0.1`) → build the framework‑dependent x64 + ARM64 bundle
+   `v3.0.0.1-windows` → `3.0.0.1`) → build the x64 + ARM64 bundle with .NET included
    (`-p:MyStreamTimerStoreBuild=true … UapAppxPackageBuildMode=StoreUpload`) → upload the `.msixupload` artifact → wait
    for the `microsoft-store` environment approval → diagnose credentials → `msstore publish <file> --appId 9N5NXX3WK7K7
-   --uploadTimeout 900`. Approve the gate in the Actions run; the submission then appears in Partner Center.
-4. In Partner Center finish the submission (release notes: README "What's new in 3.0" + "ARM32 no longer supported,
-   requires Windows 10 1809+"), and submit for certification.
+   --flightId <configured-package-flight-id> --uploadTimeout 900`. Approve the gate in the Actions run; the flight
+   submission then goes through certification in Partner Center. This does **not** release to production.
+4. Test the certified flight with the `IAP Test` accounts. When ready, create a regular production submission in
+   Partner Center, select the same packages from the flight, review release notes/settings, and submit for production
+   certification. Do not rebuild the tested packages just to promote them.
 5. Sandbox the purchases once live/in flight: Pro page shows prices for Lifetime / Monthly / 6 Months, **Subscribe** a
    subscription, relaunch → "Pro subscription active until …"; **Restore purchases** on a clean profile.
 6. After it's live: watch Partner Center **Health** (crashes) and **Reviews** for two weeks; hotfix = bump version,

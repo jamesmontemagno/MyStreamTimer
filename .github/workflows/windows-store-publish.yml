@@ -11,7 +11,7 @@ on:
         required: false
         type: string
       publish:
-        description: 'Publish the package after the protected-environment approval'
+        description: 'Submit to the configured tester flight after the protected-environment approval (never production)'
         required: true
         default: false
         type: boolean
@@ -141,7 +141,7 @@ jobs:
           retention-days: 90
 
   publish:
-    name: Submit to Microsoft Store
+    name: Submit to Microsoft Store flight
     needs: package
     if: github.event_name == 'push' || inputs.publish
     runs-on: windows-latest
@@ -161,6 +161,7 @@ jobs:
         shell: pwsh
         env:
           STORE_PRODUCT_ID: ${{ vars.MICROSOFT_STORE_PRODUCT_ID }}
+          STORE_FLIGHT_ID: ${{ vars.MICROSOFT_STORE_FLIGHT_ID }}
           PARTNER_CENTER_TENANT_ID: ${{ secrets.PARTNER_CENTER_TENANT_ID }}
           PARTNER_CENTER_SELLER_ID: ${{ secrets.PARTNER_CENTER_SELLER_ID }}
           PARTNER_CENTER_CLIENT_ID: ${{ secrets.PARTNER_CENTER_CLIENT_ID }}
@@ -168,6 +169,7 @@ jobs:
         run: |
           $requiredValues = @{
             "MICROSOFT_STORE_PRODUCT_ID repository variable" = $env:STORE_PRODUCT_ID
+            "MICROSOFT_STORE_FLIGHT_ID repository variable (package flight ID, not group name)" = $env:STORE_FLIGHT_ID
             "PARTNER_CENTER_TENANT_ID environment secret" = $env:PARTNER_CENTER_TENANT_ID
             "PARTNER_CENTER_SELLER_ID environment secret" = $env:PARTNER_CENTER_SELLER_ID
             "PARTNER_CENTER_CLIENT_ID environment secret" = $env:PARTNER_CENTER_CLIENT_ID
@@ -178,7 +180,7 @@ jobs:
             ForEach-Object Key
 
           if ($missing) {
-            throw "Configure the following before enabling Store publication: $($missing -join ', ')."
+            throw "Configure the following before enabling Store flight publication: $($missing -join ', ')."
           }
 
       - name: Diagnose Partner Center credentials
@@ -201,11 +203,16 @@ jobs:
             --clientId "${{ secrets.PARTNER_CENTER_CLIENT_ID }}" `
             --clientSecret "${{ secrets.PARTNER_CENTER_CLIENT_SECRET }}"
 
-      - name: Publish Store package
+      - name: Publish Store package to flight
         shell: pwsh
         env:
           STORE_PRODUCT_ID: ${{ vars.MICROSOFT_STORE_PRODUCT_ID }}
+          STORE_FLIGHT_ID: ${{ vars.MICROSOFT_STORE_FLIGHT_ID }}
         run: |
+          if ([string]::IsNullOrWhiteSpace($env:STORE_FLIGHT_ID)) {
+            throw "MICROSOFT_STORE_FLIGHT_ID must identify a package flight. Production publishing is disabled."
+          }
+
           $uploads = @(Get-ChildItem artifacts/store -File -Filter *.msixupload)
           if ($uploads.Count -ne 1) {
             throw "Expected exactly one downloaded .msixupload package; found $($uploads.Count)."
@@ -214,12 +221,12 @@ jobs:
 
           & .\scripts\Test-StorePackage.ps1 -PackagePath $upload.FullName
           $hash = (Get-FileHash -LiteralPath $upload.FullName -Algorithm SHA256).Hash
-          Write-Host "Uploading symbol-validated Store package: $($upload.Name); SHA256=$hash"
+          Write-Host "Uploading symbol-validated Store package to flight $($env:STORE_FLIGHT_ID): $($upload.Name); SHA256=$hash"
 
           # Pass the package file itself. Pointing msstore at a directory makes it look for a
           # project to infer a publisher from, which does not exist in this workflow.
           # Upload the whole .msixupload, including its .appxsym files, not the inner bundle.
           # --uploadTimeout must be set explicitly: when omitted the CLI has defaulted it to 0,
           # which cancels the blob upload immediately. See microsoft/msstore-cli#162.
-          msstore publish $upload.FullName --appId $env:STORE_PRODUCT_ID --uploadTimeout 900
-          if ($LASTEXITCODE -ne 0) { throw "msstore publish failed." }
+          msstore publish $upload.FullName --appId $env:STORE_PRODUCT_ID --flightId $env:STORE_FLIGHT_ID --uploadTimeout 900
+          if ($LASTEXITCODE -ne 0) { throw "msstore flight publish failed." }

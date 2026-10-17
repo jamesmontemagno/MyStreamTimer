@@ -8,7 +8,7 @@ Download today on Windows or macOS:
 
 ![](Art/demo.png)
 
-The Windows app is distributed exclusively through the Microsoft Store (Pro features use Store licensing). Releases are submitted automatically by the [Windows Store Publish](.github/workflows/windows-store-publish.yml) workflow when a `vX.Y.Z-windows` tag is pushed.
+The Windows app is distributed exclusively through the Microsoft Store (Pro features use Store licensing). A `vX.Y.Z-windows` tag starts the [Windows Store Publish](.github/workflows/windows-store-publish.yml) workflow, which submits the release to a configured **tester package flight** after protected-environment approval. Public release is a separate manual step after testing; tags never submit directly to production.
 
 ## What's new in 3.0 (Windows)
 
@@ -147,6 +147,22 @@ Remove-Item -LiteralPath 'HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporti
 ```
 
 See [Microsoft's LocalDumps guidance](https://learn.microsoft.com/windows/win32/wer/collecting-user-mode-dumps) for collection limitations.
+
+### Windows: flight-first releases
+
+Configure the flight once before publishing a new Windows tag:
+
+1. In Partner Center, open My Stream Timer's **Package flights** and create a flight linked to the **IAP Test** known user group, or use an existing flight linked to that group. The group selects the testers; its name is **not** the package flight ID.
+2. Obtain that package flight's ID. With the Store CLI authenticated for this app, `msstore flights list 9N5NXX3WK7K7` lists the flights and their IDs. Do not use a group ID, group name, or flight display name.
+3. Set the GitHub Actions repository variable `MICROSOFT_STORE_FLIGHT_ID` to that ID. Keep `MICROSOFT_STORE_PRODUCT_ID` and the Partner Center credentials configured as described in the [publishing setup](winui-migration/winui-left-todo.md#4-github-repository-secrets--variables-10-min). The existing `microsoft-store` environment approval still gates submissions.
+
+Both Windows tags and manual runs with `publish = true` submit only to that configured flight. Missing or whitespace-only flight IDs fail the job; there is no production fallback. `publish = false` still builds an artifact without submitting it, and `diagnose_only = true` still checks credentials without packaging or submitting.
+
+After the flight passes Store certification, its testers receive the Store update under the existing app identity; other customers remain on the public version. Test upgrades, startup, timer/automation behavior, and purchases with those accounts before promoting. The workflow retains the complete symbol-validated upload and logs its SHA-256.
+
+For public release, create a regular (non-flighted) submission in Partner Center and select the **same tested packages** from the published flight. Review the normal release settings and submit for production certification; do not rebuild just to promote. Production promotion is intentionally not automated by this workflow. Flight certification can relax some WACK checks, so it does not replace production certification. See [Microsoft's package flights guidance](https://learn.microsoft.com/windows/apps/publish/package-flights) and the [Store CLI publish options](https://learn.microsoft.com/windows/apps/publish/msstore-dev-cli/commands#publish-command).
+
+This routing applies to runs using the updated workflow. It does not redirect submissions from older tags or already-running releases.
 
 ### Windows: validating a Store release
 
