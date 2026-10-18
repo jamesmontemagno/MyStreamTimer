@@ -24,6 +24,8 @@ public sealed class ActivationService
         AppInstance.GetCurrent().Activated += OnActivated;
     }
 
+    public void Stop() => AppInstance.GetCurrent().Activated -= OnActivated;
+
     /// <summary>Handles the activation that launched this process and stores any command as <see cref="PendingCommand"/>.</summary>
     public void HandleLaunchActivation()
     {
@@ -47,7 +49,7 @@ public sealed class ActivationService
     {
         var hasCommand = TryParse(args, out var command);
 
-        App.DispatcherQueue.TryEnqueue(() =>
+        App.UiDispatcher.TryEnqueue(() =>
         {
             BringToFront();
             if (hasCommand)

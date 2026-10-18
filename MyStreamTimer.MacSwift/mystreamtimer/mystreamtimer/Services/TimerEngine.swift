@@ -1,5 +1,7 @@
 import Foundation
 
+typealias TimerOutputWriter = @Sendable (String, TimerOutputDestination) async throws -> Data?
+
 actor TimerEngine {
     enum Mode: Sendable {
         case countdown
@@ -33,34 +35,58 @@ actor TimerEngine {
         case completed(generation: UInt64)
     }
 
-    private let worker = BookmarkFileWorker.shared
+    private let writeTimerOutput: TimerOutputWriter
     private let eventHandler: @MainActor @Sendable (Event) -> Void
     private var newestGeneration: UInt64 = 0
     private var activeGeneration: UInt64?
     private var runTask: Task<Void, Never>?
+    private var isShutDown = false
 
-    init(eventHandler: @escaping @MainActor @Sendable (Event) -> Void) {
+    init(
+        writeTimerOutput: @escaping TimerOutputWriter = { text, destination in
+            try await BookmarkFileWorker.shared.writeTimerOutput(text: text, destination: destination)
+        },
+        eventHandler: @escaping @MainActor @Sendable (Event) -> Void
+    ) {
+        self.writeTimerOutput = writeTimerOutput
         self.eventHandler = eventHandler
     }
 
-    func start(_ configuration: Configuration) {
-        guard configuration.generation > newestGeneration else { return }
+    func start(_ configuration: Configuration) async {
+        guard !isShutDown, configuration.generation > newestGeneration else { return }
 
         newestGeneration = configuration.generation
         activeGeneration = configuration.generation
-        runTask?.cancel()
+        let task = runTask
+        task?.cancel()
+        await task?.value
+        guard !isShutDown, isCurrent(configuration.generation) else { return }
+
         runTask = Task { [weak self] in
             await self?.run(configuration)
         }
     }
 
-    func invalidate(upThrough generation: UInt64) {
+    func invalidate(upThrough generation: UInt64) async {
         newestGeneration = max(newestGeneration, generation)
-        guard let activeGeneration, activeGeneration <= generation else { return }
+        if let activeGeneration, activeGeneration > generation { return }
 
-        runTask?.cancel()
-        runTask = nil
+        let task = runTask
+        task?.cancel()
         self.activeGeneration = nil
+        await task?.value
+        if self.activeGeneration == nil {
+            runTask = nil
+        }
+    }
+
+    func shutdown() async {
+        isShutDown = true
+        let task = runTask
+        task?.cancel()
+        activeGeneration = nil
+        await task?.value
+        runTask = nil
     }
 
     private func run(_ configuration: Configuration) async {
@@ -95,10 +121,7 @@ actor TimerEngine {
 
             if text != lastSuccessfullyWrittenText {
                 do {
-                    let refreshedBookmark = try await worker.writeTimerOutput(
-                        text: text,
-                        destination: configuration.destination
-                    )
+                    let refreshedBookmark = try await writeTimerOutput(text, configuration.destination)
                     guard !Task.isCancelled, isCurrent(configuration.generation) else { return }
 
                     lastSuccessfullyWrittenText = text

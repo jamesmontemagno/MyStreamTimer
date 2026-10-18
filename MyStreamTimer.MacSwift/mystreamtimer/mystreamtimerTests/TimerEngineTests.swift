@@ -92,6 +92,96 @@ final class TimerEngineTests: XCTestCase {
         )
     }
 
+    func testCountdownCompletesOnlyAfterFailedFinishOutputIsSaved() async throws {
+        let directory = try temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let file = directory.appendingPathComponent("timer.txt")
+        try FileManager.default.createDirectory(at: file, withIntermediateDirectories: false)
+        let failed = expectation(description: "finish output write failed")
+        let completed = expectation(description: "finish output recovered and timer completed")
+        var completionCount = 0
+        var reportedFailure = false
+        let engine = TimerEngine { event in
+            switch event {
+            case .writeFailed:
+                if !reportedFailure {
+                    reportedFailure = true
+                    failed.fulfill()
+                }
+            case .completed:
+                completionCount += 1
+                completed.fulfill()
+            case .failed:
+                XCTFail("A file error must remain recoverable")
+            default:
+                break
+            }
+        }
+        let now = Date()
+        await engine.start(TimerEngine.Configuration(
+            generation: 1,
+            mode: .countdown,
+            startDate: now,
+            endDate: now.addingTimeInterval(-1),
+            initialElapsed: 0,
+            output: "Running",
+            finishText: "Finished",
+            showAMPM: false,
+            outputStyle: 0,
+            destination: timerDestination(in: directory),
+            countUpSoundTarget: nil
+        ))
+        await fulfillment(of: [failed], timeout: 2)
+        XCTAssertEqual(completionCount, 0, "Completion must wait for a successful finish write")
+        try FileManager.default.removeItem(at: file)
+        await fulfillment(of: [completed], timeout: 3)
+        await engine.shutdown()
+        XCTAssertEqual(completionCount, 1)
+        XCTAssertEqual(try String(contentsOf: file), "Finished")
+    }
+
+    func testShutdownCancelsWriteRetriesAndRejectsLateStarts() async throws {
+        let directory = try temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let file = directory.appendingPathComponent("timer.txt")
+        try FileManager.default.createDirectory(at: file, withIntermediateDirectories: false)
+        let failed = expectation(description: "output write failed")
+        var reportedFailure = false
+        let engine = TimerEngine { event in
+            if case .writeFailed = event, !reportedFailure {
+                reportedFailure = true
+                failed.fulfill()
+            }
+            if case .completed = event {
+                XCTFail("The running count up must not complete")
+            }
+        }
+        let now = Date()
+        func configuration(generation: UInt64) -> TimerEngine.Configuration {
+            TimerEngine.Configuration(
+                generation: generation,
+                mode: .countUp,
+                startDate: now,
+                endDate: now,
+                initialElapsed: 0,
+                output: "Running",
+                finishText: "",
+                showAMPM: false,
+                outputStyle: 0,
+                destination: timerDestination(in: directory),
+                countUpSoundTarget: nil
+            )
+        }
+        await engine.start(configuration(generation: 1))
+        await fulfillment(of: [failed], timeout: 2)
+        await engine.shutdown()
+        await engine.shutdown()
+        try FileManager.default.removeItem(at: file)
+        await engine.start(configuration(generation: 2))
+        try await Task.sleep(nanoseconds: 1_100_000_000)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: file.path))
+    }
+
     func testCustomFormatWithMultipleTokensUpdatesEachSecond() async throws {
         let directory = try temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }

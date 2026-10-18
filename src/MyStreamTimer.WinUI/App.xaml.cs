@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using MyStreamTimer.Core.Purchases;
 using MyStreamTimer.Core.Services;
@@ -18,6 +19,10 @@ public partial class App : Application
     /// <summary>The UI thread dispatcher; use to marshal calls to the UI thread.</summary>
     public static Microsoft.UI.Dispatching.DispatcherQueue DispatcherQueue { get; private set; } = null!;
 
+    public static ShutdownDispatcher UiDispatcher { get; private set; } = null!;
+
+    private bool shutdownCompleted;
+
     /// <summary>The native window handle (HWND) of the main window.</summary>
     public static nint WindowHandle => WinRT.Interop.WindowNative.GetWindowHandle(Window);
 
@@ -33,6 +38,8 @@ public partial class App : Application
         AppDiagnostics.Record("app-construction");
         InitializeComponent();
         DispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
+        UiDispatcher = new(() => DispatcherQueue.HasThreadAccess,
+            action => DispatcherQueue.TryEnqueue(() => action()));
         Services = ConfigureServices();
         AppDiagnostics.Record("services-ready");
     }
@@ -97,6 +104,18 @@ public partial class App : Application
 
         AppDiagnostics.Record("window-construction");
         Window = new MainWindow();
+        Window.AppWindow.Closing += OnMainWindowClosing;
+        Window.Closed += (_, _) =>
+        {
+            if (!UiDispatcher.IsShuttingDown)
+            {
+                UiDispatcher.Shutdown();
+                activation.Stop();
+                AppDiagnostics.Record("shutdown-forced", "The window closed without a coordinated drain.");
+                _ = Task.Run(() => timers.Dispose());
+                GetService<PowerService>().Dispose();
+            }
+        };
         windowService.Initialize(Window);
         Window.Activate();
         AppDiagnostics.Record("window-activated");
@@ -112,7 +131,40 @@ public partial class App : Application
 
         // Upgrading users (TimesUsed was already >= 1 before this launch's increment) see the welcome-back sheet once.
         DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low,
-            async () => await Views.WelcomeBackDialog.TryShowAsync(settings));
+            async () =>
+            {
+                if (!UiDispatcher.IsShuttingDown)
+                    await Views.WelcomeBackDialog.TryShowAsync(settings);
+            });
+    }
+
+    private async void OnMainWindowClosing(AppWindow sender, AppWindowClosingEventArgs args)
+    {
+        if (shutdownCompleted)
+            return;
+
+        args.Cancel = true;
+        if (UiDispatcher.IsShuttingDown)
+            return;
+
+        UiDispatcher.Shutdown();
+        GetService<ActivationService>().Stop();
+        AppDiagnostics.Record("shutdown-start");
+        // File-system calls may be blocked on a network share; never hold the UI behind an engine lock.
+        var shutdown = Task.Run(async () => await GetService<TimerHost>().DisposeAsync());
+        GetService<PowerService>().Dispose();
+        GetService<PopOutService>().CloseAll();
+        try
+        {
+            await shutdown.WaitAsync(TimeSpan.FromSeconds(5));
+            AppDiagnostics.Record("shutdown-drained");
+        }
+        catch (TimeoutException ex)
+        {
+            AppDiagnostics.Record("shutdown-timeout", "Pending timer I/O did not drain before closing.", ex);
+        }
+        shutdownCompleted = true;
+        Window.Close();
     }
 
     private void OnUnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)

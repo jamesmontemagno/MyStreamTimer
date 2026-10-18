@@ -13,7 +13,7 @@ public enum TimerState { Idle, Running, Paused }
 /// decoupled from any UI framework. All public members must be called from one thread (the UI thread);
 /// events are raised on the loop's thread, so consumers must marshal.
 /// </summary>
-public sealed class TimerEngine : IDisposable
+public sealed class TimerEngine : IDisposable, IAsyncDisposable
 {
     /// <summary>Upper bound between samples; keeps URL/UI commands responsive even when the next boundary is far away.</summary>
     const int MaxTickMilliseconds = 250;
@@ -50,6 +50,9 @@ public sealed class TimerEngine : IDisposable
     DateTime prevDateTime;
     CancellationTokenSource? loopCts;
     Task? loopTask;
+    readonly List<Task> pendingLoops = [];
+    bool disposed;
+    bool outputNeedsClear;
     string countdownOutput = string.Empty;
 
     public TimerEngine(TimerSettings settings, GlobalSettings global, ProEntitlement pro,
@@ -106,39 +109,42 @@ public sealed class TimerEngine : IDisposable
 
     /// <summary>
     /// Forces the timer to Idle regardless of state (Running or Paused), clearing the output file like a
-    /// legacy forced stop. No-op when already Idle.
+    /// legacy forced stop. An Idle timer only retries a previously failed output clear.
     /// </summary>
-    public void Stop()
+    public CommandResult Stop()
     {
         lock (locker)
         {
+            if (disposed)
+                return ShuttingDown;
             if (State == TimerState.Running)
-            {
-                ExecuteStartStop(true);
-                return;
-            }
+                return ExecuteStartStop(true);
 
-            if (State == TimerState.Paused)
+            if (State == TimerState.Paused || outputNeedsClear)
             {
-                // Paused == engine idle with pending resume data; discard it and clear the file.
+                StopLoop();
                 bootMins = -1;
                 extraTicksForUp = 0;
                 currentMinutes = 0;
                 firstTime = true;
                 State = TimerState.Idle;
                 CanPauseResume = false;
+                outputNeedsClear = true;
                 try
                 {
                     currentFileName = files.PrepareTarget(global.DirectoryPath, settings.FileName);
-                    WriteTimeToDisk(string.Empty);
+                    outputNeedsClear = !WriteTimeToDisk(string.Empty);
                 }
-                catch
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException or System.Security.SecurityException)
                 {
-                    // nothing to clear
+                    ReportFault(ex);
                 }
-                CountdownOutput = string.Empty;
+                var result = outputNeedsClear ? ClearFailed : CommandResult.Success;
+                CountdownOutput = result.Applied ? string.Empty : $"INIT: {result.Message}";
                 StateChanged?.Invoke(this, EventArgs.Empty);
+                return result;
             }
+            return new(CommandStatus.Ignored, "The timer is already stopped.");
         }
     }
 
@@ -202,6 +208,8 @@ public sealed class TimerEngine : IDisposable
 
         lock (locker)
         {
+            if (disposed)
+                return ShuttingDown;
             switch (command.Action)
             {
                 case CommandAction.Start:
@@ -222,7 +230,7 @@ public sealed class TimerEngine : IDisposable
                         return PauseResume();
                     break;
                 case CommandAction.Resume:
-                    if (IsTime || !IsBusy)
+                    if (IsTime || State == TimerState.Paused)
                         return PauseResume();
                     break;
                 case CommandAction.Reset:
@@ -232,15 +240,15 @@ public sealed class TimerEngine : IDisposable
                 case CommandAction.Subtract when command.Minutes > 0:
                     return AdjustMinutes(-command.Minutes);
                 case CommandAction.Stop:
-                    if (IsBusy)
-                        return ExecuteStartStop(true);
-                    break;
+                    return Stop();
             }
             return new(CommandStatus.Ignored, "The timer is not in a state that accepts this command.");
         }
     }
 
     static CommandResult InvalidDuration => new(CommandStatus.Rejected, "The duration is outside the supported date range.");
+    static CommandResult ShuttingDown => new(CommandStatus.Rejected, "The timer is shutting down.");
+    static CommandResult ClearFailed => new(CommandStatus.Rejected, "The timer stopped, but its output file could not be cleared. Check Settings.");
 
     CommandResult AdjustMinutes(double minutes)
     {
@@ -326,6 +334,8 @@ public sealed class TimerEngine : IDisposable
         bool wasBusy;
         lock (locker)
         {
+            if (disposed)
+                return ShuttingDown;
             // Completion may run during target preparation; keep the chosen transition and its timing together.
             wasBusy = IsBusy;
             if (!wasBusy && !TryCalculateTiming(forceReset ? -1 : bootMins, forceReset ? 0 : extraTicksForUp, out timing))
@@ -354,6 +364,8 @@ public sealed class TimerEngine : IDisposable
 
         lock (locker)
         {
+            if (disposed)
+                return ShuttingDown;
             StopLoop();
             currentFileName = preparedFileName;
             if (forceReset)
@@ -369,8 +381,9 @@ public sealed class TimerEngine : IDisposable
             var result = CommandResult.Success;
             if (forceReset && wasBusy)
             {
-                if (!WriteTimeToDisk(string.Empty))
-                    result = new(CommandStatus.Rejected, "The timer stopped, but its output file could not be cleared. Check Settings.");
+                outputNeedsClear = !WriteTimeToDisk(string.Empty);
+                if (outputNeedsClear)
+                    result = ClearFailed;
                 CanPauseResume = false;
                 CountdownOutput = result.Applied ? string.Empty : $"INIT: {result.Message}";
             }
@@ -417,6 +430,8 @@ public sealed class TimerEngine : IDisposable
 
             loopCts = new CancellationTokenSource();
             var token = loopCts.Token;
+            outputNeedsClear = false;
+            pendingLoops.RemoveAll(task => task.IsCompletedSuccessfully);
             loopTask = Task.Run(() => UpdateLoop(token), CancellationToken.None);
             return CommandResult.Success;
         }
@@ -424,7 +439,18 @@ public sealed class TimerEngine : IDisposable
 
     void StopLoop()
     {
-        loopCts?.Cancel();
+        if (loopCts is { } cancellation)
+        {
+            cancellation.Cancel();
+            if (loopTask is { } task)
+            {
+                pendingLoops.Add(task);
+                _ = task.ContinueWith(_ => cancellation.Dispose(),
+                    CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+            }
+            else
+                cancellation.Dispose();
+        }
         loopCts = null;
         loopTask = null;
     }
@@ -453,12 +479,15 @@ public sealed class TimerEngine : IDisposable
                             if (now < endTime)
                                 continue;
                             text = currentFinished;
+                            if (!WriteTimeToDisk(text, token))
+                                goto Delay;
+                            if (token.IsCancellationRequested)
+                                return;
                             // stop (not a forceReset — keeps the finish text on screen)
                             State = TimerState.Idle;
                             CanPauseResume = false;
                             platform.StopActivity(Kind.Id());
                             CountdownOutput = text;
-                            WriteTimeToDisk(text);
                             StateChanged?.Invoke(this, EventArgs.Empty);
                             Completed?.Invoke(this, EventArgs.Empty);
                             // Beep fire-and-forget so a Start issued during the beep can never race this loop's CTS;
@@ -513,10 +542,14 @@ public sealed class TimerEngine : IDisposable
                     text = OutputFormatter.FormatElapsed(elapsed, currentOutputStyle, currentOutput);
                 }
 
+                if (token.IsCancellationRequested)
+                    return;
                 if (text is not null && text != CountdownOutput)
                 {
-                    if (WriteTimeToDisk(text))
+                    if (WriteTimeToDisk(text, token) && !token.IsCancellationRequested)
                         CountdownOutput = text;
+                    else
+                        firstTime = true;
                 }
             }
             catch (Exception ex)
@@ -550,8 +583,10 @@ public sealed class TimerEngine : IDisposable
     static bool SameSecond(TimeSpan a, TimeSpan b) =>
         a.Seconds == b.Seconds && a.Minutes == b.Minutes && a.Hours == b.Hours && a.Days == b.Days;
 
-    bool WriteTimeToDisk(string text)
+    bool WriteTimeToDisk(string text, CancellationToken token = default)
     {
+        if (token.IsCancellationRequested)
+            return false;
         try
         {
             files.Write(currentFileName, text);
@@ -560,11 +595,13 @@ public sealed class TimerEngine : IDisposable
         }
         catch (Exception ex)
         {
+            if (token.IsCancellationRequested)
+                return false;
             errors++;
             if (errors == 1)
                 ReportFault(ex);
             if (errors == 1)
-                return WriteTimeToDisk(text);
+                return WriteTimeToDisk(text, token);
             if (errors > 5)
                 CountdownOutput = $"{ex.Message} | Ensure app has access to this directory. Go to Settings to set a valid directory.";
             return false;
@@ -582,7 +619,25 @@ public sealed class TimerEngine : IDisposable
 
     public void Dispose()
     {
-        StopLoop();
-        platform.StopActivity(Kind.Id());
+        lock (locker)
+        {
+            if (disposed)
+                return;
+            disposed = true;
+            StopLoop();
+            State = TimerState.Idle;
+            CanPauseResume = false;
+            platform.StopActivity(Kind.Id());
+        }
+    }
+
+    /// <summary>Cancels every loop generation and drains pending writes without clearing the last output.</summary>
+    public ValueTask DisposeAsync()
+    {
+        lock (locker)
+        {
+            Dispose();
+            return new(Task.WhenAll(pendingLoops));
+        }
     }
 }

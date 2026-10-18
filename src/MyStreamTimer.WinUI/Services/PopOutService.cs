@@ -125,8 +125,7 @@ public sealed class PopOutService
     {
         if (!_pro.IsPro)
         {
-            App.DispatcherQueue.TryEnqueue(CloseAll);
+            App.UiDispatcher.TryEnqueue(CloseAll);
         }
     }
 }
-

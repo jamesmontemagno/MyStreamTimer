@@ -20,6 +20,7 @@ sealed class FakeFiles : IFileOutputService
     public bool FailWrites;
     public bool FailPrepare;
     public Action? OnPrepareTarget;
+    public Action<string>? OnWrite;
     public void EnsureFile(string directory, string fileName) { }
     public string PrepareTarget(string directory, string fileName)
     {
@@ -29,6 +30,7 @@ sealed class FakeFiles : IFileOutputService
     }
     public void Write(string fullPath, string text)
     {
+        OnWrite?.Invoke(text);
         if (FailWrites) throw new IOException("denied");
         lock (Writes) Writes.Add(text);
     }
@@ -547,6 +549,5 @@ public class TimerEngineTests
         e.StartStop();
     }
 }
-
 
 

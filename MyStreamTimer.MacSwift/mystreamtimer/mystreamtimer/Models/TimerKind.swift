@@ -202,7 +202,8 @@ struct URLCommand {
     let minutes: Double
 
     init?(url: URL) {
-        guard let host = url.host?.lowercased(), let kind = TimerKind(host: host) else {
+        guard url.scheme?.lowercased() == "mystreamtimer",
+              let host = url.host?.lowercased(), let kind = TimerKind(host: host) else {
             return nil
         }
 
@@ -218,8 +219,10 @@ struct URLCommand {
             default:
                 continue
             }
+            let allowsZero = kind.isCountUp && ["mins", "secs"].contains(item.name.lowercased())
             guard let rawValue = item.value, let parsed = Double(rawValue),
-                  TimerInterval.isSupported(abs(parsed * secondsPerUnit))
+                  TimerInterval.isSupported(parsed * secondsPerUnit),
+                  parsed > 0 || (allowsZero && parsed == 0)
             else {
                 return nil
             }
