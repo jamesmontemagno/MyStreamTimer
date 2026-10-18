@@ -102,6 +102,8 @@ cd src\MyStreamTimer.WinUI && dotnet run
 
 Debug builds install side‑by‑side with the Store app under a `*.Dev` identity (protocol `mystreamtimer-dev://`). Release builds use the Store identity. The migration plan, design spec and upgrade‑test checklist live in `winui-migration/`.
 
+ImageSharp is used only by the optional [icon generator](eng/IconGen) developer tool to regenerate icon assets. It is not an app dependency and is not part of the normal solution build; the app uses the generated assets checked into source control.
+
 ## Troubleshooting
 
 My Stream Timer should work out of the box, but if it doesn't here are some tips and tricks.
