@@ -4,10 +4,12 @@ import SwiftUI
 
 struct RootView: View {
     @EnvironmentObject private var appModel: AppModel
+    // AppKit updates List selection during view updates; publish navigation afterward.
+    @State private var sidebarSelection: SidebarItem = .timer(.countdown)
 
     var body: some View {
         NavigationSplitView {
-            List(selection: $appModel.selectedItem) {
+            List(selection: $sidebarSelection) {
                 Section("Countdowns") {
                     ForEach(appModel.countdownControllers) { controller in
                         TimerSidebarRow(controller: controller)
@@ -53,6 +55,14 @@ struct RootView: View {
             }
         }
         .navigationSplitViewStyle(.balanced)
+        .onChange(of: sidebarSelection) { _, selection in
+            if appModel.selectedItem != selection {
+                appModel.selectedItem = selection
+            }
+        }
+        .onChange(of: appModel.selectedItem, initial: true) { _, selection in
+            sidebarSelection = selection
+        }
         .sheet(isPresented: $appModel.showWelcomeBack) {
             WelcomeBackView()
                 .environmentObject(appModel)
@@ -86,6 +96,7 @@ struct RootView: View {
 // MARK: - Sidebar row
 
 struct TimerSidebarRow: View {
+    @EnvironmentObject private var appModel: AppModel
     @ObservedObject var controller: TimerController
 
     var body: some View {
@@ -102,7 +113,7 @@ struct TimerSidebarRow: View {
 
             Spacer()
 
-            if controller.kind.requiresPro {
+            if controller.kind.requiresPro && !appModel.purchaseManager.isPro {
                 StatusChip(title: "PRO", tint: .yellow)
             } else if controller.isRunning {
                 StatusChip(
