@@ -32,6 +32,11 @@
 
   <PropertyGroup Condition="'$(MyStreamTimerStoreBuild)' == 'true'">
     <DefineConstants>$(DefineConstants);MYSTREAMTIMER_STORE_BUILD</DefineConstants>
+    <SelfContained>true</SelfContained>
+    <WindowsAppSDKSelfContained>false</WindowsAppSDKSelfContained>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>portable</DebugType>
+    <AppxSymbolPackageEnabled>true</AppxSymbolPackageEnabled>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(MyStreamTimerStoreBuild)' == 'true'">
@@ -115,6 +120,4 @@
     <PublishTrimmed Condition="'$(Configuration)' != 'Debug'">False</PublishTrimmed>
   </PropertyGroup>
 </Project>
-
-
 

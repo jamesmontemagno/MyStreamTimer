@@ -11,7 +11,7 @@ struct WelcomeBackView: View {
                 Text("🎉")
                     .font(.system(size: 48))
 
-                Text("What's New in 3.1.0")
+                Text("What's New in 3.2.0")
                     .font(.largeTitle.bold())
 
                 Text("Here's what was added to My Stream Timer in this update.")

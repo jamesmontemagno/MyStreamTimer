@@ -11,7 +11,7 @@ namespace MyStreamTimer.WinUI.Services;
 /// Owns one <see cref="TimerEngine"/> per <see cref="TimerKind"/> for the process lifetime, auto-starts timers
 /// flagged <c>AutoStart</c>, and dispatches <c>mystreamtimer://</c> commands to the right engine.
 /// </summary>
-public sealed class TimerHost : IDisposable
+public sealed class TimerHost : IDisposable, IAsyncDisposable
 {
     private readonly Dictionary<TimerKind, TimerEngine> _engines = [];
     private readonly ProEntitlement _pro;
@@ -27,6 +27,7 @@ public sealed class TimerHost : IDisposable
         {
             var settings = new TimerSettings(store, kind);
             _engines[kind] = new TimerEngine(settings, global, pro, files, platform, clock);
+            _engines[kind].Faulted += (_, exception) => AppDiagnostics.Record("timer-failure", kind.Id(), exception);
         }
     }
 
@@ -42,24 +43,30 @@ public sealed class TimerHost : IDisposable
             if (engine.Settings.AutoStart && IsAllowed(kind) && !engine.IsBusy)
             {
                 Debug.WriteLine($"[TimerHost] Auto-starting {kind.Id()}");
-                engine.StartAtBoot();
+                var result = engine.StartAtBoot();
+                if (!result.Applied)
+                    AppDiagnostics.Record("autostart-rejected", $"{kind.Id()}: {result.Message}");
             }
         }
     }
 
     /// <summary>Applies a parsed URL command to its timer. Ignored when invalid or Pro-gated without Pro (legacy behaviour).</summary>
-    public bool Dispatch(UrlCommand command)
+    public CommandResult Dispatch(UrlCommand command)
     {
         if (!command.IsValid || command.Kind is not { } kind || !IsAllowed(kind))
         {
             Debug.WriteLine($"[TimerHost] Ignoring command {command.Action} for host '{command.Host}'");
-            return false;
+            var rejected = new CommandResult(CommandStatus.Rejected, "The command is invalid or requires Pro.");
+            AppDiagnostics.Record("command-rejected", rejected.Message);
+            return rejected;
         }
 
         Debug.WriteLine($"[TimerHost] Dispatch {command.Action} ({command.Minutes}) → {kind.Id()}");
-        Engine(kind).Apply(command);
-        CommandDispatched?.Invoke(this, kind);
-        return true;
+        var result = Engine(kind).Apply(command);
+        AppDiagnostics.Record("command", $"{kind.Id()}: {command.Action}: {result.Status}: {result.Message}");
+        if (result.Applied)
+            CommandDispatched?.Invoke(this, kind);
+        return result;
     }
 
     private bool IsAllowed(TimerKind kind) => !kind.RequiresPro() || _pro.IsPro;
@@ -71,4 +78,7 @@ public sealed class TimerHost : IDisposable
             engine.Dispose();
         }
     }
+
+    public ValueTask DisposeAsync() =>
+        new(Task.WhenAll(_engines.Values.Select(engine => engine.DisposeAsync().AsTask())));
 }

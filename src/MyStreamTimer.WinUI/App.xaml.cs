@@ -1,11 +1,10 @@
-using System.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using MyStreamTimer.Core.Purchases;
 using MyStreamTimer.Core.Services;
 using MyStreamTimer.Core.Settings;
 using MyStreamTimer.WinUI.Services;
-using Windows.Storage;
 
 namespace MyStreamTimer.WinUI;
 
@@ -20,6 +19,10 @@ public partial class App : Application
     /// <summary>The UI thread dispatcher; use to marshal calls to the UI thread.</summary>
     public static Microsoft.UI.Dispatching.DispatcherQueue DispatcherQueue { get; private set; } = null!;
 
+    public static ShutdownDispatcher UiDispatcher { get; private set; } = null!;
+
+    private bool shutdownCompleted;
+
     /// <summary>The native window handle (HWND) of the main window.</summary>
     public static nint WindowHandle => WinRT.Interop.WindowNative.GetWindowHandle(Window);
 
@@ -31,10 +34,14 @@ public partial class App : Application
 
     public App()
     {
+        UnhandledException += OnUnhandledException;
+        AppDiagnostics.Record("app-construction");
         InitializeComponent();
         DispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
-        UnhandledException += OnUnhandledException;
+        UiDispatcher = new(() => DispatcherQueue.HasThreadAccess,
+            action => DispatcherQueue.TryEnqueue(() => action()));
         Services = ConfigureServices();
+        AppDiagnostics.Record("services-ready");
     }
 
     private static ServiceProvider ConfigureServices()
@@ -76,6 +83,7 @@ public partial class App : Application
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
+        AppDiagnostics.Record("launch-services");
         var activation = GetService<ActivationService>();
         var timers = GetService<TimerHost>();
         var settings = GetService<GlobalSettings>();
@@ -87,15 +95,31 @@ public partial class App : Application
         activation.CommandReceived += (_, command) => timers.Dispatch(command);
         activation.Start();
 
+        AppDiagnostics.Record("timer-autostart");
         timers.AutoStart();
         if (activation.TakePendingCommand() is { } pending)
         {
             timers.Dispatch(pending);
         }
 
+        AppDiagnostics.Record("window-construction");
         Window = new MainWindow();
+        Window.AppWindow.Closing += OnMainWindowClosing;
+        Window.Closed += (_, _) =>
+        {
+            if (!UiDispatcher.IsShuttingDown)
+            {
+                UiDispatcher.Shutdown();
+                activation.Stop();
+                AppDiagnostics.Record("shutdown-forced", "The window closed without a coordinated drain.");
+                _ = Task.Run(() => timers.Dispose());
+                GetService<PowerService>().Dispose();
+            }
+        };
         windowService.Initialize(Window);
         Window.Activate();
+        AppDiagnostics.Record("window-activated");
+        AppDiagnostics.RecordEnvironment();
 
         settings.TimesUsed++;
         if (settings.TimesUsed == 10)
@@ -107,22 +131,44 @@ public partial class App : Application
 
         // Upgrading users (TimesUsed was already >= 1 before this launch's increment) see the welcome-back sheet once.
         DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low,
-            async () => await Views.WelcomeBackDialog.TryShowAsync(settings));
+            async () =>
+            {
+                if (!UiDispatcher.IsShuttingDown)
+                    await Views.WelcomeBackDialog.TryShowAsync(settings);
+            });
+    }
+
+    private async void OnMainWindowClosing(AppWindow sender, AppWindowClosingEventArgs args)
+    {
+        if (shutdownCompleted)
+            return;
+
+        args.Cancel = true;
+        if (UiDispatcher.IsShuttingDown)
+            return;
+
+        UiDispatcher.Shutdown();
+        GetService<ActivationService>().Stop();
+        AppDiagnostics.Record("shutdown-start");
+        // File-system calls may be blocked on a network share; never hold the UI behind an engine lock.
+        var shutdown = Task.Run(async () => await GetService<TimerHost>().DisposeAsync());
+        GetService<PowerService>().Dispose();
+        GetService<PopOutService>().CloseAll();
+        try
+        {
+            await shutdown.WaitAsync(TimeSpan.FromSeconds(5));
+            AppDiagnostics.Record("shutdown-drained");
+        }
+        catch (TimeoutException ex)
+        {
+            AppDiagnostics.Record("shutdown-timeout", "Pending timer I/O did not drain before closing.", ex);
+        }
+        shutdownCompleted = true;
+        Window.Close();
     }
 
     private void OnUnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
     {
-        try
-        {
-            var logs = Path.Combine(ApplicationData.Current.LocalFolder.Path, "logs");
-            Directory.CreateDirectory(logs);
-            var file = Path.Combine(logs, $"crash-{DateTime.Now:yyyyMMdd-HHmmss}.txt");
-            File.WriteAllText(file, $"{DateTime.Now:O}{Environment.NewLine}{e.Message}{Environment.NewLine}{e.Exception}");
-            Debug.WriteLine($"[App] Unhandled exception logged to {file}");
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"[App] Failed to write crash log: {ex.Message}");
-        }
+        AppDiagnostics.Record("xaml-unhandled", exception: e.Exception);
     }
 }

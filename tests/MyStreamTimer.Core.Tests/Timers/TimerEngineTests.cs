@@ -18,10 +18,19 @@ sealed class FakeFiles : IFileOutputService
     public readonly List<string> Writes = [];
     public string? LastPath;
     public bool FailWrites;
+    public bool FailPrepare;
+    public Action? OnPrepareTarget;
+    public Action<string>? OnWrite;
     public void EnsureFile(string directory, string fileName) { }
-    public string PrepareTarget(string directory, string fileName) => LastPath = Path.Combine(directory, fileName);
+    public string PrepareTarget(string directory, string fileName)
+    {
+        OnPrepareTarget?.Invoke();
+        if (FailPrepare) throw new UnauthorizedAccessException("denied");
+        return LastPath = Path.Combine(directory, fileName);
+    }
     public void Write(string fullPath, string text)
     {
+        OnWrite?.Invoke(text);
         if (FailWrites) throw new IOException("denied");
         lock (Writes) Writes.Add(text);
     }
@@ -34,9 +43,9 @@ sealed class FakePlatform : ITimerPlatform
     public int BeepDelayMs;
     public readonly List<EndSoundSelection> Sounds = [];
     readonly HashSet<string> active = [];
-    public void StartActivity(string id) => active.Add(id);
-    public void StopActivity(string id) => active.Remove(id);
-    public bool HasRunningTimers => active.Count > 0;
+    public void StartActivity(string id) { lock (active) active.Add(id); }
+    public void StopActivity(string id) { lock (active) active.Remove(id); }
+    public bool HasRunningTimers { get { lock (active) return active.Count > 0; } }
     public async Task BeepAsync(EndSoundSelection sound) { lock (Sounds) Sounds.Add(sound); Interlocked.Increment(ref Beeps); if (BeepDelayMs > 0) await Task.Delay(BeepDelayMs); }
 }
 
@@ -157,6 +166,26 @@ public class TimerEngineTests
             await Task.Delay(300);
             Assert.Equal(makeSound ? 1 : 0, platform.Beeps);
             Assert.Equal(TimerState.Running, engine.State);
+        }
+    }
+
+    [Fact]
+    public async Task Count_up_URL_start_at_zero_overrides_saved_start_value()
+    {
+        var (engine, clock, files, _, _) = Create(
+            TimerKind.Countup,
+            settings =>
+            {
+                settings.Minutes = 5;
+                settings.UseMinutes = true;
+            });
+        using (engine)
+        {
+            engine.Apply(UrlCommandParser.Parse("mystreamtimer://countup/?mins=0"));
+            await WaitFor(() => files.Last == "00:00:00");
+
+            clock.Advance(TimeSpan.FromSeconds(1));
+            await WaitFor(() => files.Last == "00:00:01");
         }
     }
 
@@ -520,9 +549,5 @@ public class TimerEngineTests
         e.StartStop();
     }
 }
-
-
-
-
 
 

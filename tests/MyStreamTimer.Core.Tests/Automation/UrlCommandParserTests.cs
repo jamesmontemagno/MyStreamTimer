@@ -6,12 +6,21 @@ namespace MyStreamTimer.Core.Tests.Automation;
 
 public class UrlCommandParserTests
 {
+    [Theory]
+    [InlineData("mins=1e100")]
+    [InlineData("secs=1e100")]
+    [InlineData("addmins=infinity")]
+    [InlineData("subtractmins=1e100")]
+    [InlineData("mins=NaN")]
+    public void Nonfinite_values_are_not_commands(string query) =>
+        Assert.False(UrlCommandParser.Parse($"mystreamtimer://countdown/?{query}").IsValid);
+
     public static IEnumerable<object[]> LegacyUrls()
     {
         var hosts = new[] { "countdown", "countdown1", "countdown2", "countdown3", "countdown4", "countup", "countup1", "countup2", "COUNTDOWN2", "giveaway", "bogus" };
         var queries = new[]
         {
-            "", "?mins=6", "?mins=0", "?mins=-3", "?mins=1.5", "?mins=abc", "?secs=90", "?secs=0", "?topofhour", "?to=15:30", "?to=00:01", "?to=23:59", "?to=garbage",
+            "", "?mins=6", "?mins=-3", "?mins=1.5", "?mins=abc", "?secs=90", "?topofhour", "?to=15:30", "?to=00:01", "?to=23:59", "?to=garbage",
             "?addmins=1", "?addmins=0", "?addsecs=90", "?subtractmins=2", "?subtractsecs=30", "?pause", "?resume", "?reset", "?stop", "?PAUSE", "?mins=5&foo=bar", "?foo=bar",
         };
         foreach (var h in hosts)
@@ -52,6 +61,29 @@ public class UrlCommandParserTests
         Assert.Equal(CommandAction.Stop, s.Action);
     }
 
+    [Theory]
+    [InlineData("countup", "?mins=0")]
+    [InlineData("countup1", "?secs=0")]
+    [InlineData("countup2", "?mins=0")]
+    public void Count_up_can_start_at_zero(string host, string query)
+    {
+        var result = UrlCommandParser.Parse($"mystreamtimer://{host}/{query}");
+
+        Assert.Equal(CommandAction.Start, result.Action);
+        Assert.Equal(0, result.Minutes);
+        Assert.True(result.IsValid);
+    }
+
+    [Theory]
+    [InlineData("countdown", "?mins=0")]
+    [InlineData("countdown2", "?secs=0")]
+    public void Countdown_cannot_start_at_zero(string host, string query)
+    {
+        var result = UrlCommandParser.Parse($"mystreamtimer://{host}/{query}");
+
+        Assert.Equal(CommandAction.None, result.Action);
+    }
+
     [Fact]
     public void To_wraps_past_midnight()
     {
@@ -74,6 +106,7 @@ public class UrlCommandParserTests
     [InlineData(TimerKind.Countdown, CommandAction.Start, 5.0, false, "mystreamtimer://countdown/?mins=5")]
     [InlineData(TimerKind.Countdown2, CommandAction.Start, 90.0, true, "mystreamtimer://countdown2/?secs=90")]
     [InlineData(TimerKind.Countup, CommandAction.Add, 1.0, false, "mystreamtimer://countup/?addmins=1")]
+    [InlineData(TimerKind.Countup, CommandAction.Start, 0.0, false, "mystreamtimer://countup/?mins=0")]
     [InlineData(TimerKind.Countup2, CommandAction.Subtract, 30.0, true, "mystreamtimer://countup2/?subtractsecs=30")]
     [InlineData(TimerKind.Countdown3, CommandAction.Pause, null, false, "mystreamtimer://countdown3/?pause")]
     [InlineData(TimerKind.Countdown4, CommandAction.Stop, null, false, "mystreamtimer://countdown4/?stop")]
@@ -87,4 +120,3 @@ public class UrlCommandParserTests
         Assert.Equal(kind, parsed.Kind);
     }
 }
-

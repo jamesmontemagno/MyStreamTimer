@@ -11,12 +11,12 @@ on:
         required: false
         type: string
       publish:
-        description: 'Publish the package after the protected-environment approval'
+        description: 'Submit to the configured tester flight after the protected-environment approval (never production)'
         required: true
         default: false
         type: boolean
       diagnose_only:
-        description: 'Only check the Partner Center credentials. Skips packaging and publishing.'
+        description: 'Check credentials and discover the package flight when a product ID is configured. Skips packaging and publishing.'
         required: false
         default: false
         type: boolean
@@ -49,6 +49,8 @@ jobs:
           seller-id: ${{ secrets.PARTNER_CENTER_SELLER_ID }}
           client-id: ${{ secrets.PARTNER_CENTER_CLIENT_ID }}
           client-secret: ${{ secrets.PARTNER_CENTER_CLIENT_SECRET }}
+          product-id: ${{ vars.MICROSOFT_STORE_PRODUCT_ID }}
+          flight-id: ${{ vars.MICROSOFT_STORE_FLIGHT_ID }}
 
   package:
     name: Package Microsoft Store upload
@@ -93,12 +95,15 @@ jobs:
         run: |
           $packageDir = Join-Path (Resolve-Path ".") "artifacts/store/"
           New-Item -ItemType Directory -Force -Path $packageDir | Out-Null
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+          $pdbTool = & $vswhere -latest -products * -find 'VC\Tools\MSVC\**\bin\Hostx64\x64\mspdbcmf.exe' | Select-Object -First 1
+          if (-not $pdbTool) { throw "Visual C++ symbol tools (mspdbcmf.exe) are required for Store symbols." }
 
           dotnet build $env:APP_PROJECT `
             -c Release `
             -p:Platform=x64 `
             -p:MyStreamTimerStoreBuild=true `
-            -p:SelfContained=false `
+            -p:SelfContained=true `
             -p:WindowsAppSDKSelfContained=false `
             -p:EnableMsixTooling=true `
             -p:GenerateAppxPackageOnBuild=true `
@@ -107,15 +112,19 @@ jobs:
             -p:AppxBundlePlatforms="x64|ARM64" `
             -p:UapAppxPackageBuildMode=StoreUpload `
             -p:AppxPackageSigningEnabled=false `
-            -p:AppxSymbolPackageEnabled=false `
+            -p:AppxSymbolPackageEnabled=true `
+            "-p:PdbCmfx64ExeFullPath=$pdbTool" `
+            -p:SourceRevisionId=${{ github.sha }} `
             -v:minimal
           if ($LASTEXITCODE -ne 0) { throw "Microsoft Store package build failed." }
 
-          $upload = Get-ChildItem $packageDir -Recurse -Filter *.msixupload | Select-Object -First 1
-          if (-not $upload) {
-            throw "The Store build did not produce an .msixupload package."
+          $uploads = @(Get-ChildItem $packageDir -Recurse -File -Filter *.msixupload)
+          if ($uploads.Count -ne 1) {
+            throw "Expected exactly one .msixupload package; found $($uploads.Count)."
           }
+          $upload = $uploads[0]
 
+          & .\scripts\Test-StorePackage.ps1 -PackagePath $upload.FullName -SymbolsDirectory artifacts\store-symbols
           Copy-Item $upload.FullName "artifacts/store/MyStreamTimer-$env:PACKAGE_VERSION.msixupload" -Force
 
       - name: Upload Store package
@@ -125,8 +134,16 @@ jobs:
           path: artifacts/store/MyStreamTimer-*.msixupload
           if-no-files-found: error
 
+      - name: Retain matching symbols and build provenance
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-store-symbols-${{ env.PACKAGE_VERSION }}
+          path: artifacts/store-symbols
+          if-no-files-found: error
+          retention-days: 90
+
   publish:
-    name: Submit to Microsoft Store
+    name: Submit to Microsoft Store flight
     needs: package
     if: github.event_name == 'push' || inputs.publish
     runs-on: windows-latest
@@ -163,16 +180,19 @@ jobs:
             ForEach-Object Key
 
           if ($missing) {
-            throw "Configure the following before enabling Store publication: $($missing -join ', ')."
+            throw "Configure the following before enabling Store flight publication: $($missing -join ', ')."
           }
 
-      - name: Diagnose Partner Center credentials
+      - name: Diagnose Partner Center credentials and select flight
+        id: partner-center
         uses: ./.github/actions/diagnose-partner-center
         with:
           tenant-id: ${{ secrets.PARTNER_CENTER_TENANT_ID }}
           seller-id: ${{ secrets.PARTNER_CENTER_SELLER_ID }}
           client-id: ${{ secrets.PARTNER_CENTER_CLIENT_ID }}
           client-secret: ${{ secrets.PARTNER_CENTER_CLIENT_SECRET }}
+          product-id: ${{ vars.MICROSOFT_STORE_PRODUCT_ID }}
+          flight-id: ${{ vars.MICROSOFT_STORE_FLIGHT_ID }}
 
       - name: Setup Microsoft Store Developer CLI
         uses: microsoft/microsoft-store-apppublisher@v1.4
@@ -186,19 +206,30 @@ jobs:
             --clientId "${{ secrets.PARTNER_CENTER_CLIENT_ID }}" `
             --clientSecret "${{ secrets.PARTNER_CENTER_CLIENT_SECRET }}"
 
-      - name: Publish Store package
+      - name: Publish Store package to flight
         shell: pwsh
         env:
           STORE_PRODUCT_ID: ${{ vars.MICROSOFT_STORE_PRODUCT_ID }}
+          STORE_FLIGHT_ID: ${{ steps.partner-center.outputs.flight-id }}
         run: |
-          $upload = Get-ChildItem artifacts/store -Filter *.msixupload | Select-Object -First 1
-          if (-not $upload) {
-            throw "The downloaded Store package is missing."
+          if ([string]::IsNullOrWhiteSpace($env:STORE_FLIGHT_ID)) {
+            throw "No package flight was resolved. Production publishing is disabled."
           }
+
+          $uploads = @(Get-ChildItem artifacts/store -File -Filter *.msixupload)
+          if ($uploads.Count -ne 1) {
+            throw "Expected exactly one downloaded .msixupload package; found $($uploads.Count)."
+          }
+          $upload = $uploads[0]
+
+          & .\scripts\Test-StorePackage.ps1 -PackagePath $upload.FullName
+          $hash = (Get-FileHash -LiteralPath $upload.FullName -Algorithm SHA256).Hash
+          Write-Host "Uploading symbol-validated Store package to flight $($env:STORE_FLIGHT_ID): $($upload.Name); SHA256=$hash"
 
           # Pass the package file itself. Pointing msstore at a directory makes it look for a
           # project to infer a publisher from, which does not exist in this workflow.
+          # Upload the whole .msixupload, including its .appxsym files, not the inner bundle.
           # --uploadTimeout must be set explicitly: when omitted the CLI has defaulted it to 0,
           # which cancels the blob upload immediately. See microsoft/msstore-cli#162.
-          msstore publish $upload.FullName --appId $env:STORE_PRODUCT_ID --uploadTimeout 900
-          if ($LASTEXITCODE -ne 0) { throw "msstore publish failed." }
+          msstore publish $upload.FullName --appId $env:STORE_PRODUCT_ID --flightId $env:STORE_FLIGHT_ID --uploadTimeout 900
+          if ($LASTEXITCODE -ne 0) { throw "msstore flight publish failed." }

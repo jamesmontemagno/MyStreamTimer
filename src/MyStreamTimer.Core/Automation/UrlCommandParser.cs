@@ -62,13 +62,13 @@ public static class UrlCommandParser
 
             if (query.Contains("?mins=") && float.TryParse(query.Remove(0, 6), out mins))
             {
-                if (mins > 0)
+                if (mins > 0 || (mins == 0 && IsCountUpHost(host)))
                     action = CommandAction.Start;
             }
             else if (query.Contains("?secs=") && float.TryParse(query.Remove(0, 6), out var secs))
             {
                 mins = secs / 60.0f;
-                if (mins > 0)
+                if (mins > 0 || (mins == 0 && IsCountUpHost(host)))
                     action = CommandAction.Start;
             }
             else if (query.Contains("?topofhour"))
@@ -133,8 +133,13 @@ public static class UrlCommandParser
             // legacy swallowed everything and returned whatever was parsed so far
         }
 
+        if (!float.IsFinite(mins))
+            action = CommandAction.None;
+
         return new UrlCommand(action, mins, host);
     }
+
+    static bool IsCountUpHost(string host) => host is "countup" or "countup1" or "countup2";
 
     /// <summary>Builds a URL for the Automation command builder.</summary>
     public static string Build(TimerKind kind, CommandAction action, double? value = null, bool valueIsSeconds = false, string? clockTime = null, bool topOfHour = false)
