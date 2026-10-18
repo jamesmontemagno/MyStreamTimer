@@ -117,7 +117,9 @@ Create one package flight linked to the `IAP Test` known user group in Partner C
 The workflow discovers the app's only existing flight automatically; no portal ID lookup is needed. If multiple flights
 exist, the logs list their names and IDs so you can configure the override. No flights, ambiguous selection, an invalid
 override, or discovery errors block submission; the workflow never creates flights or falls back to production.
-See [flight-first releases](../README.md#windows-flight-first-releases) for setup and promotion.
+Manual `destination = production` submissions skip flight discovery. Both destinations use the same protected
+environment approval; do not remove its required reviewer. See [Windows release flows](../README.md#windows-flight-first-releases)
+for build-only, flight, exact-artifact promotion, direct production, and English release-note inputs.
 
 Verify before tagging: *Actions → Windows Store Publish → Run workflow* with **diagnose_only = true**. The
 `diagnose-partner-center` action requests an Entra token and calls the submission API, and tells you exactly which of
@@ -147,9 +149,13 @@ signing certificate is involved.
    for the `microsoft-store` environment approval → diagnose credentials → `msstore publish <file> --appId 9N5NXX3WK7K7
    --flightId <resolved-package-flight-id> --uploadTimeout 900`. Approve the gate in the Actions run; the flight
    submission then goes through certification in Partner Center. This does **not** release to production.
-4. Test the certified flight with the `IAP Test` accounts. When ready, create a regular production submission in
-   Partner Center, select the same packages from the flight, review release notes/settings, and submit for production
-   certification. Do not rebuild the tested packages just to promote them.
+4. Test the certified flight with the `IAP Test` accounts. When ready, run **Windows Store Publish** from `main` with
+   `destination = production`, `publish = true`, `source_run_id = <successful flight run ID>`, and **tag empty**.
+   `release_notes` reuses the flight's saved English What's new text unless overridden; enter notes for older runs
+   without saved text. Approve the production gate. The exact `.msixupload`, including PDBs, is revalidated and reused
+   without rebuilding. Alternatively, create a regular production submission in Partner Center and copy the flight's
+   packages. For **Build -> Release** directly, leave `source_run_id` empty and supply the new tag plus release notes.
+   Production still goes through certification and honors existing release scheduling; never promote before testing.
 5. Sandbox the purchases once live/in flight: Pro page shows prices for Lifetime / Monthly / 6 Months, **Subscribe** a
    subscription, relaunch → "Pro subscription active until …"; **Restore purchases** on a clean profile.
 6. After it's live: watch Partner Center **Health** (crashes) and **Reviews** for two weeks; hotfix = bump version,

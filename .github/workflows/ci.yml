@@ -54,6 +54,9 @@ jobs:
               - '.github/workflows/windows-store-publish.yml'
               - '.github/actions/diagnose-partner-center/**'
               - 'scripts/Test-StorePackage.ps1'
+              - 'scripts/StoreRelease.ps1'
+              - 'scripts/Publish-StorePackage.ps1'
+              - 'scripts/Test-StoreRelease.ps1'
 
   test:
     name: Core tests
@@ -76,6 +79,10 @@ jobs:
         if: ${{ needs.changes.outputs.windows == 'true' }}
         shell: pwsh
         run: .\.github\actions\diagnose-partner-center\Test-ResolveStoreFlight.ps1
+      - name: Test Store release routing, promotion, and release notes
+        if: ${{ needs.changes.outputs.windows == 'true' }}
+        shell: pwsh
+        run: .\scripts\Test-StoreRelease.ps1
       - name: Upload coverage
         if: ${{ always() && needs.changes.outputs.windows == 'true' }}
         uses: actions/upload-artifact@v7
