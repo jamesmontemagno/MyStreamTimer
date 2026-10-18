@@ -186,8 +186,9 @@ public class CommandBoundaryTests
     [Fact]
     public async Task Rejected_reset_preserves_a_resumed_count_up_offset()
     {
+        var clock = new FakeClock();
         var files = new FakeFiles();
-        using var engine = Create(TimerKind.Countup, files, new FakePlatform());
+        await using var engine = Create(TimerKind.Countup, files, new FakePlatform(), clock);
         Assert.True(engine.StartAtBoot(2.5f).Applied);
         Assert.True(engine.PauseResume().Applied);
         Assert.True(engine.PauseResume().Applied);
@@ -201,10 +202,12 @@ public class CommandBoundaryTests
         var rendered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         engine.TextChanged += (_, text) =>
         {
-            if (text.EndsWith("00:02:30", StringComparison.Ordinal))
+            if (text.EndsWith("00:02:31", StringComparison.Ordinal))
                 rendered.TrySetResult();
         };
         Assert.True(engine.PauseResume().Applied);
+        // An unchanged resumed value need not raise TextChanged; verify the next second instead.
+        clock.Advance(TimeSpan.FromSeconds(1));
         await rendered.Task.WaitAsync(TimeSpan.FromSeconds(5));
     }
 
