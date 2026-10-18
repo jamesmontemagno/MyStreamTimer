@@ -190,18 +190,43 @@ func effectiveSystemImage(iconGlyph: String) -> String {
     }
 }
 
+enum TimerInterval {
+    nonisolated static func isSupported(_ interval: TimeInterval) -> Bool {
+        interval.isFinite && interval >= 0 && Int(exactly: floor(interval)) != nil
+    }
+}
+
 struct URLCommand {
     let kind: TimerKind
     let action: CommandAction
     let minutes: Double
 
     init?(url: URL) {
-        guard let host = url.host?.lowercased(), let kind = TimerKind(host: host) else {
+        guard url.scheme?.lowercased() == "mystreamtimer",
+              let host = url.host?.lowercased(), let kind = TimerKind(host: host) else {
             return nil
         }
 
         let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
         let items = components?.queryItems ?? []
+        for item in items {
+            let secondsPerUnit: Double
+            switch item.name.lowercased() {
+            case "mins", "addmins", "subtractmins":
+                secondsPerUnit = 60
+            case "secs", "addsecs", "subtractsecs":
+                secondsPerUnit = 1
+            default:
+                continue
+            }
+            let allowsZero = kind.isCountUp && ["mins", "secs"].contains(item.name.lowercased())
+            guard let rawValue = item.value, let parsed = Double(rawValue),
+                  TimerInterval.isSupported(parsed * secondsPerUnit),
+                  parsed > 0 || (allowsZero && parsed == 0)
+            else {
+                return nil
+            }
+        }
         func value(for name: String) -> String? {
             items.first(where: { $0.name.lowercased() == name })?.value
         }

@@ -80,7 +80,7 @@ public sealed class StoreService
 
     private void OnOfflineLicensesChanged(StoreContext sender, object args)
     {
-        App.DispatcherQueue.TryEnqueue(async () => await RefreshLicensesAsync());
+        App.UiDispatcher.TryEnqueue(async () => await RefreshLicensesAsync());
     }
 
     /// <summary>Loads durable + subscription add-ons and caches legacy price strings in settings.</summary>
@@ -325,5 +325,4 @@ public sealed class StoreService
         }
     }
 }
-
 

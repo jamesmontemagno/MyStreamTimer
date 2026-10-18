@@ -13,7 +13,7 @@ public enum TimerState { Idle, Running, Paused }
 /// decoupled from any UI framework. All public members must be called from one thread (the UI thread);
 /// events are raised on the loop's thread, so consumers must marshal.
 /// </summary>
-public sealed class TimerEngine : IDisposable
+public sealed class TimerEngine : IDisposable, IAsyncDisposable
 {
     /// <summary>Upper bound between samples; keeps URL/UI commands responsive even when the next boundary is far away.</summary>
     const int MaxTickMilliseconds = 250;
@@ -45,10 +45,14 @@ public sealed class TimerEngine : IDisposable
     long extraTicksForUp;
     bool firstTime = true;
     int errors;
+    long lastFaultTimestamp;
     TimeSpan prevTime = TimeSpan.FromDays(1);
     DateTime prevDateTime;
     CancellationTokenSource? loopCts;
     Task? loopTask;
+    readonly List<Task> pendingLoops = [];
+    bool disposed;
+    bool outputNeedsClear;
     string countdownOutput = string.Empty;
 
     public TimerEngine(TimerSettings settings, GlobalSettings global, ProEntitlement pro,
@@ -97,6 +101,7 @@ public sealed class TimerEngine : IDisposable
     public event EventHandler? StateChanged;
     /// <summary>Raised when a countdown reaches zero (after the finish text is written).</summary>
     public event EventHandler? Completed;
+    public event EventHandler<Exception>? Faulted;
 
     // ---------------- Commands ----------------
 
@@ -104,254 +109,348 @@ public sealed class TimerEngine : IDisposable
 
     /// <summary>
     /// Forces the timer to Idle regardless of state (Running or Paused), clearing the output file like a
-    /// legacy forced stop. No-op when already Idle.
+    /// legacy forced stop. An Idle timer only retries a previously failed output clear.
     /// </summary>
-    public void Stop()
+    public CommandResult Stop()
     {
-        if (State == TimerState.Running)
-        {
-            ExecuteStartStop(true);
-            return;
-        }
-
-        if (State == TimerState.Paused)
-        {
-            // Paused == engine idle with pending resume data; discard it and clear the file.
-            bootMins = -1;
-            extraTicksForUp = 0;
-            currentMinutes = 0;
-            firstTime = true;
-            State = TimerState.Idle;
-            CanPauseResume = false;
-            try
-            {
-                currentFileName = files.PrepareTarget(global.DirectoryPath, settings.FileName);
-                WriteTimeToDisk(string.Empty);
-            }
-            catch
-            {
-                // nothing to clear
-            }
-            CountdownOutput = string.Empty;
-            StateChanged?.Invoke(this, EventArgs.Empty);
-        }
-    }
-
-    public void PauseResume()
-    {
-        if (IsTime)
-            return;
-
-        var prevBusy = IsBusy;
-        ExecuteStartStop();
-
-        if (prevBusy)
-        {
-            if (currentIsDown)
-                bootMins = (float)(endTime - clock.Now).TotalMinutes;
-            else
-            {
-                var elapsed = clock.Now.AddTicks(extraTicksForUp) - startTime;
-                extraTicksForUp = elapsed.Ticks;
-            }
-            State = TimerState.Paused;
-        }
-
-        CanPauseResume = true;
-        StateChanged?.Invoke(this, EventArgs.Empty);
-    }
-
-    public void Reset()
-    {
-        if (!IsBusy)
-            return;
-        ExecuteStartStop(true);
-        ExecuteStartStop(true);
-    }
-
-    public void AddMinutes(double minutes)
-    {
-        if (!IsBusy || minutes == 0)
-            return;
         lock (locker)
         {
-            if (IsDown)
-                endTime = endTime.AddMinutes(minutes);
-            else
-                extraTicksForUp += TimeSpan.FromMinutes(minutes).Ticks;
+            if (disposed)
+                return ShuttingDown;
+            if (State == TimerState.Running)
+                return ExecuteStartStop(true);
+
+            if (State == TimerState.Paused || outputNeedsClear)
+            {
+                StopLoop();
+                bootMins = -1;
+                extraTicksForUp = 0;
+                currentMinutes = 0;
+                firstTime = true;
+                State = TimerState.Idle;
+                CanPauseResume = false;
+                outputNeedsClear = true;
+                try
+                {
+                    currentFileName = files.PrepareTarget(global.DirectoryPath, settings.FileName);
+                    outputNeedsClear = !WriteTimeToDisk(string.Empty);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException or System.Security.SecurityException)
+                {
+                    ReportFault(ex);
+                }
+                var result = outputNeedsClear ? ClearFailed : CommandResult.Success;
+                CountdownOutput = result.Applied ? string.Empty : $"INIT: {result.Message}";
+                StateChanged?.Invoke(this, EventArgs.Empty);
+                return result;
+            }
+            return new(CommandStatus.Ignored, "The timer is already stopped.");
         }
+    }
+
+    /// <summary>Toggle pause/resume, reporting rejected transitions. Clock timers do not support pausing.</summary>
+    public CommandResult PauseResume()
+    {
+        if (IsTime)
+            return new(CommandStatus.Ignored, "Clock timers do not support pause or resume.");
+
+        lock (locker)
+        {
+            var prevBusy = IsBusy;
+            var result = ExecuteStartStop();
+            if (!result.Applied)
+                return result;
+
+            if (prevBusy)
+            {
+                if (currentIsDown)
+                    bootMins = (float)(endTime - clock.Now).TotalMinutes;
+                else
+                {
+                    var elapsed = clock.Now.AddTicks(extraTicksForUp) - startTime;
+                    extraTicksForUp = elapsed.Ticks;
+                }
+                State = TimerState.Paused;
+            }
+
+            CanPauseResume = true;
+            StateChanged?.Invoke(this, EventArgs.Empty);
+            return result;
+        }
+    }
+
+    /// <summary>Restart a running timer with its configured duration; propagate stop or restart rejection.</summary>
+    public CommandResult Reset()
+    {
+        lock (locker)
+        {
+            if (!IsBusy)
+                return new(CommandStatus.Ignored, "Start the timer before resetting it.");
+            if (!TryCalculateTiming(-1, 0, out _))
+                return InvalidDuration;
+            var result = ExecuteStartStop(true);
+            return result.Applied ? ExecuteStartStop(true) : result;
+        }
+    }
+
+    public CommandResult AddMinutes(double minutes)
+    {
+        if (!IsBusy || minutes == 0)
+            return new(CommandStatus.Ignored, "Start the timer before adjusting its time.");
+        return AdjustMinutes(minutes);
     }
 
     /// <summary>Apply a parsed URL command (legacy <c>Init</c>).</summary>
-    public void Apply(UrlCommand command)
+    public CommandResult Apply(UrlCommand command)
     {
-        switch (command.Action)
+        if (!command.IsValid || command.Kind != Kind || !float.IsFinite(command.Minutes))
+            return new(CommandStatus.Rejected, "The timer command is invalid.");
+
+        lock (locker)
         {
-            case CommandAction.Start:
-                if (IsBusy)
-                    ExecuteStartStop();
-                bootMins = command.Minutes;
-                ExecuteStartStop();
-                break;
-            case CommandAction.Pause:
-                if (IsBusy)
-                    PauseResume();
-                break;
-            case CommandAction.Resume:
-                if (!IsBusy)
-                    PauseResume();
-                break;
-            case CommandAction.Reset:
-                Reset();
-                break;
-            case CommandAction.Add when command.Minutes > 0:
-                AddMinutesUnconditional(command.Minutes);
-                break;
-            case CommandAction.Subtract when command.Minutes > 0:
-                AddMinutesUnconditional(-command.Minutes);
-                break;
-            case CommandAction.Stop:
-                if (IsBusy)
-                    ExecuteStartStop(true);
-                break;
+            if (disposed)
+                return ShuttingDown;
+            switch (command.Action)
+            {
+                case CommandAction.Start:
+                    if (command.Minutes < 0 && command.Minutes != -1)
+                        return InvalidDuration;
+                    if (!TryCalculateTiming(command.Minutes, extraTicksForUp, out _))
+                        return InvalidDuration;
+                    if (IsBusy)
+                    {
+                        var result = ExecuteStartStop();
+                        if (!result.Applied)
+                            return result;
+                    }
+                    bootMins = command.Minutes;
+                    return ExecuteStartStop();
+                case CommandAction.Pause:
+                    if (IsTime || IsBusy)
+                        return PauseResume();
+                    break;
+                case CommandAction.Resume:
+                    if (IsTime || State == TimerState.Paused)
+                        return PauseResume();
+                    break;
+                case CommandAction.Reset:
+                    return Reset();
+                case CommandAction.Add when command.Minutes > 0:
+                    return AdjustMinutes(command.Minutes);
+                case CommandAction.Subtract when command.Minutes > 0:
+                    return AdjustMinutes(-command.Minutes);
+                case CommandAction.Stop:
+                    return Stop();
+            }
+            return new(CommandStatus.Ignored, "The timer is not in a state that accepts this command.");
         }
     }
 
-    // legacy Init() adjusted end time even when not running
-    void AddMinutesUnconditional(double minutes)
+    static CommandResult InvalidDuration => new(CommandStatus.Rejected, "The duration is outside the supported date range.");
+    static CommandResult ShuttingDown => new(CommandStatus.Rejected, "The timer is shutting down.");
+    static CommandResult ClearFailed => new(CommandStatus.Rejected, "The timer stopped, but its output file could not be cleared. Check Settings.");
+
+    CommandResult AdjustMinutes(double minutes)
     {
+        if (!double.IsFinite(minutes))
+            return InvalidDuration;
         lock (locker)
         {
-            if (IsDown)
-                endTime = endTime.AddMinutes(minutes);
-            else
-                extraTicksForUp += TimeSpan.FromMinutes(minutes).Ticks;
+            if (IsDown && endTime == default)
+                return new(CommandStatus.Ignored, "Start this countdown before adjusting its time.");
+            try
+            {
+                if (IsDown)
+                    endTime = endTime.AddMinutes(minutes);
+                else
+                {
+                    var ticks = checked(extraTicksForUp + TimeSpan.FromMinutes(minutes).Ticks);
+                    _ = clock.Now.AddTicks(ticks);
+                    extraTicksForUp = ticks;
+                }
+                return CommandResult.Success;
+            }
+            catch (Exception ex) when (ex is ArgumentOutOfRangeException or OverflowException)
+            {
+                return InvalidDuration;
+            }
         }
     }
 
     /// <summary>Used for auto-start / boot-from-URL at construction time.</summary>
-    public void StartAtBoot(float minutes = -1)
+    public CommandResult StartAtBoot(float minutes = -1)
     {
+        if (!TryCalculateTiming(minutes, extraTicksForUp, out _))
+            return InvalidDuration;
         bootMins = minutes;
-        ExecuteStartStop();
+        return ExecuteStartStop();
     }
 
     // ---------------- Core start/stop ----------------
 
-    void ExecuteStartStop(bool forceReset = false)
+    readonly record struct RunTiming(float Minutes, DateTime Start, DateTime End);
+
+    bool TryCalculateTiming(float minutes, long extraTicks, out RunTiming timing)
     {
-        if (forceReset)
+        timing = default;
+        if (!float.IsFinite(minutes))
+            return false;
+        try
         {
-            bootMins = -1;
-            extraTicksForUp = 0;
-            currentMinutes = 0;
-            firstTime = true;
+            var now = clock.Now;
+            var effectiveExtraTicks = minutes >= 0 ? 0 : extraTicks;
+            var seconds = 0;
+            if (minutes < 0)
+            {
+                if (effectiveExtraTicks > 0)
+                    minutes = 0;
+                else if (settings.UseMinutes)
+                {
+                    minutes = settings.Minutes;
+                    seconds = settings.Seconds;
+                }
+                else
+                {
+                    var finishAt = settings.FinishAtTime;
+                    minutes = (float)(finishAt > now.TimeOfDay
+                        ? finishAt.TotalMinutes - now.TimeOfDay.TotalMinutes
+                        : 1440.0 - now.TimeOfDay.TotalMinutes + finishAt.TotalMinutes);
+                }
+            }
+            _ = now.AddTicks(effectiveExtraTicks);
+            var start = !IsDown && !IsTime ? now.AddMinutes(-minutes).AddSeconds(-seconds) : now;
+            timing = new(minutes, start, now.AddMinutes(minutes).AddSeconds(seconds));
+            return true;
+        }
+        catch (Exception ex) when (ex is ArgumentOutOfRangeException or OverflowException)
+        {
+            return false;
+        }
+    }
+
+    CommandResult ExecuteStartStop(bool forceReset = false)
+    {
+        RunTiming timing = default;
+        bool wasBusy;
+        lock (locker)
+        {
+            if (disposed)
+                return ShuttingDown;
+            // Completion may run during target preparation; keep the chosen transition and its timing together.
+            wasBusy = IsBusy;
+            if (!wasBusy && !TryCalculateTiming(forceReset ? -1 : bootMins, forceReset ? 0 : extraTicksForUp, out timing))
+            {
+                CountdownOutput = $"INIT: {InvalidDuration.Message}";
+                return InvalidDuration;
+            }
         }
 
         if (EffectiveOutputStyle == 0 && !IsTime && !OutputFormatter.IsValidTemplate(settings.Output))
         {
             CountdownOutput = OutputFormatter.InvalidFormatMessage;
-            return;
+            return new(CommandStatus.Rejected, OutputFormatter.InvalidFormatMessage);
         }
 
+        string preparedFileName;
         try
         {
-            currentFileName = files.PrepareTarget(global.DirectoryPath, settings.FileName);
+            preparedFileName = files.PrepareTarget(global.DirectoryPath, settings.FileName);
         }
         catch (Exception ex)
         {
             CountdownOutput = $"INIT: {ex.Message} | Ensure app has access to this directory. Go to Settings to set a valid directory.";
-            return;
+            return new(CommandStatus.Rejected, "The output directory could not be accessed. Check Settings.");
         }
 
-        var wasBusy = IsBusy;
-        if (wasBusy)
+        lock (locker)
+        {
+            if (disposed)
+                return ShuttingDown;
             StopLoop();
-
-        State = wasBusy ? TimerState.Idle : TimerState.Running;
-
-        if (forceReset && !IsBusy)
-        {
-            WriteTimeToDisk(string.Empty);
-            CanPauseResume = false;
-            CountdownOutput = string.Empty;
-        }
-
-        if (IsBusy)
-            platform.StartActivity(Kind.Id());
-        else
-            platform.StopActivity(Kind.Id());
-
-        if (!IsBusy)
-        {
-            StateChanged?.Invoke(this, EventArgs.Empty);
-            return;
-        }
-
-        CanPauseResume = !IsTime;
-
-        currentFinished = settings.Finish;
-        currentIsDown = IsDown;
-        currentShowAmPm = settings.ShowAmPm;
-        var currentSeconds = 0;
-        var isResume = bootMins < 0 && extraTicksForUp > 0;
-        if (!isResume)
-            countUpSoundPlayed = false; // once per run; a resumed count-up keeps its played state
-        if (bootMins >= 0)
-        {
-            currentMinutes = bootMins;
-            extraTicksForUp = 0;
-            bootMins = -1;
-        }
-        else if (isResume)
-        {
-            currentMinutes = 0; // resuming a count-up
-        }
-        else if (settings.UseMinutes)
-        {
-            currentMinutes = settings.Minutes;
-            currentSeconds = settings.Seconds;
-        }
-        else
-        {
-            var now = clock.Now;
-            var finishAt = settings.FinishAtTime;
-            if (finishAt > now.TimeOfDay)
-                currentMinutes = (float)(finishAt.TotalMinutes - now.TimeOfDay.TotalMinutes);
-            else
+            currentFileName = preparedFileName;
+            if (forceReset)
             {
-                currentMinutes = (float)(1440.0 - now.TimeOfDay.TotalMinutes);
-                currentMinutes += (float)finishAt.TotalMinutes;
+                bootMins = -1;
+                extraTicksForUp = 0;
+                currentMinutes = 0;
+                firstTime = true;
             }
+
+            State = wasBusy ? TimerState.Idle : TimerState.Running;
+
+            var result = CommandResult.Success;
+            if (forceReset && wasBusy)
+            {
+                outputNeedsClear = !WriteTimeToDisk(string.Empty);
+                if (outputNeedsClear)
+                    result = ClearFailed;
+                CanPauseResume = false;
+                CountdownOutput = result.Applied ? string.Empty : $"INIT: {result.Message}";
+            }
+
+            if (!wasBusy)
+                platform.StartActivity(Kind.Id());
+            else
+                platform.StopActivity(Kind.Id());
+
+            if (wasBusy)
+            {
+                StateChanged?.Invoke(this, EventArgs.Empty);
+                return result;
+            }
+
+            CanPauseResume = !IsTime;
+
+            currentFinished = settings.Finish;
+            currentIsDown = IsDown;
+            currentShowAmPm = settings.ShowAmPm;
+            var isResume = bootMins < 0 && extraTicksForUp > 0;
+            if (!isResume)
+                countUpSoundPlayed = false; // once per run; a resumed count-up keeps its played state
+            if (bootMins >= 0)
+            {
+                extraTicksForUp = 0;
+                bootMins = -1;
+            }
+            currentMinutes = timing.Minutes;
+
+            currentOutput = OutputFormatter.NormalizeTemplate(settings.Output);
+            currentBeepAtZero = settings.MakeSound;
+            currentSound = settings.EndSoundSelection;
+            currentSoundAt = settings.SoundAt;
+            hasPrevUpElapsed = false;
+            currentOutputStyle = EffectiveOutputStyle;
+
+            startTime = timing.Start;
+            endTime = timing.End;
+            prevTime = TimeSpan.FromDays(1);
+            firstTime = true;
+
+            StateChanged?.Invoke(this, EventArgs.Empty);
+
+            loopCts = new CancellationTokenSource();
+            var token = loopCts.Token;
+            outputNeedsClear = false;
+            pendingLoops.RemoveAll(task => task.IsCompletedSuccessfully);
+            loopTask = Task.Run(() => UpdateLoop(token), CancellationToken.None);
+            return CommandResult.Success;
         }
-
-        currentOutput = OutputFormatter.NormalizeTemplate(settings.Output);
-        currentBeepAtZero = settings.MakeSound;
-        currentSound = settings.EndSoundSelection;
-        currentSoundAt = settings.SoundAt;
-        hasPrevUpElapsed = false;
-        currentOutputStyle = EffectiveOutputStyle;
-
-        var start = clock.Now;
-        if (currentIsDown)
-            startTime = start;
-        else if (!IsTime)
-            startTime = start.AddMinutes(-currentMinutes).AddSeconds(-currentSeconds);
-
-        endTime = start.AddMinutes(currentMinutes).AddSeconds(currentSeconds);
-        prevTime = TimeSpan.FromDays(1);
-        firstTime = true;
-
-        StateChanged?.Invoke(this, EventArgs.Empty);
-
-        loopCts = new CancellationTokenSource();
-        var token = loopCts.Token;
-        loopTask = Task.Run(() => UpdateLoop(token), CancellationToken.None);
     }
 
     void StopLoop()
     {
-        loopCts?.Cancel();
+        if (loopCts is { } cancellation)
+        {
+            cancellation.Cancel();
+            if (loopTask is { } task)
+            {
+                pendingLoops.Add(task);
+                _ = task.ContinueWith(_ => cancellation.Dispose(),
+                    CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+            }
+            else
+                cancellation.Dispose();
+        }
         loopCts = null;
         loopTask = null;
     }
@@ -373,19 +472,29 @@ public sealed class TimerEngine : IDisposable
 
                     if (now >= end)
                     {
-                        text = currentFinished;
-                        // stop (not a forceReset — keeps the finish text on screen)
-                        State = TimerState.Idle;
-                        CanPauseResume = false;
-                        platform.StopActivity(Kind.Id());
-                        CountdownOutput = text;
-                        WriteTimeToDisk(text);
-                        StateChanged?.Invoke(this, EventArgs.Empty);
-                        Completed?.Invoke(this, EventArgs.Empty);
-                        // Beep fire-and-forget so a Start issued during the beep can never race this loop's CTS;
-                        // StopLoop() is the only place that clears loopCts.
-                        if (currentBeepAtZero)
-                            _ = platform.BeepAsync(currentSound);
+                        lock (locker)
+                        {
+                            if (token.IsCancellationRequested)
+                                return;
+                            if (now < endTime)
+                                continue;
+                            text = currentFinished;
+                            if (!WriteTimeToDisk(text, token))
+                                goto Delay;
+                            if (token.IsCancellationRequested)
+                                return;
+                            // stop (not a forceReset — keeps the finish text on screen)
+                            State = TimerState.Idle;
+                            CanPauseResume = false;
+                            platform.StopActivity(Kind.Id());
+                            CountdownOutput = text;
+                            StateChanged?.Invoke(this, EventArgs.Empty);
+                            Completed?.Invoke(this, EventArgs.Empty);
+                            // Beep fire-and-forget so a Start issued during the beep can never race this loop's CTS;
+                            // StopLoop() is the only place that clears loopCts.
+                            if (currentBeepAtZero)
+                                _ = platform.BeepAsync(currentSound);
+                        }
                         return;
                     }
 
@@ -433,15 +542,20 @@ public sealed class TimerEngine : IDisposable
                     text = OutputFormatter.FormatElapsed(elapsed, currentOutputStyle, currentOutput);
                 }
 
+                if (token.IsCancellationRequested)
+                    return;
                 if (text is not null && text != CountdownOutput)
                 {
-                    if (WriteTimeToDisk(text))
+                    if (WriteTimeToDisk(text, token) && !token.IsCancellationRequested)
                         CountdownOutput = text;
+                    else
+                        firstTime = true;
                 }
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"TimerEngine[{Kind}] loop error: {ex}");
+                ReportFault(ex);
             }
 
         Delay:
@@ -469,8 +583,10 @@ public sealed class TimerEngine : IDisposable
     static bool SameSecond(TimeSpan a, TimeSpan b) =>
         a.Seconds == b.Seconds && a.Minutes == b.Minutes && a.Hours == b.Hours && a.Days == b.Days;
 
-    bool WriteTimeToDisk(string text)
+    bool WriteTimeToDisk(string text, CancellationToken token = default)
     {
+        if (token.IsCancellationRequested)
+            return false;
         try
         {
             files.Write(currentFileName, text);
@@ -479,18 +595,49 @@ public sealed class TimerEngine : IDisposable
         }
         catch (Exception ex)
         {
+            if (token.IsCancellationRequested)
+                return false;
             errors++;
             if (errors == 1)
-                return WriteTimeToDisk(text);
+                ReportFault(ex);
+            if (errors == 1)
+                return WriteTimeToDisk(text, token);
             if (errors > 5)
                 CountdownOutput = $"{ex.Message} | Ensure app has access to this directory. Go to Settings to set a valid directory.";
             return false;
         }
     }
 
+    void ReportFault(Exception exception)
+    {
+        var now = System.Diagnostics.Stopwatch.GetTimestamp();
+        if (lastFaultTimestamp != 0 && System.Diagnostics.Stopwatch.GetElapsedTime(lastFaultTimestamp, now) < TimeSpan.FromMinutes(1))
+            return;
+        lastFaultTimestamp = now;
+        Faulted?.Invoke(this, exception);
+    }
+
     public void Dispose()
     {
-        StopLoop();
-        platform.StopActivity(Kind.Id());
+        lock (locker)
+        {
+            if (disposed)
+                return;
+            disposed = true;
+            StopLoop();
+            State = TimerState.Idle;
+            CanPauseResume = false;
+            platform.StopActivity(Kind.Id());
+        }
+    }
+
+    /// <summary>Cancels every loop generation and drains pending writes without clearing the last output.</summary>
+    public ValueTask DisposeAsync()
+    {
+        lock (locker)
+        {
+            Dispose();
+            return new(Task.WhenAll(pendingLoops));
+        }
     }
 }

@@ -51,6 +51,9 @@ jobs:
               - 'global.json'
               - 'nuget.config'
               - '.github/workflows/ci.yml'
+              - '.github/workflows/windows-store-publish.yml'
+              - '.github/actions/diagnose-partner-center/**'
+              - 'scripts/Test-StorePackage.ps1'
 
   test:
     name: Core tests
@@ -69,6 +72,10 @@ jobs:
       - name: Test Core
         if: ${{ needs.changes.outputs.windows == 'true' }}
         run: dotnet test tests/MyStreamTimer.Core.Tests/MyStreamTimer.Core.Tests.csproj -c Release --no-restore --collect:"XPlat Code Coverage" --results-directory TestResults -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura
+      - name: Test Store flight selection
+        if: ${{ needs.changes.outputs.windows == 'true' }}
+        shell: pwsh
+        run: .\.github\actions\diagnose-partner-center\Test-ResolveStoreFlight.ps1
       - name: Upload coverage
         if: ${{ always() && needs.changes.outputs.windows == 'true' }}
         uses: actions/upload-artifact@v7
@@ -122,6 +129,24 @@ jobs:
         with:
           name: msix-${{ matrix.platform }}
           path: artifacts/*.msix
+      - name: Validate Store upload runtimes and symbols
+        if: ${{ needs.changes.outputs.windows == 'true' && matrix.platform == 'x64' }}
+        shell: pwsh
+        run: |
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+          $pdbTool = & $vswhere -latest -products * -find 'VC\Tools\MSVC\**\bin\Hostx64\x64\mspdbcmf.exe' | Select-Object -First 1
+          if (-not $pdbTool) { throw "Visual C++ symbol tools (mspdbcmf.exe) are required for Store symbols." }
+          dotnet build src/MyStreamTimer.WinUI/MyStreamTimer.WinUI.csproj `
+            -c Release -p:Platform=x64 -p:MyStreamTimerStoreBuild=true `
+            -p:GenerateAppxPackageOnBuild=true -p:AppxBundle=Always `
+            -p:AppxBundlePlatforms="x64|ARM64" -p:UapAppxPackageBuildMode=StoreUpload `
+            -p:AppxPackageSigningEnabled=false -p:AppxPackageDir="$pwd\artifacts\store\" `
+            "-p:PdbCmfx64ExeFullPath=$pdbTool" `
+            -p:SourceRevisionId=${{ github.sha }}
+          if ($LASTEXITCODE -ne 0) { throw "Store package build failed." }
+          $uploads = @(Get-ChildItem artifacts\store -Recurse -File -Filter *.msixupload)
+          if ($uploads.Count -ne 1) { throw "Expected exactly one Store upload package; found $($uploads.Count)." }
+          & .\scripts\Test-StorePackage.ps1 -PackagePath $uploads[0].FullName
       - name: Skipped
         if: ${{ needs.changes.outputs.windows != 'true' }}
         run: echo "No Windows files changed; build skipped."

@@ -450,7 +450,7 @@ public sealed partial class TimerViewModel : ObservableObject
         {
             ProRequired?.Invoke(this, "Additional output formats are a Pro feature — head over to the Pro page to upgrade.");
             // Re-publish the stored value on the next dispatcher tick so the two-way binding snaps back.
-            App.DispatcherQueue.TryEnqueue(() => OnPropertyChanged(nameof(OutputStyle)));
+            App.UiDispatcher.TryEnqueue(() => OnPropertyChanged(nameof(OutputStyle)));
             return false;
         }
 
@@ -751,14 +751,6 @@ public sealed partial class TimerViewModel : ObservableObject
 
     private static void Dispatch(Action action)
     {
-        if (App.DispatcherQueue.HasThreadAccess)
-        {
-            action();
-        }
-        else
-        {
-            App.DispatcherQueue.TryEnqueue(() => action());
-        }
+        App.UiDispatcher.Dispatch(action);
     }
 }
-

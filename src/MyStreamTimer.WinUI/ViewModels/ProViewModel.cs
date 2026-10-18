@@ -141,9 +141,9 @@ public sealed partial class ProViewModel : ObservableObject
         _store.ProductsChanged -= OnProductsChanged;
     }
 
-    private void OnProChanged(object? sender, EventArgs e) => App.DispatcherQueue.TryEnqueue(Refresh);
+    private void OnProChanged(object? sender, EventArgs e) => App.UiDispatcher.TryEnqueue(Refresh);
 
-    private void OnProductsChanged(object? sender, EventArgs e) => App.DispatcherQueue.TryEnqueue(RefreshPrices);
+    private void OnProductsChanged(object? sender, EventArgs e) => App.UiDispatcher.TryEnqueue(RefreshPrices);
 
     /// <summary>Fetches the latest product catalogue and licenses (fire-and-forget safe).</summary>
     public async Task RefreshFromStoreAsync()

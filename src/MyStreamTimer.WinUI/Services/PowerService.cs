@@ -8,19 +8,20 @@ namespace MyStreamTimer.WinUI.Services;
 /// (<c>PowerCreateRequest</c> / <c>PowerSetRequest</c>). Visible in <c>powercfg /requests</c>.
 /// All calls are marshalled to the UI thread.
 /// </summary>
-public sealed class PowerService
+public sealed class PowerService : IDisposable
 {
     private const string Reason = "My Stream Timer is running a timer";
 
     private nint _request;
     private bool _isActive;
+    private bool _disposed;
 
     /// <summary>True while a power request is held.</summary>
     public bool IsKeepAwake => _isActive;
 
     public void Acquire() => RunOnUi(() =>
     {
-        if (_isActive)
+        if (_disposed || App.UiDispatcher.IsShuttingDown || _isActive)
         {
             return;
         }
@@ -87,7 +88,21 @@ public sealed class PowerService
         }
         else
         {
-            queue.TryEnqueue(() => action());
+            App.UiDispatcher.TryEnqueue(action);
+        }
+    }
+
+    public void Dispose()
+    {
+        if (_disposed)
+            return;
+        Release();
+        _disposed = true;
+        if (_request != nint.Zero)
+        {
+            if (!CloseHandle(_request))
+                AppDiagnostics.Record("power-release-failed", $"Win32 error {Marshal.GetLastWin32Error()}.");
+            _request = nint.Zero;
         }
     }
 
@@ -120,4 +135,7 @@ public sealed class PowerService
 
     [DllImport("kernel32.dll", SetLastError = true)]
     private static extern bool PowerClearRequest(nint powerRequest, PowerRequestType requestType);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool CloseHandle(nint handle);
 }

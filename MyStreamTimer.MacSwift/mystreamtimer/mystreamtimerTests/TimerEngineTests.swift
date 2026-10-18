@@ -92,6 +92,96 @@ final class TimerEngineTests: XCTestCase {
         )
     }
 
+    func testCountdownCompletesOnlyAfterFailedFinishOutputIsSaved() async throws {
+        let directory = try temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let file = directory.appendingPathComponent("timer.txt")
+        try FileManager.default.createDirectory(at: file, withIntermediateDirectories: false)
+        let failed = expectation(description: "finish output write failed")
+        let completed = expectation(description: "finish output recovered and timer completed")
+        var completionCount = 0
+        var reportedFailure = false
+        let engine = TimerEngine { event in
+            switch event {
+            case .writeFailed:
+                if !reportedFailure {
+                    reportedFailure = true
+                    failed.fulfill()
+                }
+            case .completed:
+                completionCount += 1
+                completed.fulfill()
+            case .failed:
+                XCTFail("A file error must remain recoverable")
+            default:
+                break
+            }
+        }
+        let now = Date()
+        await engine.start(TimerEngine.Configuration(
+            generation: 1,
+            mode: .countdown,
+            startDate: now,
+            endDate: now.addingTimeInterval(-1),
+            initialElapsed: 0,
+            output: "Running",
+            finishText: "Finished",
+            showAMPM: false,
+            outputStyle: 0,
+            destination: timerDestination(in: directory),
+            countUpSoundTarget: nil
+        ))
+        await fulfillment(of: [failed], timeout: 2)
+        XCTAssertEqual(completionCount, 0, "Completion must wait for a successful finish write")
+        try FileManager.default.removeItem(at: file)
+        await fulfillment(of: [completed], timeout: 3)
+        await engine.shutdown()
+        XCTAssertEqual(completionCount, 1)
+        XCTAssertEqual(try String(contentsOf: file), "Finished")
+    }
+
+    func testShutdownCancelsWriteRetriesAndRejectsLateStarts() async throws {
+        let directory = try temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let file = directory.appendingPathComponent("timer.txt")
+        try FileManager.default.createDirectory(at: file, withIntermediateDirectories: false)
+        let failed = expectation(description: "output write failed")
+        var reportedFailure = false
+        let engine = TimerEngine { event in
+            if case .writeFailed = event, !reportedFailure {
+                reportedFailure = true
+                failed.fulfill()
+            }
+            if case .completed = event {
+                XCTFail("The running count up must not complete")
+            }
+        }
+        let now = Date()
+        func configuration(generation: UInt64) -> TimerEngine.Configuration {
+            TimerEngine.Configuration(
+                generation: generation,
+                mode: .countUp,
+                startDate: now,
+                endDate: now,
+                initialElapsed: 0,
+                output: "Running",
+                finishText: "",
+                showAMPM: false,
+                outputStyle: 0,
+                destination: timerDestination(in: directory),
+                countUpSoundTarget: nil
+            )
+        }
+        await engine.start(configuration(generation: 1))
+        await fulfillment(of: [failed], timeout: 2)
+        await engine.shutdown()
+        await engine.shutdown()
+        try FileManager.default.removeItem(at: file)
+        await engine.start(configuration(generation: 2))
+        try await Task.sleep(nanoseconds: 1_100_000_000)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: file.path))
+    }
+
     func testCustomFormatWithMultipleTokensUpdatesEachSecond() async throws {
         let directory = try temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -122,6 +212,115 @@ final class TimerEngineTests: XCTestCase {
 
         await fulfillment(of: [advanced], timeout: 2)
         await engine.invalidate(upThrough: 1)
+    }
+
+    func testInvalidIntervalsReportFailureBeforeFormattingOrWriting() async throws {
+        let directory = try temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        for mode in [TimerEngine.Mode.countdown, .countUp] {
+            for interval in [Double.nan, .infinity, -.infinity, 1e100, -1e100] {
+                let failed = expectation(description: "invalid duration reported")
+                let engine = TimerEngine { event in
+                    if case let .failed(generation, message) = event {
+                        XCTAssertEqual(generation, 1)
+                        XCTAssertFalse(message.isEmpty)
+                        failed.fulfill()
+                    } else {
+                        XCTFail("Invalid timing must not render, write, or complete normally")
+                    }
+                }
+                let now = Date()
+                await engine.start(TimerEngine.Configuration(
+                    generation: 1,
+                    mode: mode,
+                    startDate: now,
+                    endDate: now.addingTimeInterval(interval),
+                    initialElapsed: interval,
+                    output: "{0:hh:mm:ss}",
+                    finishText: "Finished",
+                    showAMPM: false,
+                    outputStyle: 2,
+                    destination: timerDestination(in: directory),
+                    countUpSoundTarget: nil
+                ))
+                await fulfillment(of: [failed], timeout: 2)
+                await engine.invalidate(upThrough: 1)
+                XCTAssertFalse(FileManager.default.fileExists(
+                    atPath: directory.appendingPathComponent("timer.txt").path
+                ))
+            }
+        }
+    }
+
+    func testLongStaticCountdownUsesBoundedSleep() async throws {
+        let directory = try temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let written = expectation(description: "long countdown written")
+        var renderedCount = 0
+        let engine = TimerEngine { event in
+            switch event {
+            case .rendered:
+                renderedCount += 1
+            case .writeSucceeded:
+                written.fulfill()
+            case .writeFailed, .failed, .completed:
+                XCTFail("A supported long countdown should keep running")
+            }
+        }
+        let now = Date()
+        await engine.start(TimerEngine.Configuration(
+            generation: 1,
+            mode: .countdown,
+            startDate: now,
+            endDate: now.addingTimeInterval(100_000_000_000),
+            initialElapsed: 0,
+            output: "Running",
+            finishText: "Finished",
+            showAMPM: false,
+            outputStyle: 0,
+            destination: timerDestination(in: directory),
+            countUpSoundTarget: nil
+        ))
+        await fulfillment(of: [written], timeout: 2)
+        try await Task.sleep(nanoseconds: 30_000_000)
+        await engine.invalidate(upThrough: 1)
+        XCTAssertEqual(renderedCount, 1)
+        XCTAssertEqual(try String(contentsOf: directory.appendingPathComponent("timer.txt")), "Running")
+    }
+
+    func testLargeDayCountsAreNotTruncatedTo32Bits() async throws {
+        let directory = try temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let days = Int(Int32.max) + 100
+        for style in [0, 1] {
+            let rendered = expectation(description: "large day count rendered")
+            let engine = TimerEngine { event in
+                if case let .rendered(_, text, _) = event {
+                    XCTAssertTrue(text.hasPrefix("\(days)"), text)
+                    rendered.fulfill()
+                }
+                if case .failed = event {
+                    XCTFail("The large but representable duration should be supported")
+                }
+            }
+            let now = Date()
+            await engine.start(TimerEngine.Configuration(
+                generation: 1,
+                mode: .countUp,
+                startDate: now,
+                endDate: now,
+                initialElapsed: TimeInterval(days) * 86_400,
+                output: "{0:dd}",
+                finishText: "",
+                showAMPM: false,
+                outputStyle: style,
+                destination: timerDestination(in: directory),
+                countUpSoundTarget: nil
+            ))
+            await fulfillment(of: [rendered], timeout: 2)
+            await engine.invalidate(upThrough: 1)
+        }
     }
 
     private func temporaryDirectory() throws -> URL {
