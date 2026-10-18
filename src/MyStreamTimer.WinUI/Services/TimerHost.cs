@@ -11,7 +11,7 @@ namespace MyStreamTimer.WinUI.Services;
 /// Owns one <see cref="TimerEngine"/> per <see cref="TimerKind"/> for the process lifetime, auto-starts timers
 /// flagged <c>AutoStart</c>, and dispatches <c>mystreamtimer://</c> commands to the right engine.
 /// </summary>
-public sealed class TimerHost : IDisposable
+public sealed class TimerHost : IDisposable, IAsyncDisposable
 {
     private readonly Dictionary<TimerKind, TimerEngine> _engines = [];
     private readonly ProEntitlement _pro;
@@ -78,4 +78,7 @@ public sealed class TimerHost : IDisposable
             engine.Dispose();
         }
     }
+
+    public ValueTask DisposeAsync() =>
+        new(Task.WhenAll(_engines.Values.Select(engine => engine.DisposeAsync().AsTask())));
 }

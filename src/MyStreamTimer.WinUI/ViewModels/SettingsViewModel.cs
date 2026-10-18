@@ -187,7 +187,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         _pro.Changed -= OnProChanged;
     }
 
-    private void OnProChanged(object? sender, EventArgs e) => App.DispatcherQueue.TryEnqueue(() => IsPro = _pro.IsPro);
+    private void OnProChanged(object? sender, EventArgs e) => App.UiDispatcher.TryEnqueue(() => IsPro = _pro.IsPro);
 
     private void LoadFromSettings()
     {

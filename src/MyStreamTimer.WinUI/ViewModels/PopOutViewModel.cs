@@ -16,6 +16,7 @@ public sealed partial class PopOutViewModel : ObservableObject, IDisposable
     private readonly TimerEngine _engine;
     private readonly GlobalSettings _settings;
     private readonly PopOutService _popOuts;
+    private bool _disposed;
 
     public PopOutViewModel(TimerEngine engine, GlobalSettings settings, PopOutService popOuts)
     {
@@ -65,19 +66,20 @@ public sealed partial class PopOutViewModel : ObservableObject, IDisposable
 
     private void OnTextChanged(object? sender, string text)
     {
-        App.DispatcherQueue.TryEnqueue(() => Text = string.IsNullOrWhiteSpace(text) ? Placeholder : text);
+        App.UiDispatcher.TryEnqueue(() =>
+        {
+            if (!_disposed)
+                Text = string.IsNullOrWhiteSpace(text) ? Placeholder : text;
+        });
     }
 
     private void OnAppearanceChanged(object? sender, EventArgs e)
     {
-        if (App.DispatcherQueue.HasThreadAccess)
+        App.UiDispatcher.Dispatch(() =>
         {
-            ApplyAppearance();
-        }
-        else
-        {
-            App.DispatcherQueue.TryEnqueue(ApplyAppearance);
-        }
+            if (!_disposed)
+                ApplyAppearance();
+        });
     }
 
     private void OnTimerAppearanceChanged(object? sender, TimerKind kind)
@@ -90,6 +92,7 @@ public sealed partial class PopOutViewModel : ObservableObject, IDisposable
 
     public void Dispose()
     {
+        _disposed = true;
         _engine.TextChanged -= OnTextChanged;
         _popOuts.AppearanceChanged -= OnAppearanceChanged;
         _popOuts.TimerAppearanceChanged -= OnTimerAppearanceChanged;

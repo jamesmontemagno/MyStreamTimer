@@ -50,6 +50,7 @@ final class AppModel: ObservableObject {
     )
 
     private var hasStarted = false
+    private var isShuttingDown = false
     private var cancellables = Set<AnyCancellable>()
 
     var allControllers: [TimerController] {
@@ -118,6 +119,7 @@ final class AppModel: ObservableObject {
     /// Runs once per launch. It is called at launch and again whenever the main window
     /// appears, because the app can launch, and keep running, without that window.
     func startup() async {
+        guard !isShuttingDown else { return }
         WindowManager.applyStayOnTop(settingsStore.stayOnTop)
 
         guard !hasStarted else { return }
@@ -138,6 +140,7 @@ final class AppModel: ObservableObject {
         menuBarController.start()
 
         await purchaseManager.start()
+        guard !isShuttingDown else { return }
         allControllers
             .filter(\.autoStart)
             .forEach { $0.start() }
@@ -146,6 +149,13 @@ final class AppModel: ObservableObject {
         // window. That is fine while a timer is in the menu bar; otherwise open it.
         if !menuBarController.hasVisibleItems, WindowManager.contentWindows.isEmpty {
             showMainWindow()
+        }
+    }
+
+    func shutdown() async {
+        isShuttingDown = true
+        for controller in allControllers {
+            await controller.shutdown()
         }
     }
 
@@ -258,6 +268,8 @@ final class AppModel: ObservableObject {
     }
 
     func handleIncomingURL(_ url: URL) {
+        guard !isShuttingDown else { return }
+
         guard let command = URLCommand(url: url) else {
             showAlert(title: "Unsupported Command", message: "That URL isn't recognized by My Stream Timer.")
             return

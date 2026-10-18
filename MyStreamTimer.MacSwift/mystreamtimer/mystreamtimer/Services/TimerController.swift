@@ -32,6 +32,8 @@ final class TimerController: ObservableObject, Identifiable {
 
     private let settingsStore: LegacySettingsStore
     private let fileAccess: BookmarkFileAccess
+    private let initializeFile: @MainActor (String) async throws -> Void
+    private let writeTimerOutput: TimerOutputWriter
     private let canUseProFeatures: () -> Bool
     private lazy var endSoundPlayer = EndSoundPlayer()
 
@@ -41,6 +43,9 @@ final class TimerController: ObservableObject, Identifiable {
     private var pausedElapsed: TimeInterval = 0
     private var generation: UInt64 = 0
     private var activeGeneration: UInt64?
+    private var isShutDown = false
+    private var initializationTask: Task<Void, Never>?
+    private var stopTask: Task<Void, Never>?
     private var activityToken: NSObjectProtocol?
     private var cancellables = Set<AnyCancellable>()
     private var activeSoundEnabled = false
@@ -49,7 +54,7 @@ final class TimerController: ObservableObject, Identifiable {
     private var activeCountUpSoundTarget: TimeInterval = 0
     private var previousCountUpSoundElapsed: TimeInterval = 0
     private var didPlayCountUpSound = false
-    private lazy var timerEngine = TimerEngine { [weak self] event in
+    private lazy var timerEngine = TimerEngine(writeTimerOutput: writeTimerOutput) { [weak self] event in
         self?.handleTimerEvent(event)
     }
 
@@ -87,11 +92,17 @@ final class TimerController: ObservableObject, Identifiable {
         kind: TimerKind,
         settingsStore: LegacySettingsStore,
         fileAccess: BookmarkFileAccess,
+        initializeFile: (@MainActor (String) async throws -> Void)? = nil,
+        writeTimerOutput: @escaping TimerOutputWriter = { text, destination in
+            try await BookmarkFileWorker.shared.writeTimerOutput(text: text, destination: destination)
+        },
         canUseProFeatures: @escaping () -> Bool
     ) {
         self.kind = kind
         self.settingsStore = settingsStore
         self.fileAccess = fileAccess
+        self.initializeFile = initializeFile ?? { try await fileAccess.initializeFile(named: $0) }
+        self.writeTimerOutput = writeTimerOutput
         self.canUseProFeatures = canUseProFeatures
 
         let configuration = settingsStore.loadConfiguration(for: kind)
@@ -126,12 +137,14 @@ final class TimerController: ObservableObject, Identifiable {
 
         persist()
 
-        Task { [weak self] in
-            guard let self else { return }
+        initializationTask = Task { [weak self] in
+            guard let self, self.generation == 0 else { return }
             do {
-                try await self.fileAccess.initializeFile(named: configuration.fileName)
+                try await self.initializeFile(configuration.fileName)
+                guard self.generation == 0 else { return }
                 self.lastError = nil
             } catch {
+                guard self.generation == 0 else { return }
                 self.lastError = "Couldn't prepare \(configuration.fileName): \(error.localizedDescription)"
             }
         }
@@ -207,6 +220,8 @@ final class TimerController: ObservableObject, Identifiable {
     }
 
     func apply(_ command: URLCommand) async {
+        guard !isShutDown else { return }
+
         switch command.action {
         case .start:
             start(overrideMinutes: command.minutes)
@@ -236,6 +251,8 @@ final class TimerController: ObservableObject, Identifiable {
     }
 
     func start(overrideMinutes: Double? = nil) {
+        guard !isShutDown else { return }
+
         guard !kind.requiresPro || canUseProFeatures() else {
             lastError = "\(effectiveTitle) requires Pro."
             return
@@ -312,21 +329,57 @@ final class TimerController: ObservableObject, Identifiable {
     }
 
     func stop(clearOutput: Bool) async {
+        guard !isShutDown else { return }
+
         let invalidatedGeneration = invalidateTimerEngine()
-        await timerEngine.invalidate(upThrough: invalidatedGeneration)
         isRunning = false
         isPaused = false
+        pausedRemaining = 0
+        pausedElapsed = 0
         endActivity()
-
         if clearOutput {
             currentText = ""
-            do {
-                try await fileAccess.writeTimerOutput(text: "", fileName: fileName)
-                lastError = nil
-            } catch {
-                lastError = error.localizedDescription
+        }
+
+        let previousStop = stopTask
+        let task = Task {
+            await previousStop?.value
+            await timerEngine.invalidate(upThrough: invalidatedGeneration)
+            guard generation == invalidatedGeneration, !isShutDown else { return }
+
+            if clearOutput {
+                let destination = fileAccess.timerOutputDestination(fileName: fileName)
+                do {
+                    let refreshedBookmark = try await writeTimerOutput("", destination)
+                    guard generation == invalidatedGeneration, !isShutDown else { return }
+                    fileAccess.applyRefreshedTimerBookmark(refreshedBookmark, destination: destination)
+                    lastError = nil
+                } catch {
+                    guard generation == invalidatedGeneration, !isShutDown else { return }
+                    lastError = error.localizedDescription
+                }
             }
         }
+        stopTask = task
+        await task.value
+        if generation == invalidatedGeneration {
+            stopTask = nil
+        }
+    }
+
+    func shutdown() async {
+        isShutDown = true
+        invalidateTimerEngine()
+        isRunning = false
+        isPaused = false
+        pausedRemaining = 0
+        pausedElapsed = 0
+        endActivity()
+        stopEndSoundPreview()
+        // Keep the last output on quit, but finish any write already in flight.
+        await initializationTask?.value
+        await stopTask?.value
+        await timerEngine.shutdown()
     }
 
     func pauseResume() {
@@ -428,7 +481,10 @@ final class TimerController: ObservableObject, Identifiable {
                 : nil
         )
 
+        // A new run must not overtake an in-flight output clear.
+        let pendingStop = stopTask
         Task {
+            await pendingStop?.value
             await timerEngine.start(configuration)
         }
     }

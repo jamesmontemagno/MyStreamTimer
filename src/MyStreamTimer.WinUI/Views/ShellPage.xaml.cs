@@ -47,14 +47,7 @@ public sealed partial class ShellPage : Page
 
     private void OnNavigationRequested(object? sender, string tag)
     {
-        if (DispatcherQueue.HasThreadAccess)
-        {
-            SelectByTag(tag);
-        }
-        else
-        {
-            DispatcherQueue.TryEnqueue(() => SelectByTag(tag));
-        }
+        App.UiDispatcher.Dispatch(() => SelectByTag(tag));
     }
 
     /// <summary>Selects the sidebar item for <paramref name="tag"/> (which in turn navigates); falls back to Home.</summary>
