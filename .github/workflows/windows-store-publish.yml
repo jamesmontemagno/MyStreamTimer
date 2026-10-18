@@ -1,4 +1,5 @@
 name: Windows Store Publish
+run-name: Store ${{ inputs.destination || 'flight' }} - ${{ inputs.source_run_id && format('reuse run {0}', inputs.source_run_id) || inputs.tag || github.ref_name }}
 
 on:
   push:
@@ -7,14 +8,30 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Windows release tag (for example, v3.0.0-windows). Not needed when running diagnostics only.'
+        description: 'Version for a new build, e.g. v3.2.1-windows. Leave empty when reusing a source run or diagnosing.'
         required: false
         type: string
       publish:
-        description: 'Submit to the configured tester flight after the protected-environment approval (never production)'
+        description: 'Submit to the selected destination after protected-environment approval. False only builds artifacts.'
         required: true
         default: false
         type: boolean
+      destination:
+        description: 'Where to submit. Tag pushes always use flight; production must be selected manually.'
+        required: true
+        default: flight
+        type: choice
+        options:
+          - flight
+          - production
+      source_run_id:
+        description: 'Promote an existing successful Store Publish run to production without rebuilding. Leave tag empty and enable publish.'
+        required: false
+        type: string
+      release_notes:
+        description: "What's new (max 1,500 characters). Saved for flights; updates existing English listings in production. Blank promotion reuses saved notes."
+        required: false
+        type: string
       diagnose_only:
         description: 'Check credentials and discover the package flight when a product ID is configured. Skips packaging and publishing.'
         required: false
@@ -23,6 +40,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: windows-store-publish
@@ -49,40 +67,71 @@ jobs:
           seller-id: ${{ secrets.PARTNER_CENTER_SELLER_ID }}
           client-id: ${{ secrets.PARTNER_CENTER_CLIENT_ID }}
           client-secret: ${{ secrets.PARTNER_CENTER_CLIENT_SECRET }}
-          product-id: ${{ vars.MICROSOFT_STORE_PRODUCT_ID }}
+          product-id: ${{ inputs.destination != 'production' && vars.MICROSOFT_STORE_PRODUCT_ID || '' }}
           flight-id: ${{ vars.MICROSOFT_STORE_FLIGHT_ID }}
+
+  prepare:
+    name: Validate release destination and source
+    if: github.event_name == 'push' || !inputs.diagnose_only
+    runs-on: ubuntu-latest
+    outputs:
+      destination: ${{ steps.plan.outputs.destination }}
+      source-run-id: ${{ steps.plan.outputs.source-run-id }}
+      package-version: ${{ steps.plan.outputs.package-version }}
+      publish: ${{ steps.plan.outputs.publish }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Validate release plan
+        id: plan
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+          RELEASE_DESTINATION: ${{ inputs.destination || 'flight' }}
+          SOURCE_RUN_ID: ${{ inputs.source_run_id }}
+          RELEASE_PUBLISH: ${{ inputs.publish }}
+          RELEASE_NOTES: ${{ inputs.release_notes }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          . .\scripts\StoreRelease.ps1
+          $plan = Get-StoreReleasePlan -EventName $env:GITHUB_EVENT_NAME -RefName $env:GITHUB_REF_NAME `
+            -Tag $env:RELEASE_TAG -Destination $env:RELEASE_DESTINATION -SourceRunId $env:SOURCE_RUN_ID `
+            -Publish ($env:RELEASE_PUBLISH -eq 'true') -ReleaseNotes $env:RELEASE_NOTES
+          if ($plan.SourceRunId) {
+            $headers = @{ Authorization = "Bearer $env:GH_TOKEN"; Accept = 'application/vnd.github+json' }
+            $uri = "https://api.github.com/repos/$env:GITHUB_REPOSITORY/actions/runs/$($plan.SourceRunId)"
+            $source = Invoke-RestMethod -Uri $uri -Headers $headers -TimeoutSec 60 -AsHashtable
+            $artifacts = Invoke-RestMethod -Uri "$uri/artifacts?per_page=100" -Headers $headers -TimeoutSec 60 -AsHashtable
+            if ($artifacts.total_count -gt 100) { throw 'The source has too many artifacts to validate unambiguously.' }
+            Test-StoreReleaseSource -Run $source -Artifacts $artifacts.artifacts -RunId $plan.SourceRunId `
+              -Repository $env:GITHUB_REPOSITORY -DefaultBranch $env:DEFAULT_BRANCH
+            "Source: $env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/actions/runs/$($plan.SourceRunId); commit $($source.head_sha)" >> $env:GITHUB_STEP_SUMMARY
+          }
+          "destination=$($plan.Destination)" >> $env:GITHUB_OUTPUT
+          "source-run-id=$($plan.SourceRunId)" >> $env:GITHUB_OUTPUT
+          "package-version=$($plan.PackageVersion)" >> $env:GITHUB_OUTPUT
+          "publish=$($plan.Publish.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+          "Destination: **$($plan.Destination)**. Submit: $($plan.Publish). Production never follows a failed flight selection." >> $env:GITHUB_STEP_SUMMARY
 
   package:
     name: Package Microsoft Store upload
-    if: github.event_name == 'push' || !inputs.diagnose_only
+    needs: prepare
     runs-on: windows-latest
+    env:
+      PACKAGE_VERSION: ${{ needs.prepare.outputs.package-version }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
 
       - name: Setup .NET SDK
+        if: needs.prepare.outputs.source-run-id == ''
         uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 10.0.x
 
-      - name: Set release version
-        shell: pwsh
-        run: |
-          $tag = if ("${{ github.event_name }}" -eq "workflow_dispatch") {
-            "${{ inputs.tag }}"
-          } else {
-            "${{ github.ref_name }}"
-          }
-
-          if ($tag -notmatch '^v(?<base>\d+\.\d+\.\d+)(?:\.(?<revision>\d+))?-windows$') {
-            throw "Windows release tags must look like v3.0.0-windows or v3.0.0.1-windows. Got '$tag'."
-          }
-
-          $revision = if ($Matches.revision) { $Matches.revision } else { "0" }
-          "PACKAGE_VERSION=$($Matches.base).$revision" >> $env:GITHUB_ENV
-
       - name: Stamp Store package manifest version
+        if: needs.prepare.outputs.source-run-id == ''
         shell: pwsh
         run: |
           $manifestPath = "src/MyStreamTimer.WinUI/Package.Store.appxmanifest"
@@ -91,6 +140,7 @@ jobs:
           Set-Content -Path $manifestPath -Value $content -Encoding utf8
 
       - name: Build Store upload package
+        if: needs.prepare.outputs.source-run-id == ''
         shell: pwsh
         run: |
           $packageDir = Join-Path (Resolve-Path ".") "artifacts/store/"
@@ -127,14 +177,52 @@ jobs:
           & .\scripts\Test-StorePackage.ps1 -PackagePath $upload.FullName -SymbolsDirectory artifacts\store-symbols
           Copy-Item $upload.FullName "artifacts/store/MyStreamTimer-$env:PACKAGE_VERSION.msixupload" -Force
 
+      - name: Reuse exact source package
+        if: needs.prepare.outputs.source-run-id != ''
+        uses: actions/download-artifact@v8
+        with:
+          name: windows-store-package
+          path: artifacts/store
+          run-id: ${{ needs.prepare.outputs.source-run-id }}
+          github-token: ${{ github.token }}
+
+      - name: Validate package and retain release notes
+        shell: pwsh
+        env:
+          RELEASE_NOTES: ${{ inputs.release_notes }}
+          RELEASE_DESTINATION: ${{ needs.prepare.outputs.destination }}
+          RELEASE_PUBLISH: ${{ needs.prepare.outputs.publish }}
+        run: |
+          . .\scripts\StoreRelease.ps1
+          $uploads = @(Get-ChildItem artifacts\store -File -Filter MyStreamTimer-*.msixupload)
+          if ($uploads.Count -ne 1) { throw 'Expected exactly one versioned Store upload.' }
+          $upload = $uploads[0]
+          & .\scripts\Test-StorePackage.ps1 -PackagePath $upload.FullName
+          $notesPath = 'artifacts\store\release-notes.txt'
+          $savedNotes = ''
+          if (Test-Path -LiteralPath $notesPath) {
+            $savedNotes = [IO.File]::ReadAllText((Resolve-Path -LiteralPath $notesPath))
+          }
+          $notes = Get-StoreReleaseNotes -ReleaseNotes $env:RELEASE_NOTES -SavedReleaseNotes $savedNotes `
+            -RequireNotes ($env:RELEASE_DESTINATION -eq 'production' -and $env:RELEASE_PUBLISH -eq 'true')
+          [IO.File]::WriteAllText((Join-Path $PWD $notesPath), $notes, [Text.UTF8Encoding]::new($false))
+          "PACKAGE_VERSION=$($upload.BaseName.Substring('MyStreamTimer-'.Length))" >> $env:GITHUB_ENV
+          $hash = (Get-FileHash -LiteralPath $upload.FullName -Algorithm SHA256).Hash
+          "Package: $($upload.Name); SHA256=$hash. Full package and matching PDBs revalidated; promotion does not rebuild." >> $env:GITHUB_STEP_SUMMARY
+          if ($notes) { "### What's new (English)`n$notes" >> $env:GITHUB_STEP_SUMMARY }
+
       - name: Upload Store package
         uses: actions/upload-artifact@v7
         with:
           name: windows-store-package
-          path: artifacts/store/MyStreamTimer-*.msixupload
+          path: |
+            artifacts/store/MyStreamTimer-*.msixupload
+            artifacts/store/release-notes.txt
           if-no-files-found: error
+          retention-days: 90
 
       - name: Retain matching symbols and build provenance
+        if: needs.prepare.outputs.source-run-id == ''
         uses: actions/upload-artifact@v7
         with:
           name: windows-store-symbols-${{ env.PACKAGE_VERSION }}
@@ -143,9 +231,9 @@ jobs:
           retention-days: 90
 
   publish:
-    name: Submit to Microsoft Store flight
-    needs: package
-    if: github.event_name == 'push' || inputs.publish
+    name: Submit to Microsoft Store (${{ needs.prepare.outputs.destination }})
+    needs: [prepare, package]
+    if: needs.prepare.outputs.publish == 'true'
     runs-on: windows-latest
     environment: microsoft-store
 
@@ -180,10 +268,11 @@ jobs:
             ForEach-Object Key
 
           if ($missing) {
-            throw "Configure the following before enabling Store flight publication: $($missing -join ', ')."
+            throw "Configure the following before enabling Store publication: $($missing -join ', ')."
           }
 
       - name: Diagnose Partner Center credentials and select flight
+        if: needs.prepare.outputs.destination == 'flight'
         id: partner-center
         uses: ./.github/actions/diagnose-partner-center
         with:
@@ -199,23 +288,29 @@ jobs:
 
       - name: Configure Microsoft Store Developer CLI
         shell: pwsh
+        env:
+          PARTNER_CENTER_TENANT_ID: ${{ secrets.PARTNER_CENTER_TENANT_ID }}
+          PARTNER_CENTER_SELLER_ID: ${{ secrets.PARTNER_CENTER_SELLER_ID }}
+          PARTNER_CENTER_CLIENT_ID: ${{ secrets.PARTNER_CENTER_CLIENT_ID }}
+          PARTNER_CENTER_CLIENT_SECRET: ${{ secrets.PARTNER_CENTER_CLIENT_SECRET }}
         run: |
           msstore reconfigure `
-            --tenantId "${{ secrets.PARTNER_CENTER_TENANT_ID }}" `
-            --sellerId "${{ secrets.PARTNER_CENTER_SELLER_ID }}" `
-            --clientId "${{ secrets.PARTNER_CENTER_CLIENT_ID }}" `
-            --clientSecret "${{ secrets.PARTNER_CENTER_CLIENT_SECRET }}"
+            --tenantId "$env:PARTNER_CENTER_TENANT_ID" `
+            --sellerId "$env:PARTNER_CENTER_SELLER_ID" `
+            --clientId "$env:PARTNER_CENTER_CLIENT_ID" `
+            --clientSecret "$env:PARTNER_CENTER_CLIENT_SECRET"
+          if ($LASTEXITCODE -ne 0) { throw 'Store CLI authentication failed.' }
 
-      - name: Publish Store package to flight
+      - name: Publish symbol-validated package with release notes
         shell: pwsh
         env:
           STORE_PRODUCT_ID: ${{ vars.MICROSOFT_STORE_PRODUCT_ID }}
           STORE_FLIGHT_ID: ${{ steps.partner-center.outputs.flight-id }}
+          STORE_DESTINATION: ${{ needs.prepare.outputs.destination }}
+          PARTNER_CENTER_TENANT_ID: ${{ secrets.PARTNER_CENTER_TENANT_ID }}
+          PARTNER_CENTER_CLIENT_ID: ${{ secrets.PARTNER_CENTER_CLIENT_ID }}
+          PARTNER_CENTER_CLIENT_SECRET: ${{ secrets.PARTNER_CENTER_CLIENT_SECRET }}
         run: |
-          if ([string]::IsNullOrWhiteSpace($env:STORE_FLIGHT_ID)) {
-            throw "No package flight was resolved. Production publishing is disabled."
-          }
-
           $uploads = @(Get-ChildItem artifacts/store -File -Filter *.msixupload)
           if ($uploads.Count -ne 1) {
             throw "Expected exactly one downloaded .msixupload package; found $($uploads.Count)."
@@ -224,12 +319,9 @@ jobs:
 
           & .\scripts\Test-StorePackage.ps1 -PackagePath $upload.FullName
           $hash = (Get-FileHash -LiteralPath $upload.FullName -Algorithm SHA256).Hash
-          Write-Host "Uploading symbol-validated Store package to flight $($env:STORE_FLIGHT_ID): $($upload.Name); SHA256=$hash"
+          Write-Host "Uploading symbol-validated Store package to $($env:STORE_DESTINATION): $($upload.Name); SHA256=$hash"
 
-          # Pass the package file itself. Pointing msstore at a directory makes it look for a
-          # project to infer a publisher from, which does not exist in this workflow.
-          # Upload the whole .msixupload, including its .appxsym files, not the inner bundle.
-          # --uploadTimeout must be set explicitly: when omitted the CLI has defaulted it to 0,
-          # which cancels the blob upload immediately. See microsoft/msstore-cli#162.
-          msstore publish $upload.FullName --appId $env:STORE_PRODUCT_ID --flightId $env:STORE_FLIGHT_ID --uploadTimeout 900
-          if ($LASTEXITCODE -ne 0) { throw "msstore flight publish failed." }
+          $notes = [IO.File]::ReadAllText((Resolve-Path -LiteralPath 'artifacts\store\release-notes.txt'))
+          & .\scripts\Publish-StorePackage.ps1 -Destination $env:STORE_DESTINATION `
+            -PackagePath $upload.FullName -ProductId $env:STORE_PRODUCT_ID `
+            -FlightId $env:STORE_FLIGHT_ID -ReleaseNotes $notes
