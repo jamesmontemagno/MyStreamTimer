@@ -30,9 +30,9 @@ public sealed partial class TimerPage : Page
         _copiedTipTimer = DispatcherQueue.CreateTimer();
         _copiedTipTimer.Interval = CopiedTipDuration;
         _copiedTipTimer.IsRepeating = false;
-        _copiedTipTimer.Tick += (_, _) => CopiedTip.IsOpen = false;
 
         Loaded += OnLoaded;
+        Unloaded += OnUnloaded;
     }
 
     /// <summary>The timer currently shown. Never null after the first navigation.</summary>
@@ -55,6 +55,14 @@ public sealed partial class TimerPage : Page
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
+        if (App.UiDispatcher.IsShuttingDown)
+        {
+            return;
+        }
+
+        _copiedTipTimer.Tick += OnCopiedTipTimerTick;
+        CopiedTip.IsOpen = false;
+
         if (!_isShadowReceiverWired)
         {
             HeroShadow.Receivers.Add(ShadowReceiver);
@@ -64,6 +72,20 @@ public sealed partial class TimerPage : Page
         if (_viewModel is not null)
         {
             UpdateVisualStates(useTransitions: false);
+        }
+    }
+
+    private void OnUnloaded(object sender, RoutedEventArgs e)
+    {
+        _copiedTipTimer.Stop();
+        _copiedTipTimer.Tick -= OnCopiedTipTimerTick;
+    }
+
+    private void OnCopiedTipTimerTick(DispatcherQueueTimer sender, object args)
+    {
+        if (IsLoaded && !App.UiDispatcher.IsShuttingDown)
+        {
+            CopiedTip.IsOpen = false;
         }
     }
 
@@ -150,6 +172,11 @@ public sealed partial class TimerPage : Page
 
     private void OnCopied(object? sender, string message)
     {
+        if (!IsLoaded || App.UiDispatcher.IsShuttingDown)
+        {
+            return;
+        }
+
         CopiedTip.Title = message;
         CopiedTip.Target = message.StartsWith("Path", StringComparison.Ordinal) && OutputExpander.IsExpanded
             ? CopyPathButton

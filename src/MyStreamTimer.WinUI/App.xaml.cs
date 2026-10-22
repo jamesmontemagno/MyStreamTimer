@@ -110,10 +110,10 @@ public partial class App : Application
             if (!UiDispatcher.IsShuttingDown)
             {
                 UiDispatcher.Shutdown();
-                activation.Stop();
                 AppDiagnostics.Record("shutdown-forced", "The window closed without a coordinated drain.");
-                _ = Task.Run(() => timers.Dispose());
-                GetService<PowerService>().Dispose();
+                RunShutdownStep("activation", activation.Stop);
+                _ = Task.Run(() => RunShutdownStep("timers", timers.Dispose));
+                RunShutdownStep("power", () => GetService<PowerService>().Dispose());
             }
         };
         windowService.Initialize(Window);
@@ -148,14 +148,14 @@ public partial class App : Application
             return;
 
         UiDispatcher.Shutdown();
-        GetService<ActivationService>().Stop();
         AppDiagnostics.Record("shutdown-start");
-        // File-system calls may be blocked on a network share; never hold the UI behind an engine lock.
-        var shutdown = Task.Run(async () => await GetService<TimerHost>().DisposeAsync());
-        GetService<PowerService>().Dispose();
-        GetService<PopOutService>().CloseAll();
         try
         {
+            RunShutdownStep("activation", () => GetService<ActivationService>().Stop());
+            // File-system calls may be blocked on a network share; never hold the UI behind an engine lock.
+            var shutdown = Task.Run(async () => await GetService<TimerHost>().DisposeAsync());
+            RunShutdownStep("power", () => GetService<PowerService>().Dispose());
+            RunShutdownStep("pop-outs", () => GetService<PopOutService>().CloseAll());
             await shutdown.WaitAsync(TimeSpan.FromSeconds(5));
             AppDiagnostics.Record("shutdown-drained");
         }
@@ -163,8 +163,36 @@ public partial class App : Application
         {
             AppDiagnostics.Record("shutdown-timeout", "Pending timer I/O did not drain before closing.", ex);
         }
-        shutdownCompleted = true;
-        Window.Close();
+        catch (Exception ex)
+        {
+            AppDiagnostics.Record("shutdown-failed", exception: ex);
+        }
+        finally
+        {
+            shutdownCompleted = true;
+            try
+            {
+                Window.Close();
+            }
+            catch (Exception ex)
+            {
+                AppDiagnostics.Record("shutdown-close-failed", exception: ex);
+                // The UI is already shut down; do not leave a live, unusable window or rethrow from async void.
+                Environment.Exit(1);
+            }
+        }
+    }
+
+    private static void RunShutdownStep(string step, Action cleanup)
+    {
+        try
+        {
+            cleanup();
+        }
+        catch (Exception ex)
+        {
+            AppDiagnostics.Record("shutdown-step-failed", step, ex);
+        }
     }
 
     private void OnUnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
