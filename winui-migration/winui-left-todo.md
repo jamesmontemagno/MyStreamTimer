@@ -112,11 +112,15 @@ and the product ID as a **repository variable**. A package flight ID override is
 | Environment secret | `PARTNER_CENTER_CLIENT_SECRET` | the client secret |
 | **Repository variable** | `MICROSOFT_STORE_PRODUCT_ID` | `9N5NXX3WK7K7` |
 | Optional repository variable | `MICROSOFT_STORE_FLIGHT_ID` | Existing package flight ID; only needed to choose among multiple flights |
+| Repository variable for initial flight creation | `MICROSOFT_STORE_FLIGHT_GROUP_IDS` | Comma-separated Partner Center tester group IDs, not names |
 
-Create one package flight linked to the `IAP Test` known user group in Partner Center, then reuse it for future releases.
+Configure tester group IDs so an approved flight publish can create **Internal Testing** through the API when no flights exist,
+or reuse an existing flight linked to the `IAP Test` known user group.
 The workflow discovers the app's only existing flight automatically; no portal ID lookup is needed. If multiple flights
-exist, the logs list their names and IDs so you can configure the override. No flights, ambiguous selection, an invalid
-override, or discovery errors block submission; the workflow never creates flights or falls back to production.
+exist, the logs list their names and IDs so you can configure the override. Missing flights without valid group IDs,
+ambiguous selection, an invalid override, or discovery errors block submission; there is no production fallback.
+Portal-created drafts without API upload URLs block publication unless a manual flight publish explicitly enables
+`replace_flight_draft`; only its unsubmitted PendingCommit draft is deleted, preserving the flight and testers.
 Manual `destination = production` submissions skip flight discovery. Both destinations use the same protected
 environment approval; do not remove its required reviewer. See [Windows release flows](../README.md#windows-flight-first-releases)
 for build-only, flight, exact-artifact promotion, direct production, and English release-note inputs.

@@ -2,10 +2,18 @@
 param(
     [Parameter(Mandatory)][string]$ProductId,
     [Parameter(Mandatory)][string]$AccessToken,
-    [string]$FlightId
+    [string]$FlightId,
+    [string]$FlightGroupIds,
+    [switch]$PrepareFlight,
+    [switch]$ReplaceFlightDraft
 )
 
 $ErrorActionPreference = 'Stop'
+if ($ReplaceFlightDraft -and -not $PrepareFlight) {
+    throw 'Draft replacement requires flight preparation.'
+}
+$requestedId = "$FlightId".Trim()
+$headers = @{ Authorization = "Bearer $AccessToken" }
 $baseUri = [uri]'https://manage.devcenter.microsoft.com/v1.0/my/'
 $flightPath = "applications/$([uri]::EscapeDataString($ProductId))/listflights"
 $nextUri = [uri]::new($baseUri, "$flightPath`?top=100")
@@ -23,7 +31,7 @@ do {
     }
     catch [Microsoft.PowerShell.Commands.HttpResponseException] {
         if ($_.Exception.Response.StatusCode -eq [System.Net.HttpStatusCode]::NotFound) {
-            throw 'No package flights were found. In Partner Center, create one package flight linked to the IAP Test group, then reuse that flight for future releases.'
+            throw 'No package flights were found. Check the product ID and API access; use an approved flight publish with MICROSOFT_STORE_FLIGHT_GROUP_IDS when the flight list is empty.'
         }
         throw "Package flight discovery failed with HTTP $([int]$_.Exception.Response.StatusCode). Check this app's Partner Center API access. No flight was selected."
     }
@@ -66,13 +74,28 @@ if ($flights.Count -ne $totalCount) {
     throw 'Package flight discovery returned an incomplete list. No flight was selected.'
 }
 if ($flights.Count -eq 0) {
-    throw 'No package flights were found. In Partner Center, create one package flight linked to the IAP Test group, then reuse that flight for future releases.'
+    if (-not $PrepareFlight -or $requestedId) {
+        throw 'No package flights were found. Use an approved flight publish with MICROSOFT_STORE_FLIGHT_GROUP_IDS to create Internal Testing, or correct MICROSOFT_STORE_FLIGHT_ID. Diagnostics never create flights.'
+    }
+    $groupIds = @($FlightGroupIds -split ',' | ForEach-Object { $_.Trim() } | Select-Object -Unique)
+    if ($groupIds.Count -eq 0 -or @($groupIds | Where-Object { $_ -cnotmatch '\A[a-zA-Z0-9][a-zA-Z0-9-]*\z' }).Count) {
+        throw 'Set MICROSOFT_STORE_FLIGHT_GROUP_IDS to comma-separated Partner Center tester group IDs before creating Internal Testing. Group names are not IDs.'
+    }
+    $created = Invoke-RestMethod -Method Post `
+        -Uri ([uri]::new($baseUri, "applications/$([uri]::EscapeDataString($ProductId))/flights")) `
+        -Headers $headers -TimeoutSec 60 -ContentType 'application/json' `
+        -Body (@{ friendlyName = 'Internal Testing'; groupIds = $groupIds } | ConvertTo-Json -Depth 5 -Compress)
+    if ($created.friendlyName -cne 'Internal Testing' -or
+        $created.flightId -isnot [string] -or $created.flightId -cnotmatch '\A[a-zA-Z0-9][a-zA-Z0-9-]*\z') {
+        throw 'Partner Center returned an unexpected created flight. Inspect flights before retrying.'
+    }
+    $flights.Add($created)
+    Write-Host 'Created API-managed Internal Testing with the configured tester groups.'
 }
 
 foreach ($flight in $flights) {
     Write-Host "Package flight: $($flight.friendlyName); ID=$($flight.flightId); group IDs=$($flight.groupIds -join ', ')"
 }
-$requestedId = "$FlightId".Trim()
 if ($requestedId) {
     $matchingFlights = @($flights | Where-Object flightId -EQ $requestedId)
     if ($matchingFlights.Count -ne 1) {
@@ -83,6 +106,35 @@ if ($requestedId) {
     $selected = $flights[0]
 } else {
     throw 'Multiple package flights exist. Set MICROSOFT_STORE_FLIGHT_ID to one of the IDs listed above. No flight was selected.'
+}
+
+if ($PrepareFlight) {
+    $flightUri = [uri]::new($baseUri, "applications/$([uri]::EscapeDataString($ProductId))/flights/$($selected.flightId)")
+    $flight = Invoke-RestMethod -Method Get -Uri $flightUri -Headers $headers -TimeoutSec 60
+    if ($flight.flightId -cne $selected.flightId) {
+        throw 'Partner Center returned an unexpected flight. No draft was removed.'
+    }
+    if ($flight.pendingFlightSubmission) {
+        $submissionId = $flight.pendingFlightSubmission.id
+        if ($submissionId -isnot [string] -or $submissionId -cnotmatch '\A[a-zA-Z0-9][a-zA-Z0-9-]*\z') {
+            throw 'Partner Center returned an invalid pending submission ID. No draft was removed.'
+        }
+        $submissionUri = "$($flightUri.AbsoluteUri)/submissions/$submissionId"
+        $submission = Invoke-RestMethod -Method Get -Uri $submissionUri -Headers $headers -TimeoutSec 60
+        if ($submission.id -cne $submissionId -or $submission.flightId -cne $selected.flightId) {
+            throw 'Partner Center returned an unexpected flight submission. No draft was removed.'
+        }
+        if ($submission.status -notin @('PendingCommit', 'CommitFailed')) {
+            throw 'The flight submission is processing or not editable. Wait or resolve it in Partner Center. No draft was removed.'
+        }
+        if ([string]::IsNullOrWhiteSpace($submission.fileUploadUrl)) {
+            if (-not $ReplaceFlightDraft -or $submission.status -ne 'PendingCommit') {
+                throw 'The flight has a portal-created draft without an API upload URL. Discard only the unsubmitted draft in Partner Center, or manually publish with replace_flight_draft enabled. No draft was removed.'
+            }
+            Invoke-RestMethod -Method Delete -Uri $submissionUri -Headers $headers -TimeoutSec 60 | Out-Null
+            Write-Host 'Discarded only the explicitly approved portal draft; the flight and tester groups are preserved.'
+        }
+    }
 }
 
 Write-Host "Selected package flight: $($selected.friendlyName); ID=$($selected.flightId)"

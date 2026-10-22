@@ -3,7 +3,8 @@ description: >-
   Reproduces the two calls the Microsoft Store Developer CLI makes during
   `msstore reconfigure` so an authentication failure points at a specific cause
   instead of the CLI's generic "Really failed to auth" message. When a product ID
-  is supplied, also resolves an existing package flight without modifying it.
+  is supplied, also resolves a package flight. Diagnostics are read-only;
+  approved flight publication can prepare an API-managed flight.
 
 inputs:
   tenant-id:
@@ -24,10 +25,19 @@ inputs:
   flight-id:
     description: Optional package flight ID override. Otherwise the app must have exactly one flight.
     required: false
+  flight-group-ids:
+    description: Comma-separated tester group IDs used only when creating Internal Testing.
+    required: false
+  prepare-flight:
+    description: Allow flight creation and check pending drafts before publishing.
+    default: 'false'
+  replace-flight-draft:
+    description: Explicitly discard only an unsubmitted portal-created PendingCommit flight draft.
+    default: 'false'
 
 outputs:
   flight-id:
-    description: The selected existing package flight ID, when a product ID was supplied.
+    description: The selected package flight ID, when a product ID was supplied.
     value: ${{ steps.diagnose.outputs.flight-id }}
 
 runs:
@@ -43,6 +53,9 @@ runs:
         PARTNER_CENTER_CLIENT_SECRET: ${{ inputs.client-secret }}
         STORE_PRODUCT_ID: ${{ inputs.product-id }}
         STORE_FLIGHT_ID: ${{ inputs.flight-id }}
+        STORE_FLIGHT_GROUP_IDS: ${{ inputs.flight-group-ids }}
+        STORE_PREPARE_FLIGHT: ${{ inputs.prepare-flight }}
+        STORE_REPLACE_FLIGHT_DRAFT: ${{ inputs.replace-flight-draft }}
       run: |
         # The secret and the access token are never written to the log.
         $tenantId = "$env:PARTNER_CENTER_TENANT_ID".Trim()
@@ -127,7 +140,10 @@ runs:
           throw "Partner Center returned no access token for flight discovery."
         }
 
-        Write-Host "`n--- Step 3: discover an existing package flight for $productId ---"
+        Write-Host "`n--- Step 3: resolve package flight for $productId ---"
         $flightId = & (Join-Path $env:GITHUB_ACTION_PATH 'Resolve-StoreFlight.ps1') `
-          -ProductId $productId -AccessToken $accessToken -FlightId "$env:STORE_FLIGHT_ID"
+          -ProductId $productId -AccessToken $accessToken -FlightId "$env:STORE_FLIGHT_ID" `
+          -FlightGroupIds "$env:STORE_FLIGHT_GROUP_IDS" `
+          -PrepareFlight:($env:STORE_PREPARE_FLIGHT -eq 'true') `
+          -ReplaceFlightDraft:($env:STORE_REPLACE_FLIGHT_DRAFT -eq 'true')
         Add-Content -LiteralPath $env:GITHUB_OUTPUT -Value "flight-id=$flightId"
