@@ -103,7 +103,7 @@ public sealed class PopOutService
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[PopOutService] Close failed: {ex.Message}");
+                AppDiagnostics.Record("popout-close-failed", exception: ex);
             }
         }
 
