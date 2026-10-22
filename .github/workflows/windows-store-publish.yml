@@ -37,6 +37,11 @@ on:
         required: false
         default: false
         type: boolean
+      replace_flight_draft:
+        description: 'Flight publish only: discard an unsubmitted portal-created draft, preserving the flight and testers.'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -271,7 +276,7 @@ jobs:
             throw "Configure the following before enabling Store publication: $($missing -join ', ')."
           }
 
-      - name: Diagnose Partner Center credentials and select flight
+      - name: Check Partner Center credentials and prepare API-managed flight
         if: needs.prepare.outputs.destination == 'flight'
         id: partner-center
         uses: ./.github/actions/diagnose-partner-center
@@ -282,6 +287,9 @@ jobs:
           client-secret: ${{ secrets.PARTNER_CENTER_CLIENT_SECRET }}
           product-id: ${{ vars.MICROSOFT_STORE_PRODUCT_ID }}
           flight-id: ${{ vars.MICROSOFT_STORE_FLIGHT_ID }}
+          flight-group-ids: ${{ vars.MICROSOFT_STORE_FLIGHT_GROUP_IDS }}
+          prepare-flight: 'true'
+          replace-flight-draft: ${{ github.event_name == 'workflow_dispatch' && inputs.publish && inputs.replace_flight_draft }}
 
       - name: Setup Microsoft Store Developer CLI
         uses: microsoft/microsoft-store-apppublisher@v1.4
