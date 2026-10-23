@@ -165,7 +165,7 @@ function msstore {
     $global:LASTEXITCODE = $global:StoreReleaseTestCliExitCode
 }
 function Invoke-RestMethod {
-    param($Method, $Uri, $Headers, $TimeoutSec, $ContentType, $Body, [switch] $AsHashtable)
+    param($Method, $Uri, $Headers, $TimeoutSec, $ContentType, $Body)
     $global:StoreReleaseTestRequests.Add("$Method $Uri")
     if ($TimeoutSec -ne 60) { throw 'Unbounded HTTP request.' }
     if ($global:StoreReleaseTestHttpFailure) { throw 'Simulated HTTP failure.' }
