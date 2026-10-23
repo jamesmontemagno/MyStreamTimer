@@ -215,7 +215,7 @@ function Invoke-RestMethod {
         return $submission | ConvertTo-Json -Depth 100 | ConvertFrom-Json
     }
     if ($Method -eq 'Post' -and $Uri -like '*/draft-1/commit') {
-        return @{ status = $(if ($global:StoreReleaseTestScenario -eq 'commit-rejected') { 'CommitFailed' } else { 'CommitStarted' }) }
+        return [pscustomobject]@{ status = $(if ($global:StoreReleaseTestScenario -eq 'commit-rejected') { 'CommitFailed' } else { 'CommitStarted' }) }
     }
     throw "Unexpected test request: $Method $Uri"
 }
