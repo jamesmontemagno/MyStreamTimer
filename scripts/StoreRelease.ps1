@@ -9,6 +9,35 @@ function Get-StoreReleaseNotes {
     return $notes
 }
 
+function ConvertTo-StoreReleaseHashtable {
+    param([object] $InputObject)
+
+    if ($null -eq $InputObject) { return $null }
+    if ($InputObject -is [System.Collections.IDictionary]) {
+        $result = @{}
+        foreach ($key in $InputObject.Keys) {
+            $result[$key] = ConvertTo-StoreReleaseHashtable -InputObject $InputObject[$key]
+        }
+        return $result
+    }
+    if ($InputObject -is [pscustomobject]) {
+        $result = @{}
+        foreach ($property in $InputObject.PSObject.Properties) {
+            $result[$property.Name] = ConvertTo-StoreReleaseHashtable -InputObject $property.Value
+        }
+        return $result
+    }
+    if ($InputObject -is [System.Collections.IEnumerable] -and $InputObject -isnot [string]) {
+        $result = @(
+            foreach ($item in $InputObject) {
+                ConvertTo-StoreReleaseHashtable -InputObject $item
+            }
+        )
+        return ,$result
+    }
+    return $InputObject
+}
+
 function Get-StoreReleasePlan {
     param(
         [string] $EventName,
