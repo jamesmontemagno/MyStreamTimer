@@ -105,10 +105,8 @@ jobs:
           if ($plan.SourceRunId) {
             $headers = @{ Authorization = "Bearer $env:GH_TOKEN"; Accept = 'application/vnd.github+json' }
             $uri = "https://api.github.com/repos/$env:GITHUB_REPOSITORY/actions/runs/$($plan.SourceRunId)"
-            $source = Invoke-RestMethod -Uri $uri -Headers $headers -TimeoutSec 60 |
-              ConvertTo-Json -Depth 100 -Compress | ConvertFrom-Json -AsHashtable
-            $artifacts = Invoke-RestMethod -Uri "$uri/artifacts?per_page=100" -Headers $headers -TimeoutSec 60 |
-              ConvertTo-Json -Depth 100 -Compress | ConvertFrom-Json -AsHashtable
+            $source = ConvertTo-StoreReleaseHashtable (Invoke-RestMethod -Uri $uri -Headers $headers -TimeoutSec 60)
+            $artifacts = ConvertTo-StoreReleaseHashtable (Invoke-RestMethod -Uri "$uri/artifacts?per_page=100" -Headers $headers -TimeoutSec 60)
             if ($artifacts.total_count -gt 100) { throw 'The source has too many artifacts to validate unambiguously.' }
             Test-StoreReleaseSource -Run $source -Artifacts $artifacts.artifacts -RunId $plan.SourceRunId `
               -Repository $env:GITHUB_REPOSITORY -DefaultBranch $env:DEFAULT_BRANCH

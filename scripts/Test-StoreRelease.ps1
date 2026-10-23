@@ -47,6 +47,21 @@ Test-Case 'promotion inherits saved English release notes exactly' {
     $notes = "Fixed pause.`nImproved output."
     Assert ((Get-StoreReleaseNotes -SavedReleaseNotes $notes -RequireNotes $true) -ceq $notes) 'Saved notes were not inherited.'
 }
+Test-Case 'API response conversion creates nested dictionaries without changing arrays' {
+    $response = [pscustomobject]@{
+        listings = [pscustomobject]@{
+            'en-us' = [pscustomobject]@{ baseListing = [pscustomobject]@{ releaseNotes = 'Fixes.' } }
+        }
+        artifacts = @([pscustomobject]@{ name = 'windows-store-package' })
+    }
+    $converted = ConvertTo-StoreReleaseHashtable $response
+    Assert ($converted -is [System.Collections.IDictionary] -and
+        $converted.listings -is [System.Collections.IDictionary] -and
+        $converted.listings['en-us'].baseListing.releaseNotes -eq 'Fixes.') 'Nested API objects were not converted to dictionaries.'
+    Assert ($converted.artifacts -is [array] -and
+        $converted.artifacts[0] -is [System.Collections.IDictionary] -and
+        $converted.artifacts[0].name -eq 'windows-store-package') 'API arrays were changed or not recursively converted.'
+}
 Test-Case 'promotion can override saved notes without changing package bytes' {
     Assert ((Get-StoreReleaseNotes -ReleaseNotes ' New notes. ' -SavedReleaseNotes 'Old notes.' -RequireNotes $true) -ceq 'New notes.') 'Notes override was ignored.'
 }
@@ -190,14 +205,14 @@ function Invoke-RestMethod {
         return
     }
     if ($Method -eq 'Get') {
-        if ($global:StoreReleaseTestSaved) { return $global:StoreReleaseTestSaved }
+        if ($global:StoreReleaseTestSaved) { return $global:StoreReleaseTestSaved | ConvertTo-Json -Depth 100 | ConvertFrom-Json }
         $submission = New-Submission
         if ($global:StoreReleaseTestScenario -eq 'missing-English') {
             $submission.listings.Remove('en-us')
             $submission.listings.Remove('en-gb')
         }
         if ($global:StoreReleaseTestScenario -eq 'draft-not-ready') { $submission.status = 'Certification' }
-        return $submission
+        return $submission | ConvertTo-Json -Depth 100 | ConvertFrom-Json
     }
     if ($Method -eq 'Post' -and $Uri -like '*/draft-1/commit') {
         return @{ status = $(if ($global:StoreReleaseTestScenario -eq 'commit-rejected') { 'CommitFailed' } else { 'CommitStarted' }) }

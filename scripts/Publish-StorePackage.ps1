@@ -47,8 +47,7 @@ $application = Invoke-RestMethod -Method Get -Uri $appUri -Headers $headers -Tim
 $submissionId = $application.pendingApplicationSubmission.id
 if ($submissionId -notmatch '^[a-zA-Z0-9-]+$') { throw 'The uploaded production draft could not be identified. Nothing was committed.' }
 $submissionUri = "$appUri/submissions/$submissionId"
-$submission = Invoke-RestMethod -Method Get -Uri $submissionUri -Headers $headers -TimeoutSec 60 |
-    ConvertTo-Json -Depth 100 -Compress | ConvertFrom-Json -AsHashtable
+$submission = ConvertTo-StoreReleaseHashtable (Invoke-RestMethod -Method Get -Uri $submissionUri -Headers $headers -TimeoutSec 60)
 if ($submission.id -ne $submissionId -or $submission.status -ne 'PendingCommit') {
     throw 'The production draft is not awaiting commit. Nothing was committed.'
 }
@@ -57,8 +56,7 @@ $json = $submission | ConvertTo-Json -Depth 100 -Compress
 Invoke-RestMethod -Method Put -Uri $submissionUri -Headers $headers -TimeoutSec 60 `
     -ContentType 'application/json; charset=utf-8' -Body ([Text.Encoding]::UTF8.GetBytes($json)) | Out-Null
 
-$saved = Invoke-RestMethod -Method Get -Uri $submissionUri -Headers $headers -TimeoutSec 60 |
-    ConvertTo-Json -Depth 100 -Compress | ConvertFrom-Json -AsHashtable
+$saved = ConvertTo-StoreReleaseHashtable (Invoke-RestMethod -Method Get -Uri $submissionUri -Headers $headers -TimeoutSec 60)
 foreach ($language in @($submission.listings.Keys | Where-Object { $_ -match '^en(?:-|$)' })) {
     if ($saved.listings[$language].baseListing.releaseNotes -cne $ReleaseNotes.Trim()) {
         throw "The $language What's new text was not saved. The production submission remains uncommitted."
