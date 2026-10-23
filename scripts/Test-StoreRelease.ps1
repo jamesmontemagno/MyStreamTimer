@@ -58,7 +58,7 @@ Test-Case 'API response conversion creates nested dictionaries without changing 
     Assert ($converted -is [System.Collections.IDictionary] -and
         $converted.listings -is [System.Collections.IDictionary] -and
         $converted.listings['en-us'].baseListing.releaseNotes -eq 'Fixes.') 'Nested API objects were not converted to dictionaries.'
-    Assert ($converted.artifacts -is [array] -and
+    Assert ($converted.artifacts -is [array] -and $converted.artifacts.Count -eq 1 -and
         $converted.artifacts[0] -is [System.Collections.IDictionary] -and
         $converted.artifacts[0].name -eq 'windows-store-package') 'API arrays were changed or not recursively converted.'
 }
