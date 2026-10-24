@@ -2,11 +2,11 @@ name: Windows Build
 
 # PR / push gate for the Windows (WinUI 3) app. The workflow always runs so the
 # required status checks always report; the `changes` job decides whether the
-# build and tests actually execute. The build/test jobs always start (so the
-# matrix-expanded check names like "Build (Windows, x64)" are reported even on
-# docs-only PRs) but every step is conditional, so a skip costs only a runner
-# spin-up. A job-level `if` would prevent matrix expansion and leave the
-# required checks "expected" forever.
+# build and tests actually execute. Keep the same jobs and matrix-expanded
+# check names on every run, using Linux for no-op checks on non-Windows changes.
+# !cancelled() also expands the matrix after failed or skipped change detection;
+# each job rejects unsuccessful or invalid detection instead of reporting a
+# successful no-op. Cancellation still stops work. Do not gate expansion on paths.
 
 on:
   pull_request:
@@ -61,8 +61,19 @@ jobs:
   test:
     name: Core tests
     needs: changes
-    runs-on: windows-latest
+    if: ${{ !cancelled() }}
+    runs-on: ${{ needs.changes.result == 'success' && needs.changes.outputs.windows == 'true' && 'windows-latest' || 'ubuntu-latest' }}
     steps:
+      - name: Validate change detection
+        shell: bash
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          WINDOWS_CHANGED: ${{ needs.changes.outputs.windows }}
+        run: |
+          if [[ "$CHANGES_RESULT" != "success" || ! "$WINDOWS_CHANGED" =~ ^(true|false)$ ]]; then
+            echo "::error::Windows change detection did not succeed with a valid result."
+            exit 1
+          fi
       - uses: actions/checkout@v7
         if: ${{ needs.changes.outputs.windows == 'true' }}
       - uses: actions/setup-dotnet@v5
@@ -97,7 +108,8 @@ jobs:
   build:
     name: Build (Windows, ${{ matrix.platform }})
     needs: changes
-    runs-on: windows-latest
+    if: ${{ !cancelled() }}
+    runs-on: ${{ needs.changes.result == 'success' && needs.changes.outputs.windows == 'true' && 'windows-latest' || 'ubuntu-latest' }}
     strategy:
       fail-fast: false
       matrix:
@@ -107,6 +119,16 @@ jobs:
           - platform: ARM64
             rid: win-arm64
     steps:
+      - name: Validate change detection
+        shell: bash
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          WINDOWS_CHANGED: ${{ needs.changes.outputs.windows }}
+        run: |
+          if [[ "$CHANGES_RESULT" != "success" || ! "$WINDOWS_CHANGED" =~ ^(true|false)$ ]]; then
+            echo "::error::Windows change detection did not succeed with a valid result."
+            exit 1
+          fi
       - uses: actions/checkout@v7
         if: ${{ needs.changes.outputs.windows == 'true' }}
       - uses: actions/setup-dotnet@v5
@@ -161,8 +183,19 @@ jobs:
   no-windows-changes:
     name: Build skipped (no Windows changes)
     needs: changes
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
+      - name: Validate change detection
+        shell: bash
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          WINDOWS_CHANGED: ${{ needs.changes.outputs.windows }}
+        run: |
+          if [[ "$CHANGES_RESULT" != "success" || ! "$WINDOWS_CHANGED" =~ ^(true|false)$ ]]; then
+            echo "::error::Windows change detection did not succeed with a valid result."
+            exit 1
+          fi
       - name: Report successful skip
         if: ${{ needs.changes.outputs.windows != 'true' }}
         run: echo "No Windows files changed; skipping the Windows build and tests."
