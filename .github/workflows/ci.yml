@@ -84,6 +84,8 @@ jobs:
           $packages = Join-Path $nugetRoot 'packages'
           $httpCache = Join-Path $nugetRoot 'http-cache'
           New-Item -ItemType Directory -Force -Path $packages, $httpCache | Out-Null
+          Write-Host "NuGet packages: $packages"
+          Write-Host "NuGet HTTP cache: $httpCache"
           Add-Content -Path $env:GITHUB_ENV -Value "NUGET_PACKAGES=$packages"
           Add-Content -Path $env:GITHUB_ENV -Value "NUGET_HTTP_CACHE_PATH=$httpCache"
       - uses: actions/setup-dotnet@v5
@@ -149,6 +151,8 @@ jobs:
           $packages = Join-Path $nugetRoot 'packages'
           $httpCache = Join-Path $nugetRoot 'http-cache'
           New-Item -ItemType Directory -Force -Path $packages, $httpCache | Out-Null
+          Write-Host "NuGet packages: $packages"
+          Write-Host "NuGet HTTP cache: $httpCache"
           Add-Content -Path $env:GITHUB_ENV -Value "NUGET_PACKAGES=$packages"
           Add-Content -Path $env:GITHUB_ENV -Value "NUGET_HTTP_CACHE_PATH=$httpCache"
       - uses: actions/setup-dotnet@v5
