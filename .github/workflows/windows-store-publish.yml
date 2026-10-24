@@ -129,6 +129,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
 
+      - name: Use runner-temp NuGet caches
+        if: needs.prepare.outputs.source-run-id == ''
+        shell: pwsh
+        run: |
+          $nugetRoot = Join-Path $env:RUNNER_TEMP 'nuget'
+          $packages = Join-Path $nugetRoot 'packages'
+          $httpCache = Join-Path $nugetRoot 'http-cache'
+          New-Item -ItemType Directory -Force -Path $packages, $httpCache | Out-Null
+          Add-Content -Path $env:GITHUB_ENV -Value "NUGET_PACKAGES=$packages"
+          Add-Content -Path $env:GITHUB_ENV -Value "NUGET_HTTP_CACHE_PATH=$httpCache"
+
       - name: Setup .NET SDK
         if: needs.prepare.outputs.source-run-id == ''
         uses: actions/setup-dotnet@v5
