@@ -4,9 +4,9 @@ name: Windows Build
 # required status checks always report; the `changes` job decides whether the
 # build and tests actually execute. Keep the same jobs and matrix-expanded
 # check names on every run, using Linux for no-op checks on non-Windows changes.
-# An always() job condition also expands the matrix after change-detection
-# failure; each job rejects failed, cancelled, skipped, or invalid detection
-# instead of reporting a successful no-op. Do not gate matrix expansion on paths.
+# !cancelled() also expands the matrix after failed or skipped change detection;
+# each job rejects unsuccessful or invalid detection instead of reporting a
+# successful no-op. Cancellation still stops work. Do not gate expansion on paths.
 
 on:
   pull_request:
@@ -61,7 +61,7 @@ jobs:
   test:
     name: Core tests
     needs: changes
-    if: ${{ always() }}
+    if: ${{ !cancelled() }}
     runs-on: ${{ needs.changes.result == 'success' && needs.changes.outputs.windows == 'true' && 'windows-latest' || 'ubuntu-latest' }}
     steps:
       - name: Validate change detection
@@ -108,7 +108,7 @@ jobs:
   build:
     name: Build (Windows, ${{ matrix.platform }})
     needs: changes
-    if: ${{ always() }}
+    if: ${{ !cancelled() }}
     runs-on: ${{ needs.changes.result == 'success' && needs.changes.outputs.windows == 'true' && 'windows-latest' || 'ubuntu-latest' }}
     strategy:
       fail-fast: false
@@ -183,7 +183,7 @@ jobs:
   no-windows-changes:
     name: Build skipped (no Windows changes)
     needs: changes
-    if: ${{ always() }}
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
       - name: Validate change detection
