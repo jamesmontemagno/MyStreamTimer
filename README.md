@@ -241,6 +241,12 @@ xcodebuild test \
 
 Regressions cover invalid numeric URLs, cold/stopped adjustments, preserving active/paused timers on rejected commands, integer settings boundaries, count-up zero, long static countdown scheduling, and large day counts. These macOS tests require Xcode; a Windows Core test pass does not validate the Swift app.
 
+### Countdown file lifecycle regression
+
+Core `TimerKindAndFilesTests`, Swift `CommandBoundaryTests`, and Stream Deck `file-timer.test.ts` exercise a 12-second countdown through three elapsed seconds, a 20-second logical pause, two resumed output transitions, reset while running, and stop. They read actual temporary output files using controlled clocks, not a 20-second sleep. App reset restores the saved eight-second duration; standalone Stream Deck reset restores its original twelve-second session. Each retains its own formatting and reset behavior.
+
+Run Core with `dotnet test tests/MyStreamTimer.Core.Tests/MyStreamTimer.Core.Tests.csproj -c Release --filter FullyQualifiedName~TimerKindAndFilesTests`, Stream Deck with `npm test -- tests/file-timer.test.ts` in `MyStreamTimer.StreamDeck`, and Swift with the Xcode command above (optionally adding `-only-testing:mystreamtimerTests/CommandBoundaryTests`). The Swift controller and actor share an injectable clock that defaults to `Date()`; the test clock is lock-protected across both. These tests do not launch native OS protocol handlers or OBS, and passing another platform's tests does not validate Swift.
+
 ### macOS: Files can't be saved
 In some instances My Stream Timer may need full file accessed based on your setup (This is rare). Head to **Preferences > Security & Privacy > Full Disk Access** Unlock to add My Stream Timer from your application folder.
 

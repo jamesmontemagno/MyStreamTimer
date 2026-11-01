@@ -5,6 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <DefineConstants>$(DefineConstants);WINDOWS_STABILITY_STUBS</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,5 +25,20 @@
   <ItemGroup>
     <None Include="Fixtures\**\*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- Test the Windows adapter's managed logic with test-only OS/diagnostics doubles. -->
+    <Compile Include="..\..\src\MyStreamTimer.WinUI\Services\LocalSettingsStore.cs" Link="WindowsStability\LocalSettingsStore.cs" />
+    <Compile Include="..\WindowsStability\LocalSettingsStoreTests.cs" Link="WindowsStability\LocalSettingsStoreTests.cs" />
+    <Compile Include="..\..\src\MyStreamTimer.WinUI\Services\ActivationRedirection.cs" Link="WindowsStability\ActivationRedirection.cs" />
+    <Compile Include="..\WindowsStability\ActivationRedirectionTests.cs" Link="WindowsStability\ActivationRedirectionTests.cs" />
+    <Compile Include="..\..\src\MyStreamTimer.WinUI\Services\SettingsResetConfirmation.cs" Link="WindowsStability\SettingsResetConfirmation.cs" />
+    <Compile Include="..\WindowsStability\SettingsResetConfirmationTests.cs" Link="WindowsStability\SettingsResetConfirmationTests.cs" />
+    <Compile Include="..\..\src\MyStreamTimer.WinUI\Services\FolderService.cs" Link="WindowsStability\FolderService.cs" />
+    <Compile Include="..\WindowsStability\FolderServiceTests.cs" Link="WindowsStability\FolderServiceTests.cs" />
+    <Compile Include="..\..\src\MyStreamTimer.WinUI\Services\StoreService.cs" Link="WindowsStability\StoreService.cs" />
+    <Compile Include="..\..\src\MyStreamTimer.WinUI\Services\StoreLicenseRefreshOutcome.cs" Link="WindowsStability\StoreLicenseRefreshOutcome.cs" />
+    <Compile Include="..\..\src\MyStreamTimer.WinUI\Services\ShellServices.cs" Link="WindowsStability\ShellServices.cs" />
+    <Compile Include="..\WindowsStability\StoreAndLauncherTests.cs" Link="WindowsStability\StoreAndLauncherTests.cs" />
+    <Compile Include="..\WindowsStability\StoreAndLauncherTestDoubles.cs" Link="WindowsStability\StoreAndLauncherTestDoubles.cs" />
+  </ItemGroup>
 </Project>
-

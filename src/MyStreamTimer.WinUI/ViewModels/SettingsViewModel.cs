@@ -251,7 +251,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     private async Task ChooseFolderAsync()
     {
         var path = await _folders.PickFolderAsync();
-        if (path is null)
+        if (path is null || App.UiDispatcher.IsShuttingDown)
         {
             return;
         }
@@ -260,16 +260,19 @@ public sealed partial class SettingsViewModel : ObservableObject
         try
         {
             var (ok, message) = await _folders.TestAccessAsync(path);
-            if (ok)
+            App.UiDispatcher.Dispatch(() =>
             {
-                SetDirectory(path);
-            }
+                if (ok)
+                {
+                    SetDirectory(path);
+                }
 
-            ShowFolderStatus(message, ok ? InfoBarSeverity.Success : InfoBarSeverity.Error);
+                ShowFolderStatus(message, ok ? InfoBarSeverity.Success : InfoBarSeverity.Error);
+            });
         }
         finally
         {
-            IsFolderBusy = false;
+            App.UiDispatcher.Dispatch(() => IsFolderBusy = false);
         }
     }
 
@@ -294,39 +297,49 @@ public sealed partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     private async Task TestAccessAsync()
     {
+        if (App.UiDispatcher.IsShuttingDown)
+            return;
+
         IsFolderBusy = true;
         try
         {
             var (ok, message) = await _folders.TestAccessAsync(DirectoryPath);
-            ShowFolderStatus(message, ok ? InfoBarSeverity.Success : InfoBarSeverity.Error);
+            App.UiDispatcher.Dispatch(() =>
+                ShowFolderStatus(message, ok ? InfoBarSeverity.Success : InfoBarSeverity.Error));
         }
         finally
         {
-            IsFolderBusy = false;
+            App.UiDispatcher.Dispatch(() => IsFolderBusy = false);
         }
     }
 
     [RelayCommand]
     private async Task UseDefaultAsync()
     {
+        if (App.UiDispatcher.IsShuttingDown)
+            return;
+
         IsFolderBusy = true;
         try
         {
             var path = _settings.DefaultDirectoryPath;
             var (ok, message) = await _folders.TestAccessAsync(path);
-            if (ok)
+            App.UiDispatcher.Dispatch(() =>
             {
-                SetDirectory(path);
-                ShowFolderStatus("Output folder reset to the default location.", InfoBarSeverity.Success);
-            }
-            else
-            {
-                ShowFolderStatus(message, InfoBarSeverity.Error);
-            }
+                if (ok)
+                {
+                    SetDirectory(path);
+                    ShowFolderStatus("Output folder reset to the default location.", InfoBarSeverity.Success);
+                }
+                else
+                {
+                    ShowFolderStatus(message, InfoBarSeverity.Error);
+                }
+            });
         }
         finally
         {
-            IsFolderBusy = false;
+            App.UiDispatcher.Dispatch(() => IsFolderBusy = false);
         }
     }
 
@@ -348,18 +361,17 @@ public sealed partial class SettingsViewModel : ObservableObject
     private void GoToPro() => NavigateToProRequested?.Invoke(this, EventArgs.Empty);
 
     [RelayCommand]
-    private async Task ResetAllSettingsAsync()
-    {
-        var confirmed = await _dialogs.ConfirmAsync(
+    private Task ResetAllSettingsAsync() => SettingsResetConfirmation.RunAsync(
+        App.UiDispatcher,
+        () => _dialogs.ConfirmAsync(
             "Reset all settings?",
             "Every timer's duration, output format, file name, end sound and behaviour, plus the output folder, theme and pop-out appearance will return to their defaults. Your Pro purchases are kept.",
             "Reset",
-            "Cancel");
-        if (!confirmed)
-        {
-            return;
-        }
+            "Cancel"),
+        ResetSettings);
 
+    private void ResetSettings()
+    {
         foreach (var kind in TimerKindExtensions.All)
         {
             foreach (var name in TimerKeyNames)

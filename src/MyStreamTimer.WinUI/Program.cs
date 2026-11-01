@@ -67,18 +67,12 @@ public static class Program
         return true;
     }
 
-    // Documented pattern (Microsoft Learn "App instancing with the app lifecycle API"): wait on a Win32
-    // event while pumping COM messages, because RedirectActivationToAsync cannot be awaited on an STA thread.
+    // Keep the documented COM-pumping wait on the STA thread; the task's handle signals even on failure.
     private static void RedirectActivationTo(AppActivationArguments args, AppInstance keyInstance)
     {
-        var redirectEventHandle = CreateEvent(nint.Zero, true, false, null);
-        Task.Run(() =>
-        {
-            keyInstance.RedirectActivationToAsync(args).AsTask().Wait();
-            SetEvent(redirectEventHandle);
-        });
-
-        _ = CoWaitForMultipleObjects(CWMO_DEFAULT, INFINITE, 1, [redirectEventHandle], out _);
+        ActivationRedirection.Run(() => keyInstance.RedirectActivationToAsync(args).AsTask(),
+            completed => Marshal.ThrowExceptionForHR(CoWaitForMultipleObjects(
+                CWMO_DEFAULT, INFINITE, 1, [completed.SafeWaitHandle.DangerousGetHandle()], out _)));
     }
 
     private const uint CWMO_DEFAULT = 0;
@@ -87,12 +81,6 @@ public static class Program
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern int MessageBox(nint hWnd, string text, string caption, uint type);
 
-    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    private static extern nint CreateEvent(nint lpEventAttributes, bool bManualReset, bool bInitialState, string? lpName);
-
-    [DllImport("kernel32.dll")]
-    private static extern bool SetEvent(nint hEvent);
-
     [DllImport("ole32.dll")]
-    private static extern uint CoWaitForMultipleObjects(uint dwFlags, uint dwMilliseconds, ulong nHandles, nint[] pHandles, out uint dwIndex);
+    private static extern int CoWaitForMultipleObjects(uint dwFlags, uint dwMilliseconds, uint nHandles, nint[] pHandles, out uint dwIndex);
 }

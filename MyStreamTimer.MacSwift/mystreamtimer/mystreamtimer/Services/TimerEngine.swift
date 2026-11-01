@@ -36,6 +36,7 @@ actor TimerEngine {
     }
 
     private let writeTimerOutput: TimerOutputWriter
+    private let now: @Sendable () -> Date
     private let eventHandler: @MainActor @Sendable (Event) -> Void
     private var newestGeneration: UInt64 = 0
     private var activeGeneration: UInt64?
@@ -46,9 +47,11 @@ actor TimerEngine {
         writeTimerOutput: @escaping TimerOutputWriter = { text, destination in
             try await BookmarkFileWorker.shared.writeTimerOutput(text: text, destination: destination)
         },
+        now: @escaping @Sendable () -> Date = { Date() },
         eventHandler: @escaping @MainActor @Sendable (Event) -> Void
     ) {
         self.writeTimerOutput = writeTimerOutput
+        self.now = now
         self.eventHandler = eventHandler
     }
 
@@ -94,7 +97,7 @@ actor TimerEngine {
         var shouldRetryWrite = false
 
         while !Task.isCancelled, isCurrent(configuration.generation) {
-            let now = Date()
+            let now = self.now()
             let interval: TimeInterval
             switch configuration.mode {
             case .countdown:
@@ -165,7 +168,7 @@ actor TimerEngine {
                 : nextTransition
             let wakeDate = min(nextTransition, retryDate)
             // Long static countdowns must not overflow the nanosecond conversion.
-            let delay = min(86_400, max(0.01, wakeDate.timeIntervalSinceNow))
+            let delay = min(86_400, max(0.01, wakeDate.timeIntervalSince(self.now())))
             try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
         }
     }

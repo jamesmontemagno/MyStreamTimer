@@ -30,11 +30,16 @@ public sealed class LauncherService
     {
         try
         {
-            return await Launcher.LaunchUriAsync(new Uri(uri));
+            var opened = await Launcher.LaunchUriAsync(new Uri(uri));
+            if (!opened)
+            {
+                AppDiagnostics.Record("launcher-uri-not-opened", "The shell did not open the URI.");
+            }
+            return opened;
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[LauncherService] OpenUri failed: {ex.Message}");
+            AppDiagnostics.Record("launcher-uri-failed", "The shell URI launch failed.", ex);
             return false;
         }
     }
@@ -43,11 +48,16 @@ public sealed class LauncherService
     {
         try
         {
-            return await Launcher.LaunchFolderPathAsync(path);
+            var opened = await Launcher.LaunchFolderPathAsync(path);
+            if (!opened)
+            {
+                AppDiagnostics.Record("launcher-folder-not-opened", "The shell did not open the folder.");
+            }
+            return opened;
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[LauncherService] OpenFolder failed: {ex.Message}");
+            AppDiagnostics.Record("launcher-folder-failed", "The shell folder launch failed.", ex);
             return false;
         }
     }

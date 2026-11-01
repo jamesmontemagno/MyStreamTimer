@@ -34,6 +34,7 @@ final class TimerController: ObservableObject, Identifiable {
     private let fileAccess: BookmarkFileAccess
     private let initializeFile: @MainActor (String) async throws -> Void
     private let writeTimerOutput: TimerOutputWriter
+    private let now: @Sendable () -> Date
     private let canUseProFeatures: () -> Bool
     private lazy var endSoundPlayer = EndSoundPlayer()
 
@@ -54,7 +55,7 @@ final class TimerController: ObservableObject, Identifiable {
     private var activeCountUpSoundTarget: TimeInterval = 0
     private var previousCountUpSoundElapsed: TimeInterval = 0
     private var didPlayCountUpSound = false
-    private lazy var timerEngine = TimerEngine(writeTimerOutput: writeTimerOutput) { [weak self] event in
+    private lazy var timerEngine = TimerEngine(writeTimerOutput: writeTimerOutput, now: now) { [weak self] event in
         self?.handleTimerEvent(event)
     }
 
@@ -96,6 +97,7 @@ final class TimerController: ObservableObject, Identifiable {
         writeTimerOutput: @escaping TimerOutputWriter = { text, destination in
             try await BookmarkFileWorker.shared.writeTimerOutput(text: text, destination: destination)
         },
+        now: @escaping @Sendable () -> Date = { Date() },
         canUseProFeatures: @escaping () -> Bool
     ) {
         self.kind = kind
@@ -103,6 +105,7 @@ final class TimerController: ObservableObject, Identifiable {
         self.fileAccess = fileAccess
         self.initializeFile = initializeFile ?? { try await fileAccess.initializeFile(named: $0) }
         self.writeTimerOutput = writeTimerOutput
+        self.now = now
         self.canUseProFeatures = canUseProFeatures
 
         let configuration = settingsStore.loadConfiguration(for: kind)
@@ -267,7 +270,7 @@ final class TimerController: ObservableObject, Identifiable {
             return
         }
 
-        let now = Date()
+        let now = self.now()
         let duration: TimeInterval
         if kind.isCountdown {
             if let overrideMinutes {
@@ -387,18 +390,18 @@ final class TimerController: ObservableObject, Identifiable {
 
         if !isPaused {
             if kind.isCountdown {
-                pausedRemaining = max(0, endDate.timeIntervalSinceNow)
+                pausedRemaining = max(0, endDate.timeIntervalSince(now()))
             } else if kind.isCountUp {
-                pausedElapsed = max(0, Date().timeIntervalSince(startDate) + pausedElapsed)
+                pausedElapsed = max(0, now().timeIntervalSince(startDate) + pausedElapsed)
             }
             isPaused = true
             invalidateTimerEngine()
         } else {
             isPaused = false
             if kind.isCountdown {
-                endDate = Date().addingTimeInterval(pausedRemaining)
+                endDate = now().addingTimeInterval(pausedRemaining)
             } else if kind.isCountUp {
-                startDate = Date()
+                startDate = now()
                 previousCountUpSoundElapsed = currentCountUpElapsed()
             }
             launchTimerEngine()
@@ -427,7 +430,7 @@ final class TimerController: ObservableObject, Identifiable {
             let adjustedEndDate = endDate.addingTimeInterval(adjustment)
             let remaining = isPaused
                 ? pausedRemaining + adjustment
-                : adjustedEndDate.timeIntervalSinceNow
+                : adjustedEndDate.timeIntervalSince(now())
             guard TimerInterval.isSupported(abs(remaining)) else {
                 lastError = "The adjusted timer duration is outside the supported range."
                 return
@@ -441,7 +444,7 @@ final class TimerController: ObservableObject, Identifiable {
         } else if kind.isCountUp {
             let previousElapsed = currentCountUpElapsed()
             let adjustedElapsed = max(0, pausedElapsed + adjustment)
-            let elapsed = isPaused ? adjustedElapsed : Date().timeIntervalSince(startDate) + adjustedElapsed
+            let elapsed = isPaused ? adjustedElapsed : now().timeIntervalSince(startDate) + adjustedElapsed
             guard TimerInterval.isSupported(max(0, elapsed)) else {
                 lastError = "The adjusted timer duration is outside the supported range."
                 return
@@ -605,9 +608,9 @@ final class TimerController: ObservableObject, Identifiable {
         playActiveEndSound()
     }
 
-    private func currentCountUpElapsed(at date: Date = Date()) -> TimeInterval {
+    private func currentCountUpElapsed(at date: Date? = nil) -> TimeInterval {
         guard kind.isCountUp else { return 0 }
-        return max(0, date.timeIntervalSince(startDate) + pausedElapsed)
+        return max(0, (date ?? now()).timeIntervalSince(startDate) + pausedElapsed)
     }
 
     private func playActiveEndSound() {

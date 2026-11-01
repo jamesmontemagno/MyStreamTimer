@@ -9,6 +9,7 @@ namespace MyStreamTimer.WinUI.Services;
 /// <see cref="ISettingsStore"/> over <c>ApplicationData.Current.LocalSettings.Values</c> (root container,
 /// no prefixes) so every key the legacy UWP app wrote through Plugin.Settings is read back unchanged.
 /// Numeric reads tolerate a value stored as a different numeric type (e.g. an Int32 read as long).
+/// Invalid Boolean conversions use the caller's default and record diagnostics without rewriting stored values.
 /// </summary>
 public sealed class LocalSettingsStore : ISettingsStore
 {
@@ -25,13 +26,22 @@ public sealed class LocalSettingsStore : ISettingsStore
             return defaultValue;
         }
 
-        return raw switch
+        try
         {
-            bool b => b,
-            string s when bool.TryParse(s, out var parsed) => parsed,
-            IConvertible c => Convert.ToInt64(c, CultureInfo.InvariantCulture) != 0,
-            _ => defaultValue,
-        };
+            return raw switch
+            {
+                bool b => b,
+                string s when bool.TryParse(s, out var parsed) => parsed,
+                IConvertible c => Convert.ToInt64(c, CultureInfo.InvariantCulture) != 0,
+                _ => defaultValue,
+            };
+        }
+        catch (Exception ex) when (ex is FormatException or InvalidCastException or OverflowException)
+        {
+            AppDiagnostics.Record("settings-boolean-invalid",
+                "A stored Boolean could not be converted; using the caller default.", ex);
+            return defaultValue;
+        }
     }
 
     public int GetInt(string key, int defaultValue) => GetNumber(key, defaultValue, Convert.ToInt32);
