@@ -62,7 +62,6 @@ public sealed partial class ProViewModel : ObservableObject
 {
     public const string PrivacyUrl = "https://refractored.com/about/";
     public const string TermsUrl = "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/";
-    public const string RestoreNotFoundMessage = "Looks like we couldn't find your previous purchases or active subscriptions. Tap on the purchase button to attempt to purchase or restore.";
 
     private static readonly Color BronzeColor = ColorHex.Parse("#CD7F32", Colors.Transparent);
     private static readonly Color SilverColor = ColorHex.Parse("#A8A9AD", Colors.Transparent);
@@ -334,10 +333,10 @@ public sealed partial class ProViewModel : ObservableObject
                 return;
             }
 
-            var found = await _store.RestoreAsync();
-            if (!found)
+            var outcome = await _store.RestoreAsync();
+            if (outcome.GetRestoreMessage() is { } message)
             {
-                await _dialogs.ShowMessageAsync("Restore purchases", RestoreNotFoundMessage);
+                await _dialogs.ShowMessageAsync("Restore purchases", message);
             }
         }
         finally

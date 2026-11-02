@@ -12,6 +12,7 @@ public sealed class FolderService
     public const string AccessOkMessage = "This directory is valid and can be accessed! New files will be saved here.";
     public const string AccessFailedMessage = "Double check this is a valid directory path, or make sure that My Stream Timer has full write access to put files in this directory.";
     public const string TimersRunningMessage = "Please stop all timers before changing the save directory";
+    public const string ShutdownMessage = "The app is shutting down; folder access was skipped.";
 
     private readonly ITimerPlatform _platform;
 
@@ -23,6 +24,9 @@ public sealed class FolderService
     /// <summary>Shows the folder picker; returns the chosen path or null when cancelled.</summary>
     public async Task<string?> PickFolderAsync()
     {
+        if (SkipForShutdown())
+            return null;
+
         try
         {
             var picker = new Microsoft.Windows.Storage.Pickers.FolderPicker(App.Window.AppWindow.Id)
@@ -36,8 +40,14 @@ public sealed class FolderService
                 return null;
             }
 
+            if (SkipForShutdown())
+                return null;
+
             // Keep parity with the legacy app: remember the folder in the Future Access List.
             var folder = await StorageFolder.GetFolderFromPathAsync(result.Path);
+            if (SkipForShutdown())
+                return null;
+
             StorageApplicationPermissions.FutureAccessList.AddOrReplace(FutureAccessToken, folder);
             return result.Path;
         }
@@ -51,6 +61,9 @@ public sealed class FolderService
     /// <summary>Creates the directory if needed and verifies a file can be written and deleted there.</summary>
     public Task<(bool Ok, string Message)> TestAccessAsync(string path)
     {
+        if (SkipForShutdown())
+            return Task.FromResult((false, ShutdownMessage));
+
         if (_platform.HasRunningTimers)
         {
             return Task.FromResult((false, TimersRunningMessage));
@@ -58,6 +71,10 @@ public sealed class FolderService
 
         return Task.Run(() =>
         {
+            if (SkipForShutdown())
+                return (false, ShutdownMessage);
+
+            // Once the probe starts, let its write/delete finish even if shutdown begins.
             try
             {
                 if (string.IsNullOrWhiteSpace(path))
@@ -77,5 +94,14 @@ public sealed class FolderService
                 return (false, AccessFailedMessage);
             }
         });
+    }
+
+    private static bool SkipForShutdown()
+    {
+        if (!App.UiDispatcher.IsShuttingDown)
+            return false;
+
+        AppDiagnostics.Record("folder-operation-skipped", "A folder operation was skipped because shutdown has started.");
+        return true;
     }
 }

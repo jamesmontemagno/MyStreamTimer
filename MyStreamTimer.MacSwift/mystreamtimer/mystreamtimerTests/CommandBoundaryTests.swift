@@ -2,8 +2,81 @@ import Foundation
 import XCTest
 @testable import My_Stream_Timer
 
+// The controller and timer actor read the same clock; every access is locked.
+private nonisolated final class CountdownTestClock: @unchecked Sendable {
+    private let lock = NSLock()
+    private var date = Date(timeIntervalSince1970: 1_767_268_800)
+
+    func now() -> Date {
+        lock.lock()
+        defer { lock.unlock() }
+        return date
+    }
+
+    func advance(seconds: TimeInterval) {
+        lock.lock()
+        defer { lock.unlock() }
+        date = date.addingTimeInterval(seconds)
+    }
+}
+
 @MainActor
 final class CommandBoundaryTests: XCTestCase {
+    func testCountdownFilePreservesLongPauseResumesAndResetsSavedDuration() async throws {
+        let clock = CountdownTestClock()
+        try await withControllerAndDirectory(.countdown, now: { clock.now() }) { controller, directory in
+            controller.minutes = 0
+            controller.seconds = 8
+            controller.useMinutes = true
+            controller.outputStyle = 0
+            controller.output = "{0:mm}:{0:ss}"
+            controller.beepAtZero = false
+            controller.persist(restartTimer: false)
+            let file = directory.appendingPathComponent(controller.fileName)
+            func expectFile(_ text: String) async throws {
+                try await self.waitForCondition("Expected file output \(text)") {
+                    (try? String(contentsOf: file)) == text
+                }
+                XCTAssertEqual(try String(contentsOf: file), text)
+            }
+
+            try await self.apply("secs=12", to: controller)
+            try await expectFile("00:12")
+            clock.advance(seconds: 3)
+            try await expectFile("00:09")
+            try await self.apply("pause", to: controller)
+            XCTAssertTrue(controller.isPaused)
+            clock.advance(seconds: 20)
+            // Let cancellation settle without sleeping through the logical pause.
+            try await Task.sleep(nanoseconds: 350_000_000)
+            XCTAssertEqual(try String(contentsOf: file), "00:09")
+            XCTAssertTrue(controller.isRunning)
+            XCTAssertTrue(controller.isPaused)
+
+            try await self.apply("resume", to: controller)
+            XCTAssertFalse(controller.isPaused)
+            try await expectFile("00:09")
+            clock.advance(seconds: 1)
+            try await expectFile("00:08")
+            clock.advance(seconds: 1)
+            try await expectFile("00:07")
+            try await self.apply("reset", to: controller)
+            try await expectFile("00:08")
+            XCTAssertTrue(controller.isRunning)
+            XCTAssertFalse(controller.isPaused)
+            clock.advance(seconds: 1)
+            try await expectFile("00:07")
+            try await self.apply("stop", to: controller)
+            try await expectFile("")
+            XCTAssertFalse(controller.isRunning)
+            XCTAssertFalse(controller.isPaused)
+            clock.advance(seconds: 20)
+            await controller.shutdown()
+            XCTAssertEqual(try String(contentsOf: file), "")
+            XCTAssertNil(controller.lastError)
+        }
+    }
+
     func testSupportedIntervalsMatchSafeIntegerConversion() {
         for interval in [0, Double.leastNonzeroMagnitude, 0.5, 60, Double(Int.max).nextDown] {
             XCTAssertTrue(TimerInterval.isSupported(interval), "\(interval)")
@@ -550,6 +623,7 @@ final class CommandBoundaryTests: XCTestCase {
 
     private func withControllerAndDirectory(
         _ kind: TimerKind,
+        now: @escaping @Sendable () -> Date = { Date() },
         _ body: (TimerController, URL) async throws -> Void
     ) async throws {
         let suiteName = "CommandBoundaryTests.\(UUID().uuidString)"
@@ -565,6 +639,7 @@ final class CommandBoundaryTests: XCTestCase {
             kind: kind,
             settingsStore: store,
             fileAccess: BookmarkFileAccess(settingsStore: store),
+            now: now,
             canUseProFeatures: { true }
         )
         await controller.stop(clearOutput: true)

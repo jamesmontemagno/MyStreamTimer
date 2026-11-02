@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using MyStreamTimer.Core.Purchases;
 using MyStreamTimer.Core.Settings;
 using Windows.Networking.Connectivity;
@@ -11,8 +10,8 @@ public sealed record StoreProductInfo(string Id, string StoreId, string Title, s
 
 /// <summary>
 /// Wraps <see cref="StoreContext"/>: product catalogue, licenses → <see cref="ProEntitlement"/>, purchases
-/// (durables and subscriptions), restore, and the rating prompt. Every Store call is guarded — the APIs throw
-/// when the app is not installed from the Store (e.g. the dev identity) — and never crash the app.
+/// (durables and subscriptions), restore, and the rating prompt. Store API failures are recorded and
+/// mapped to operation outcomes; cached entitlements are not cleared on lookup failure.
 /// </summary>
 public sealed class StoreService
 {
@@ -46,8 +45,9 @@ public sealed class StoreService
             {
                 return NetworkInformation.GetInternetConnectionProfile()?.GetNetworkConnectivityLevel() == NetworkConnectivityLevel.InternetAccess;
             }
-            catch
+            catch (Exception ex)
             {
+                AppDiagnostics.Record("store-connectivity-failed", "Could not determine Store connectivity.", ex);
                 return false;
             }
         }
@@ -70,7 +70,7 @@ public sealed class StoreService
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[StoreService] StoreContext unavailable: {ex.Message}");
+                AppDiagnostics.Record("store-context-unavailable", "Could not initialize the Store context.", ex);
                 _context = null;
             }
 
@@ -97,7 +97,7 @@ public sealed class StoreService
             var result = await context.GetAssociatedStoreProductsAsync(["Durable"]); // subscription add-ons are reported as Durable (detected via SubscriptionInfo)
             if (result.ExtendedError is not null)
             {
-                Debug.WriteLine($"[StoreService] GetAssociatedStoreProducts error: {result.ExtendedError.Message}");
+                AppDiagnostics.Record("store-products-failed", "The Store product lookup failed.", result.ExtendedError);
                 return;
             }
 
@@ -130,7 +130,7 @@ public sealed class StoreService
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[StoreService] RefreshProducts failed: {ex.Message}");
+            AppDiagnostics.Record("store-products-failed", "The Store product lookup failed.", ex);
         }
     }
 
@@ -169,13 +169,13 @@ public sealed class StoreService
         _settings.ProPriceDate = DateTime.UtcNow;
     }
 
-    /// <summary>Reads the app license and applies active add-on licenses to <see cref="ProEntitlement"/>. Returns true if any were active.</summary>
-    public async Task<bool> RefreshLicensesAsync()
+    /// <summary>Applies recognized active licenses additively, distinguishing empty lookup results from unavailable or failed lookups.</summary>
+    public async Task<StoreLicenseRefreshOutcome> RefreshLicensesAsync()
     {
         var context = Context;
         if (context is null)
         {
-            return false;
+            return StoreLicenseRefreshOutcome.Unavailable;
         }
 
         try
@@ -183,7 +183,8 @@ public sealed class StoreService
             var license = await context.GetAppLicenseAsync();
             if (license is null)
             {
-                return false;
+                AppDiagnostics.Record("store-licenses-failed", "The Store returned no app license.");
+                return StoreLicenseRefreshOutcome.Failed;
             }
 
             var lifetime = new List<string>();
@@ -218,16 +219,16 @@ public sealed class StoreService
 
             if (lifetime.Count == 0 && subExpiration is null)
             {
-                return false;
+                return StoreLicenseRefreshOutcome.NoActiveEntitlements;
             }
 
             _pro.Sync(lifetime, subExpiration);
-            return true;
+            return StoreLicenseRefreshOutcome.ActiveEntitlements;
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[StoreService] RefreshLicenses failed: {ex.Message}");
-            return false;
+            AppDiagnostics.Record("store-licenses-failed", "The Store license refresh failed.", ex);
+            return StoreLicenseRefreshOutcome.Failed;
         }
     }
 
@@ -259,6 +260,7 @@ public sealed class StoreService
     {
         if (!HasInternet)
         {
+            AppDiagnostics.Record("store-purchase-offline", "The purchase was not started because Internet access is unavailable.");
             return (false, NetworkErrorMessage);
         }
 
@@ -275,6 +277,7 @@ public sealed class StoreService
                 await RefreshProductsAsync();
                 if (!_storeProducts.TryGetValue(productId, out product))
                 {
+                    AppDiagnostics.Record("store-purchase-unavailable", "The purchase could not start because its product is unavailable.");
                     return (false, ServerErrorMessage);
                 }
             }
@@ -289,21 +292,22 @@ public sealed class StoreService
                 case StorePurchaseStatus.NotPurchased:
                     return (false, null);
                 case StorePurchaseStatus.NetworkError:
+                    AppDiagnostics.Record("store-purchase-network-error", "The Store reported a purchase network error.", result.ExtendedError);
                     return (false, NetworkErrorMessage);
                 default:
-                    Debug.WriteLine($"[StoreService] Purchase error: {result.ExtendedError?.Message}");
+                    AppDiagnostics.Record("store-purchase-failed", "The Store purchase failed.", result.ExtendedError);
                     return (false, ServerErrorMessage);
             }
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[StoreService] Purchase failed: {ex.Message}");
+            AppDiagnostics.Record("store-purchase-failed", "The Store purchase failed.", ex);
             return (false, ServerErrorMessage);
         }
     }
 
-    /// <summary>Re-reads licenses; true when at least one active add-on license was found.</summary>
-    public Task<bool> RestoreAsync() => RefreshLicensesAsync();
+    /// <summary>Re-reads licenses without treating lookup failure as an empty purchase history.</summary>
+    public Task<StoreLicenseRefreshOutcome> RestoreAsync() => RefreshLicensesAsync();
 
     /// <summary>Shows the Store rating/review dialog (request 16).</summary>
     public async Task RequestRatingAsync()
@@ -317,12 +321,14 @@ public sealed class StoreService
         try
         {
             var result = await StoreRequestHelper.SendRequestAsync(context, 16, string.Empty);
-            Debug.WriteLine($"[StoreService] Rating request: {result.ExtendedError?.Message ?? result.Response}");
+            if (result.ExtendedError is not null)
+            {
+                AppDiagnostics.Record("store-rating-failed", "The Store rating request failed.", result.ExtendedError);
+            }
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[StoreService] RequestRating failed: {ex.Message}");
+            AppDiagnostics.Record("store-rating-failed", "The Store rating request failed.", ex);
         }
     }
 }
-

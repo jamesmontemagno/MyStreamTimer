@@ -27,6 +27,69 @@ Use a disposable Windows 11 25H2 **x64 build 26200** VM and record its full OS r
 - [ ] With explicit consent, configure per-app WER capture for naturally occurring native failures. Analyze collected evidence with the release's retained binaries/symbols; remove only the test's per-app dump configuration afterward. Do not deliberately trigger a native crash.
 - [ ] Retain the upload hash, commit, symbols and evidence before recommending a Store flight. Publication requires separate authorization. Do not claim a Partner Center rate reduction until comparable post-flight cohorts support it.
 
+## Local Store/launcher and shutdown regression qualification
+
+This checklist is **not an executed Windows pass**. Managed source-linked tests use Task-based
+Store/shell doubles; they do not compile WinUI, validate COM, or establish native dialog teardown
+ordering. Run only on an authorized disposable Windows host with isolated app settings/output.
+Do not use the owner's installed app, accounts or folders. Do not publish or dispatch CI.
+Store transactions/rating submissions and account/license changes need separate authorization;
+do not perform them merely to complete this checklist. Protected/manual flight-first publishing
+remains unchanged.
+
+The Store license refresh now distinguishes recognized active entitlements, a completed lookup
+with no recognized active entitlements, Store unavailability, and failure (including a null app
+license). Restore shows different messages for the latter three; none clears cached access.
+Successful/AlreadyPurchased transactions remain successful even if their subsequent refresh
+fails. English message literals follow the existing Pro page pattern (no resource catalog exists).
+
+Store context/connectivity/products/licenses/purchase/rating failures and shell launch failures
+now use fixed diagnostic categories/details. A native launcher `false` records `*-not-opened`,
+without inventing an exception or cancellation reason. Exception type/HResult and stacks without
+source-file information are exported; URI/path values, Store response bodies, IDs, exception
+messages, `Data`, and `Source` are not included in these records.
+
+- [ ] Record base commit and applied patch hashes, OS build/revision/architecture, SDK/runtime,
+  package identity and Windows App Runtime versions. Record every case as passed/failed/blocked
+  with evidence; an unavailable host or Store is blocked, not a pass.
+- [ ] Build the actual WinUI app on Windows, using the existing local build convention:
+  `dotnet restore src/MyStreamTimer.WinUI/MyStreamTimer.WinUI.csproj -p:Platform=x64 -r win-x64 -p:PublishReadyToRun=true`,
+  then `dotnet build src/MyStreamTimer.WinUI/MyStreamTimer.WinUI.csproj -c Release -p:Platform=x64 -r win-x64 --no-restore`.
+  Repeat with `ARM64`/`win-arm64` for that architecture. Do not install the Release identity over
+  the owner's app; use an already authorized disposable VM/package for runtime checks.
+- [ ] Run normal Core tests on Windows, including `MyStreamTimer.WindowsStability.Tests`,
+  `TimerKindAndFilesTests`, `CommandBoundaryTests`, `ShutdownRegressionTests`,
+  `ShutdownDispatcherTests`, and `DiagnosticLogTests`. Keep results separate from native checks.
+- [ ] In an isolated test profile, verify valid legacy Boolean settings and reset accept/decline.
+  Close while reset confirmation or welcome-back is pending; record actual close/dismiss/continuation
+  order, responsiveness and diagnostics. Do not assume a close request actually tears down a
+  modal window. Confirm no reset starts after shutdown; no new dialog cancellation policy is added.
+- [ ] Close during folder selection and storage lookup; check for no new Future Access mutation
+  or access probe after shutdown. Cancel and successful selection must retain their normal behavior.
+  Allow an already-running write/delete probe to finish; check for leftover fixture probe files.
+- [ ] With separately approved Store test identity/fixtures, check active, empty, unavailable and
+  failed license lookups. Verify distinct restore messaging and unchanged cached lifetime/subscription
+  state on empty/error. A Store-unavailable dev identity cannot qualify active/empty Store behavior.
+  Use managed tests for purchase cancellation/success/error until native transaction testing is
+  separately authorized. Never substitute a failed lookup for a no-purchases result.
+- [ ] Close/navigate away during Store refresh and a pending restore/result dialog. Record event
+  delivery, UI continuation ordering, crashes/hangs and cached state. Existing Pro finally/dialog
+  continuations remain native qualification risks; the new outcome type is not a lifetime fix.
+- [ ] On the isolated host only, exercise successful, false-result and failed folder/URI launches
+  when safely reproducible; close during completion. Verify caller warning/status UX and the
+  fixed category, with no specific explanation inferred from `false`.
+- [ ] Lock only a newly created fixture output file with `FileShare.None` in a separate local
+  process. Exercise Start/tick/completion/Stop and close during pending writes; release the lock
+  in `finally`. Verify explicit failure/retry behavior, finish-text/clear behavior and drain status.
+  No real OBS or owner output files. Follow the existing locked-output gate above.
+- [ ] Export diagnostics from the test profile. Inspect the ZIP for fixed Store/launcher events,
+  no synthetic secret payloads, no account/product/license identifiers, no URI/folder values,
+  no exception messages/source paths. Capture actual native failures only with separate consent;
+  no injected crash switch, broad exception recovery or automatic uploads.
+- [ ] Preserve build/test logs, timestamps, diagnostic ZIP hash, observed native ordering and any
+  naturally occurring WER evidence. No crash-reduction or release-readiness claim from managed
+  tests alone; native Windows/COM/Store/ACL and Swift/Xcode remain separate gates.
+
 ## Preparation
 - [ ] Install the current Store build (`winget install 9N5NXX3WK7K7 --source msstore`) and launch once.
 - [ ] Configure **every** timer with non-default values (see table), run Countdown 1 for a few seconds, stop.

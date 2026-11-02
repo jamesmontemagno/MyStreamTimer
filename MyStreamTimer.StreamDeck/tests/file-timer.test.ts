@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 import process from "node:process";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   FileTimerManager,
@@ -46,6 +46,82 @@ describe("file timer formatting", () => {
 });
 
 describe("FileTimerManager", () => {
+  it("preserves a long countdown pause, resumes, and resets the original file duration", async () => {
+    const directory = await createTestDirectory();
+    const path = join(directory, "countdown.txt");
+    const errors: unknown[] = [];
+    const manager = new FileTimerManager((error) => errors.push(error));
+    const output = new FakeOutput();
+    const control = (operation: "pause" | "resume" | "reset" | "stop") =>
+      manager.control(
+        normalizeFileControlSettings({
+          displayFormat: "countdown",
+          operation,
+          outputDirectory: directory,
+          fileName: "countdown.txt",
+        }),
+        output,
+      );
+    // Keep real filesystem I/O and the bounded polling helper on real timers.
+    let now = new Date(2026, 0, 1, 12).valueOf();
+    const clock = vi.spyOn(Date, "now").mockImplementation(() => now);
+    const advance = (seconds: number) => {
+      now += seconds * 1_000;
+    };
+    const expectFile = async (text: string) => {
+      await expect
+        .poll(() => readFile(path, "utf8"), { timeout: 2_000 })
+        .toBe(text);
+    };
+    try {
+      await manager.start(
+        normalizeFileStartSettings({
+          displayFormat: "countdown",
+          amount: 12,
+          unit: "seconds",
+          outputDirectory: directory,
+          fileName: "countdown.txt",
+        }),
+        "File\n12 sec",
+        output,
+      );
+      await expectFile("0:12");
+      advance(3);
+      await expectFile("0:09");
+      await control("pause");
+      advance(20);
+      await new Promise((resolve) => setTimeout(resolve, 350));
+      expect(await readFile(path, "utf8")).toBe("0:09");
+      expect(manager.isRunning(path)).toBe(true);
+
+      await control("resume");
+      await expectFile("0:09");
+      advance(1);
+      await expectFile("0:08");
+      advance(1);
+      await expectFile("0:07");
+      await control("reset");
+      await expectFile("0:12");
+      advance(1);
+      await expectFile("0:11");
+      await control("stop");
+      await expectFile("");
+      expect(manager.isRunning(path)).toBe(false);
+      expect(output.titles.at(-1)).toBe("File\n12 sec");
+      advance(20);
+      await new Promise((resolve) => setTimeout(resolve, 350));
+      expect(await readFile(path, "utf8")).toBe("");
+      expect(errors).toEqual([]);
+    } finally {
+      try {
+        if (manager.isRunning(path)) await control("stop");
+      } finally {
+        clock.mockRestore();
+        await rm(directory, { force: true, recursive: true });
+      }
+    }
+  });
+
   it("starts, restarts, and stops a countdown selected by its output path", async () => {
     const directory = await createTestDirectory();
     const output = new FakeOutput();
